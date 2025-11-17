@@ -1,16 +1,13 @@
 # smash_mobile
 
-A new Flutter project.
+Tugas Kelompok PBP A - A05
 
-## Getting Started
+<h3>Anggota 👤</h3>
+<hr>
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Ardyana Feby Pratiwi - 2406398274
+- Christna Yosua Rotinsulu - 2406495691
+- Ilham Afuw Ghaniy - 2406403495
+- Nathanael Leander Herdanatra - 2406421320
+- Nita Pasaribu 2406436890
+- Rashika Maharani Putri Rudyanto - 2406352670
