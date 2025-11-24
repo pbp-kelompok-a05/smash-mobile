@@ -39,3 +39,7 @@ Data aplikasi terintegrasi dengan [versi web dari aplikasi](https://nathanael-le
 ### Link Figma (WIP)
 
 [Figma Design Link](https://www.figma.com/design/3VuyZhgnNKDuvrI3NkmgK8/TK2-PBP?m=auto&t=uAIObD9s4PPWKHMY-6)
+
+### Link Spreadsheet Planning
+
+[Planning A05_Smash](https://docs.google.com/spreadsheets/d/1s9tCWLteShxZbHgpX9CTKBdMHocH7qI8WwD6wGcW2AU/edit?usp=sharing)
