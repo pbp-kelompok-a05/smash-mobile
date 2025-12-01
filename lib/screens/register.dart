@@ -1,164 +1,482 @@
-import 'dart:convert';
+// ignore_for_file: unused_element_parameter
+
 import 'package:flutter/material.dart';
-import 'package:pbp_django_auth/pbp_django_auth.dart';
-import 'package:provider/provider.dart';
 import 'package:smash_mobile/screens/login.dart';
 
-class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
-
-  @override
-  State<RegisterPage> createState() => _RegisterPageState();
+void main() {
+  runApp(const SmashApp());
 }
 
-class _RegisterPageState extends State<RegisterPage> {
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+class SmashApp extends StatelessWidget {
+  const SmashApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final request = context.watch<CookieRequest>();
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Register'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+    return MaterialApp(
+      title: 'Smash Auth',
+      theme: ThemeData(
+        primarySwatch: Colors.purple,
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Card(
-            elevation: 8,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const Text(
-                    'Register',
-                    style: TextStyle(
-                      fontSize: 24.0,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 30.0),
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Username',
-                      hintText: 'Enter your username',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                      ),
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your username';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12.0),
-                  TextFormField(
-                    controller: _passwordController,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      hintText: 'Enter your password',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                      ),
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                    ),
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12.0),
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    decoration: const InputDecoration(
-                      labelText: 'Confirm Password',
-                      hintText: 'Confirm your password',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                      ),
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                    ),
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please confirm your password';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24.0),
-                  ElevatedButton(
-                    onPressed: () async {
-                      String username = _usernameController.text;
-                      String password1 = _passwordController.text;
-                      String password2 = _confirmPasswordController.text;
+      debugShowCheckedModeBanner: false,
+      home: const SmashLoginPage(),
+    );
+  }
+}
 
-                      // Check credentials                      
-                      // To connect Android emulator with Django on localhost, use URL http://10.0.2.2/
-                      // If you using chrome,  use URL http://localhost:8000       
-                      final response = await request.postJson(
-                          "http://localhost:8000/auth/register/",
-                          jsonEncode({
-                            "username": username,
-                            "password1": password1,
-                            "password2": password2,
-                          }));
-                      if (context.mounted) {
-                        if (response['status'] == 'success') {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Successfully registered!'),
-                            ),
-                          );
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const SmashLoginPage()),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Failed to register!'),
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      minimumSize: Size(double.infinity, 50),
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    ),
-                    child: const Text('Register'),
-                  ),
-                ],
+/* ---------------------------
+   Shared Logo / Header
+   --------------------------- */
+class SmashHeader extends StatelessWidget {
+  final EdgeInsetsGeometry? padding;
+  final double logoSize;
+  const SmashHeader({super.key, this.padding, this.logoSize = 48});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: padding ?? const EdgeInsets.symmetric(vertical: 18.0),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Smash!',
+                style: TextStyle(
+                  fontSize: logoSize,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF4A2B55),
+                ),
               ),
+              const SizedBox(width: 10),
+              Container(
+                width: logoSize * 0.92,
+                height: logoSize * 0.92,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2C6D9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.sports_tennis,
+                  size: 26,
+                  color: Color(0xFF6A2B53),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SignInForm extends StatefulWidget {
+  const _SignInForm({super.key});
+
+  @override
+  State<_SignInForm> createState() => _SignInFormState();
+}
+
+class _SignInFormState extends State<_SignInForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
+  }
+
+  InputDecoration _dec(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(28),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(28),
+        borderSide: BorderSide(color: Colors.grey.shade500),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          const Center(
+            child: Text(
+              'Sign In to your account',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              'Welcome back to SMASH!',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text.rich(
+              TextSpan(children: [
+                const TextSpan(
+                  text: 'Username',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                TextSpan(text: '*', style: TextStyle(color: Colors.red.shade700)),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            decoration: _dec('Enter your email'),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please enter email';
+              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) return 'Invalid email';
+              return null;
+            },
+          ),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text.rich(
+              TextSpan(children: [
+                const TextSpan(
+                  text: 'Password',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                TextSpan(text: '*', style: TextStyle(color: Colors.red.shade700)),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _passCtrl,
+            obscureText: _obscure,
+            decoration: _dec('Enter your password').copyWith(
+              suffixIcon: IconButton(
+                icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please enter password';
+              if (v.length < 6) return 'Password must be at least 6 chars';
+              return null;
+            },
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                if (_formKey.currentState?.validate() ?? false) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Signing in...')),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                elevation: 4,
+              ),
+              child: const Text('Sign In', style: TextStyle(fontSize: 16)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            alignment: WrapAlignment.center,
+            children: [
+              Text("Don't have an account? ", style: TextStyle(color: Colors.grey.shade700)),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SmashRegisterPage()),
+                  );
+                },
+                child: const Text('Create account', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ---------------------------
+   Register Page
+   --------------------------- */
+class SmashRegisterPage extends StatelessWidget {
+  const SmashRegisterPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    return Scaffold(
+      // same background as login
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFFDFF7EE),
+              Color(0xFFF7E7E9),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              children: [
+                const SmashHeader(padding: EdgeInsets.only(top: 12, bottom: 6), logoSize: 56),
+                const SizedBox(height: 6),
+                Center(
+                  child: Container(
+                    width: width * 0.92,
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    padding: const EdgeInsets.all(18),
+                    margin: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        )
+                      ],
+                    ),
+                    child: const _RegisterForm(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // tagline below card (mirrors the screenshot)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+                  child: Text(
+                    'Forum Diskusi Olahraga Padel\nPERTAMA di Indonesia',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  ),
+                )
+              ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _RegisterForm extends StatefulWidget {
+  const _RegisterForm({super.key});
+
+  @override
+  State<_RegisterForm> createState() => _RegisterFormState();
+}
+
+class _RegisterFormState extends State<_RegisterForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _userCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  final _pass2Ctrl = TextEditingController();
+  bool _obscureA = true;
+  bool _obscureB = true;
+
+  @override
+  void dispose() {
+    _userCtrl.dispose();
+    _passCtrl.dispose();
+    _pass2Ctrl.dispose();
+    super.dispose();
+  }
+
+  InputDecoration _dec(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(28),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(28),
+        borderSide: BorderSide(color: Colors.grey.shade500),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          const Center(
+            child: Text(
+              'Create a New Account',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Center(
+            child: Text(
+              'Start your winning journey with SMASH!',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text.rich(
+              TextSpan(children: [
+                const TextSpan(text: 'Username', style: TextStyle(fontWeight: FontWeight.w700)),
+                TextSpan(text: '*', style: TextStyle(color: Colors.red.shade700)),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _userCtrl,
+            decoration: _dec('Enter your email'),
+            keyboardType: TextInputType.emailAddress,
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please enter email';
+              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) return 'Invalid email';
+              return null;
+            },
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text.rich(
+              TextSpan(children: [
+                const TextSpan(text: 'Password', style: TextStyle(fontWeight: FontWeight.w700)),
+                TextSpan(text: '*', style: TextStyle(color: Colors.red.shade700)),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _passCtrl,
+            decoration: _dec('Enter your password').copyWith(
+              suffixIcon: IconButton(
+                icon: Icon(_obscureA ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => _obscureA = !_obscureA),
+              ),
+            ),
+            obscureText: _obscureA,
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please enter password';
+              if (v.length < 6) return 'Password must be at least 6 chars';
+              return null;
+            },
+          ),
+          const SizedBox(height: 12),
+          // second password field (the screenshot shows two Password labels — we treat second as repeat/confirm)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text.rich(
+              TextSpan(children: [
+                const TextSpan(text: 'Password', style: TextStyle(fontWeight: FontWeight.w700)),
+                TextSpan(text: '*', style: TextStyle(color: Colors.red.shade700)),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _pass2Ctrl,
+            decoration: _dec('Enter your password').copyWith(
+              suffixIcon: IconButton(
+                icon: Icon(_obscureB ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => _obscureB = !_obscureB),
+              ),
+            ),
+            obscureText: _obscureB,
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please confirm password';
+              if (v != _passCtrl.text) return 'Passwords do not match';
+              return null;
+            },
+          ),
+          const SizedBox(height: 12),
+          // Confirm Password (explicit label shown in screenshot)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text.rich(
+              TextSpan(children: [
+                const TextSpan(text: 'Confirm Password', style: TextStyle(fontWeight: FontWeight.w700)),
+                TextSpan(text: '*', style: TextStyle(color: Colors.red.shade700)),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // For UX we reuse pass2 controller (the screenshot had 3 password fields; to be safe, keep this as a check)
+          TextFormField(
+            decoration: _dec('Enter your password'),
+            obscureText: true,
+            validator: (v) {
+              // optional: check that this matches previous confirm
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                if (_formKey.currentState?.validate() ?? false) {
+                  // simulate register action
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Registering account...')),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                elevation: 4,
+              ),
+              child: const Text('Register', style: TextStyle(fontSize: 16)),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            alignment: WrapAlignment.center,
+            children: [
+              Text('Already have an account? ', style: TextStyle(color: Colors.grey.shade700)),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

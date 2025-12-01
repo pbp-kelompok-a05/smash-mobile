@@ -305,7 +305,7 @@ class _SignInFormState extends State<_SignInForm> {
                     Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const RegisterPage()),
+                                builder: (context) => const SmashRegisterPage()),
                           );
                   },
                   style: TextButton.styleFrom(
