@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class PostCard extends StatelessWidget {
   final String title;
   final String content;
+  final Image? profileImage;
   final Image? image;
   final String author;
   final int likeCount;
@@ -15,6 +16,7 @@ class PostCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.content,
+    this.profileImage,
     this.image,
     required this.author,
     required this.likeCount,
@@ -44,16 +46,28 @@ class PostCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (image != null)
-                      Container(
-                        margin: const EdgeInsets.only(right: 12),
-                        width: 50,
-                        height: 50,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(25),
-                          child: image,
-                        ),
-                      ),
+                    profileImage != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(25),
+                            child: SizedBox(
+                              width: 50,
+                              height: 50,
+                              child: profileImage,
+                            ),
+                          )
+                        : Container(
+                            margin: const EdgeInsets.only(right: 12),
+                            child: CircleAvatar(
+                              radius: 25,
+                              backgroundColor: Colors.grey[300],
+                              child: Icon(
+                                Icons.person,
+                                size: 30,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,6 +89,13 @@ class PostCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (image != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: image,
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Text(content, style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 12),
