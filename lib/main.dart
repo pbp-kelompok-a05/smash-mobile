@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smash_mobile/widgets/post_card.dart';
+import 'package:smash_mobile/widgets/comment_card.dart';
 import 'package:smash_mobile/screens/post_detail.dart';
 
 void main() {
@@ -59,40 +60,65 @@ class MyHomePage extends StatelessWidget {
         title: Text(title),
       ),
       body: SingleChildScrollView(
-        child: Center(
-          child: PostCard(
-            title: "Hello World!",
-            content:
-                "Lorem Ipsum dolor sit amet blababla bleblele blobloblo haup blulululluullullu",
-            author: "Jane Doe",
-            image: Image.network(
-              'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d',
-            ),
-            likeCount: 3,
-            dislikeCount: 1,
-            commentCount: 10,
-            timestamp: DateTime.now(),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PostDetailScreen(
-                    title: "Hello World!",
-                    content:
-                        "Lorem Ipsum dolor sit amet blababla bleblele blobloblo haup blulululluullullu",
-                    author: "Jane Doe",
-                    image: Image.network(
-                      'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d',
+        child: Column(
+          children: [
+            PostCard(
+              title: "Hello World!",
+              content:
+                  "Lorem Ipsum dolor sit amet blababla bleblele blobloblo haup blulululluullullu",
+              author: "Jane Doe",
+              image: Image.network(
+                'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d',
+              ),
+              likeCount: 3,
+              dislikeCount: 1,
+              commentCount: 10,
+              timestamp: DateTime.now(),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PostDetailScreen(
+                      title: "Hello World!",
+                      content:
+                          "Lorem Ipsum dolor sit amet blababla bleblele blobloblo haup blulululluullullu",
+                      author: "Jane Doe",
+                      image: Image.network(
+                        'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d',
+                      ),
+                      likeCount: 3,
+                      dislikeCount: 1,
+                      commentCount: 10,
+                      timestamp: DateTime.now(),
                     ),
-                    likeCount: 3,
-                    dislikeCount: 1,
-                    commentCount: 10,
-                    timestamp: DateTime.now(),
                   ),
-                ),
-              );
-            },
-          ),
+                );
+              },
+            ),
+            CommentCard(
+              content: "This is a great post! I really enjoyed reading it.",
+              author: "John Smith",
+              likeCount: 5,
+              dislikeCount: 0,
+              timestamp: DateTime.now(),
+              onTap: () {
+                print("Comment tapped");
+              },
+            ),
+            CommentCard(
+              content: "Thanks for sharing this information!",
+              author: "Alice Johnson",
+              profileImage: Image.network(
+                'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
+              ),
+              likeCount: 2,
+              dislikeCount: 1,
+              timestamp: DateTime.now().subtract(Duration(hours: 2)),
+              onTap: () {
+                print("Comment tapped");
+              },
+            ),
+          ],
         ),
       ),
     );
