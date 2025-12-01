@@ -70,156 +70,6 @@ class SmashHeader extends StatelessWidget {
   }
 }
 
-class _SignInForm extends StatefulWidget {
-  const _SignInForm({super.key});
-
-  @override
-  State<_SignInForm> createState() => _SignInFormState();
-}
-
-class _SignInFormState extends State<_SignInForm> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  bool _obscure = true;
-
-  @override
-  void dispose() {
-    _emailCtrl.dispose();
-    _passCtrl.dispose();
-    super.dispose();
-  }
-
-  InputDecoration _dec(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(28),
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(28),
-        borderSide: BorderSide(color: Colors.grey.shade500),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          const Center(
-            child: Text(
-              'Sign In to your account',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              'Welcome back to SMASH!',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text.rich(
-              TextSpan(children: [
-                const TextSpan(
-                  text: 'Username',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                TextSpan(text: '*', style: TextStyle(color: Colors.red.shade700)),
-              ]),
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _emailCtrl,
-            keyboardType: TextInputType.emailAddress,
-            decoration: _dec('Enter your email'),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Please enter email';
-              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) return 'Invalid email';
-              return null;
-            },
-          ),
-          const SizedBox(height: 14),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text.rich(
-              TextSpan(children: [
-                const TextSpan(
-                  text: 'Password',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                TextSpan(text: '*', style: TextStyle(color: Colors.red.shade700)),
-              ]),
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _passCtrl,
-            obscureText: _obscure,
-            decoration: _dec('Enter your password').copyWith(
-              suffixIcon: IconButton(
-                icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _obscure = !_obscure),
-              ),
-            ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Please enter password';
-              if (v.length < 6) return 'Password must be at least 6 chars';
-              return null;
-            },
-          ),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState?.validate() ?? false) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Signing in...')),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                elevation: 4,
-              ),
-              child: const Text('Sign In', style: TextStyle(fontSize: 16)),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            alignment: WrapAlignment.center,
-            children: [
-              Text("Don't have an account? ", style: TextStyle(color: Colors.grey.shade700)),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SmashRegisterPage()),
-                  );
-                },
-                child: const Text('Create account', style: TextStyle(fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /* ---------------------------
    Register Page
    --------------------------- */
@@ -470,7 +320,10 @@ class _RegisterFormState extends State<_RegisterForm> {
               Text('Already have an account? ', style: TextStyle(color: Colors.grey.shade700)),
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop();
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SmashLoginPage()),
+                    );
                 },
                 child: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
