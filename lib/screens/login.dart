@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smash_mobile/screens/register.dart';
 
 void main() {
   runApp(const SmashApp());
@@ -300,8 +301,12 @@ class _SignInFormState extends State<_SignInForm> {
                   style: TextStyle(color: Colors.grey.shade700),
                 ),
                 TextButton(
-                  onPressed: () {
-                    // TODO: navigasi ke halaman pendaftaran
+                  onPressed: () {                    
+                    Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const RegisterPage()),
+                          );
                   },
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
