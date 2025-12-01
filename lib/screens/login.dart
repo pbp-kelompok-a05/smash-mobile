@@ -1,76 +1,73 @@
-import 'package:smash_mobile/screens/menu.dart';
 import 'package:flutter/material.dart';
-import 'package:pbp_django_auth/pbp_django_auth.dart';
-import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const LoginApp());
+  runApp(const SmashApp());
 }
 
-class LoginApp extends StatelessWidget {
-  const LoginApp({super.key});
+class SmashApp extends StatelessWidget {
+  const SmashApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'House of Champions - Login',
+      title: 'Smash Login',
       theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.light,
-        ),
-        fontFamily: 'Inter',
+        primarySwatch: Colors.purple,
       ),
-      home: const LoginPage(),
       debugShowCheckedModeBanner: false,
+      home: const SmashLoginPage(),
     );
   }
 }
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
-
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false; // State untuk loading indicator
-  bool _obscurePassword = true; // State untuk show/hide password
+class SmashLoginPage extends StatelessWidget {
+  const SmashLoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final request = context.watch<CookieRequest>();
-
+    final width = MediaQuery.of(context).size.width;
     return Scaffold(
-      // Background gradient yang modern
+      // background gradient dari hijau pucat ke pink pucat
       body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.blue[800]!,
-              Colors.blue[600]!,
-              Colors.blue[400]!,
+              Color(0xFFDFF7EE), // mint very light
+              Color(0xFFF7E7E9), // pink very light
             ],
           ),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(vertical: 24.0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Header Section dengan Logo dan Welcome Text
-                _buildHeaderSection(),
-                
-                // Login Card Section
-                _buildLoginCard(request),
+                // Logo + tagline
+                const _LogoSection(),
+                const SizedBox(height: 24),
+                // Card form
+                Center(
+                  child: Container(
+                    width: width * 0.92,
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    padding: const EdgeInsets.all(18.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const _SignInForm(),
+                  ),
+                ),
               ],
             ),
           ),
@@ -78,424 +75,252 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+}
 
-  /// Membangun header section dengan logo dan teks sambutan
-  Widget _buildHeaderSection() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-      child: Column(
-        children: [
-          // Logo/Icon Aplikasi
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.sports_soccer,
-              size: 40,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 20),
-          
-          // Teks Sambutan
-          const Text(
-            'House of Champions',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Welcome back! Please sign in to continue',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white.withOpacity(0.8),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+class _LogoSection extends StatelessWidget {
+  const _LogoSection();
 
-  /// Membangun card login dengan form input
-  Widget _buildLoginCard(CookieRequest request) {
-    return Container(
-      margin: const EdgeInsets.all(20),
-      child: Card(
-        elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Title Section
-              const Text(
-                'Sign In',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Enter your credentials to access your account',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-
-              // Username Field
-              _buildTextField(
-                controller: _usernameController,
-                label: 'Username',
-                hint: 'Enter your username',
-                prefixIcon: Icons.person_outline,
-                keyboardType: TextInputType.text,
-              ),
-              const SizedBox(height: 20),
-
-              // Password Field
-              _buildPasswordField(),
-              const SizedBox(height: 8),
-
-              // Forgot Password (Optional)
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    // TODO: Implement forgot password functionality
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Forgot password feature coming soon!'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    'Forgot Password?',
-                    style: TextStyle(
-                      color: Colors.blue[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Login Button
-              _buildLoginButton(request),
-              const SizedBox(height: 32),
-
-              // Register Section
-              _buildRegisterSection(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Membangun text field yang reusable
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData prefixIcon,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
+  @override
+  Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          style: const TextStyle(fontSize: 16),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey[500]),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[400]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.blue[400]!, width: 2),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[400]!),
-            ),
-            filled: true,
-            fillColor: Colors.grey[50],
-            prefixIcon: Icon(
-              prefixIcon,
-              color: Colors.grey[600],
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Membangun password field dengan toggle visibility
-  Widget _buildPasswordField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Password',
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            color: Colors.grey,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _passwordController,
-          obscureText: _obscurePassword,
-          style: const TextStyle(fontSize: 16),
-          decoration: InputDecoration(
-            hintText: 'Enter your password',
-            hintStyle: TextStyle(color: Colors.grey[500]),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[400]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.blue[400]!, width: 2),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[400]!),
-            ),
-            filled: true,
-            fillColor: Colors.grey[50],
-            prefixIcon: const Icon(
-              Icons.lock_outline,
-              color: Colors.grey,
-            ),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                color: Colors.grey[600],
-              ),
-              onPressed: () {
-                setState(() {
-                  _obscurePassword = !_obscurePassword;
-                });
-              },
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Membangun login button dengan loading state
-  Widget _buildLoginButton(CookieRequest request) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue[700],
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 2,
-          shadowColor: Colors.blue[200],
-        ),
-        onPressed: _isLoading
-            ? null
-            : () async {
-                _performLogin(request);
-              },
-        child: _isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : const Text(
-                'Sign In',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-      ),
-    );
-  }
-
-  /// Membangun section untuk registrasi
-  Widget _buildRegisterSection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          "Don't have an account?",
-          style: TextStyle(
-            color: Colors.grey[600],
-          ),
-        ),
-        const SizedBox(width: 4),
-        GestureDetector(          
-          child: Text(
-            'Create Account',
-            style: TextStyle(
-              color: Colors.blue[700],
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Melakukan proses login dengan error handling
-  void _performLogin(CookieRequest request) async {
-    // Validasi input
-    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showErrorDialog('Please fill in all fields');
-      return;
-    }
-
-    // Set loading state
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Check credentials
-      // TODO: Replace the URL with your app's URL
-      // To connect Android emulator with Django on localhost, use URL http://10.0.2.2/
-      // If you using chrome, use URL http://localhost:8000
-      final response = await request.login(
-        "http://localhost:8000/auth/login/",
-        {
-          'username': _usernameController.text.trim(),
-          'password': _passwordController.text,
-        },
-      );
-
-      // Reset loading state
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-
-      if (request.loggedIn) {
-        // Login successful
-        String message = response['message'];
-        String uname = response['username'];
-        
-        if (mounted) {
-          // Show success message
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text("$message Welcome back, $uname! 👋"),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            );
-
-          // Navigate to home page
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => MyHomePage()),
-          );
-        }
-      } else {
-        // Login failed
-        _showErrorDialog(response['message'] ?? 'Login failed. Please try again.');
-      }
-    } catch (e) {
-      // Handle network errors
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        _showErrorDialog('Network error: Please check your connection and try again.');
-      }
-    }
-  }
-
-  /// Menampilkan dialog error
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
+        // Logo (bisa diganti dengan Image.asset jika Anda punya asset logo)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, color: Colors.red, size: 24),
-            SizedBox(width: 8),
-            Text('Login Failed'),
+            // tulisan Smash!
+            Text(
+              'Smash!',
+              style: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF4A2B55), // deep purple
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Balloon / icon sebagai dekorasi logo
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2C6D9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.sports_tennis, // mendekati bola padel
+                size: 26,
+                color: Color(0xFF6A2B53),
+              ),
+            ),
           ],
         ),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+        const SizedBox(height: 8),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.0),
+          child: Text(
+            '“Forum Diskusi Olahraga Padel\nPERTAMA di Indonesia”',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+              fontStyle: FontStyle.italic,
+            ),
           ),
-        ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
         ),
+      ],
+    );
+  }
+}
+
+class _SignInForm extends StatefulWidget {
+  const _SignInForm();
+
+  @override
+  State<_SignInForm> createState() => _SignInFormState();
+}
+
+class _SignInFormState extends State<_SignInForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
+  }
+
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(28),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(28),
+        borderSide: BorderSide(color: Colors.grey.shade500),
       ),
     );
   }
 
   @override
-  void dispose() {
-    // Clean up controllers
-    _usernameController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        // isi card
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Text(
+              'Sign In to your account',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              'Welcome back to SMASH!',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          // Username label + field
+          const Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: 'Username',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                TextSpan(
+                  text: '*',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            decoration: _inputDecoration('Enter your email'),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please enter email';
+              return null;
+            },
+          ),
+          const SizedBox(height: 14),
+          // Password label + field
+          const Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: 'Password',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                TextSpan(
+                  text: '*',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _passCtrl,
+            obscureText: _obscure,
+            decoration: _inputDecoration('Enter your password').copyWith(
+              suffixIcon: IconButton(
+                icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please enter password';
+              return null;
+            },
+          ),
+          const SizedBox(height: 18),
+          // Sign in button (pill black)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                if (_formKey.currentState?.validate() ?? false) {
+                  // contoh aksi: hanya tunjukkan snackbar
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Signing in...')),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                elevation: 4,
+              ),
+              child: const Text(
+                'Sign In',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          // bottom text "Don't have an account? Create account"
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  "Don't have an account? ",
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // TODO: navigasi ke halaman pendaftaran
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    'Create account',
+                    style: TextStyle(
+                      color: Color(0xFF3E98D6), // biru muda link
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
