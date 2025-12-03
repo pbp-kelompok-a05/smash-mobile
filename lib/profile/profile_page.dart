@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'widgets/navbar.dart';
+import 'package:smash_mobile/widgets/navbar.dart';
 
 
 class ProfilePage extends StatelessWidget {

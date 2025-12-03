@@ -1,10 +1,12 @@
+// ignore_for_file: depend_on_referenced_packages
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 
-import 'widgets/navbar.dart';
+import 'package:smash_mobile/profile/profile_page.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({

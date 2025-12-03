@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'profile_page.dart';
+import 'package:smash_mobile/profile/profile_page.dart';
 
 void main() => runApp(const MyApp());
 
