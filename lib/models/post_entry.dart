@@ -1,22 +1,27 @@
 import 'dart:convert';
-List<PostEntry> postEntryFromJson(String str) => List<PostEntry>.from(json.decode(str).map((x) => PostEntry.fromJson(x)));
+final data = jsonDecode(response.body);
+List<PostEntry> posts = 
+  (data["posts"] as List).map((e) => PostEntry.fromJson(e)).toList();
 
 String postEntryFromJson(List<PostEntry> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 class PostEntry {
+    String id;
     String title;
     String content;
     String? image;
-    String? videoLink;
-    DateTime createdAt;
-    DateTime updatedAt;
+    String? video;
+    DateTime? createdAt;
+    DateTime? updatedAt;
     bool isDeleted;
     int userId;
     int likesCount;
     int dislikesCount;
     PostEntry({
+          required this.id,
           required this.title,
           required this.content,
           required this.image,
+          required this.video,
           required this.createdAt,
           required this.updatedAt,
           required this.isDeleted,
@@ -25,84 +30,114 @@ class PostEntry {
           this.dislikesCount=0,
       });
     factory PostEntry.fromJson(Map<String, dynamic> json)=> PostEntry(
+        id: json["id"],
         title: json["title"],
         content: json["content"],
         image: json["image"],
-        createdAt: DateTime.parse(json["created_at"]),
-        updatedAt: DateTime.parse(json["updated_at"]),
+        video: json["video"],
+        createdAt: json["created_at"] != null
+            ? DateTime.parse(json["created_at"])
+            : null,
+        updatedAt: json["updated_at"] != null
+            ? DateTime.parse(json["updated_at"])
+            : null,
         isDeleted: json["is_deleted"],
         userId: json["user_id"],
         likesCount: json["likes_count"] ?? 0,
         dislikesCount: json["dislikes_count"] ?? 0,
     );
     Map<String, dynamic> toJson() =>{
+      "id": id,
       "title": title,
       "content": content,
       "image": image,
-      "created_at": createdAt,
-      "updated_at": updatedAt,
+      "video": video,
+      "created_at": createdAt?.toIso8601String(),
+      "updated_at": updatedAt?.toIso8601String(),
       "is_deleted": isDeleted,
       "user_id": userId,
       "likes_count": likesCount,
       "dislikes_count": dislikesCount,
     };
 }
-List<InteractionPost> interactionPostFromJson(String str) => List<InteractionPost>.from(json.decode(str).map((x) => InteractionPost.fromJson(x)));
+List<InteractionPost> interactions = 
+  (data["interactions"] as List).map((e) => InteractionPost.fromJson(e)).toList();
 
 String interactionPostFromJson(List<InteractionPost> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 class InteractionPost{
+  String postId;
   int userId;
-  DateTime createdAt;
+  DateTime? createdAt;
   String interactionType;
   InteractionPost({
+    required this.postId,
     required this.userId,
     required this.createdAt,
     required this.interactionType,
   });
   factory InteractionPost.fromJson(Map<String, dynamic> json) => InteractionPost(
+    postId: json["post_id"],
     userId: json["user_id"],
-    createdAt: json["created_at"],
+    createdAt: json["created_at"] != null
+            ? DateTime.parse(json["created_at"])
+            : null,
     interactionType: json["interaction_type"],
   );
   Map<String, dynamic> toJson() =>{
+    "post_id": postId,
     "user_id": userId,
-    "created_at": createdAt,
+    "created_at": createdAt?.toIso8601String(),
     "interaction_type": interactionType,
   }
 }
-List<PostSave> postSaveFromJson(String str) => List<PostSave>.from(json.decode(str).map((x) => PostSave.fromJson(x)));
+List<PostSave> saves = 
+  (data["saves"] as List).map((e) => PostSave.fromJson(e)).toList();
 
 String postSaveFromJson(List<PostSave> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 class PostSave{
+  String postId;
   int userId;
-  DateTime createdAt;
+  DateTime? createdAt;
   PostSave({
+    required this.postId,
     required this.userId,
     required this.createdAt,
   });
   factory PostSave.fromJson(Map<String, dynamic> json) => PostSave(
+    postId: json["post_id"],
     userId: json["user_id"],
-    createdAt: json["created_at"],
+    createdAt: json["created_at"] != null
+            ? DateTime.parse(json["created_at"])
+            : null,
   );
   Map<String, dynamic> toJson() =>{
+    "post_id": postId,
     "user_id": userId,
-    "created_at": createdAt,
+    "created_at": createdAt?.toIso8601String(),
   }
 }
-
+List<PostShare> shares = 
+  (data["shares"] as List).map((e) => PostShare.fromJson(e)).toList();
+String postShareFromJson(List<PostShare> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 class PostShare{
+  String postId;
   int userId;
-  DateTime createdAt;
+  DateTime? createdAt;
   PostShare({
+    required this.postId,
     required this.userId,
     required this.createdAt,
   });
   factory PostShare.fromJson(Map<String, dynamic> json) => PostShare(
+    postId: json["post_id"],
     userId: json["user_id"],
-    createdAt: json["created_at"],
+    createdAt: json["created_at"] != null
+            ? DateTime.parse(json["created_at"])
+            : null,
   );
   Map<String, dynamic> toJson() =>{
+    "post_id": postId,
     "user_id": userId,
-    "created_at": createdAt,
+    "created_at": createdAt?.toIso8601String(),
   }
 }
