@@ -1,7 +1,31 @@
 import 'dart:convert';
-final data = jsonDecode(response.body);
-List<PostEntry> posts = 
-  (data["posts"] as List).map((e) => PostEntry.fromJson(e)).toList();
+import 'package:http/http.dart' as http;
+Future<void> fetchAllPostData() async {
+  final uri = Uri.parse('https://<your-domain>/post/json/');
+  final resp = await http.get(uri);
+
+  if (resp.statusCode != 200) {
+    throw Exception('Gagal load: ${resp.statusCode}');
+  }
+
+  final data = jsonDecode(resp.body);
+
+  List<PostEntry> posts =
+      (data['posts'] as List).map((e) => PostEntry.fromJson(e)).toList();
+
+  List<InteractionPost> interactions =
+      (data['post_interactions'] as List)
+          .map((e) => InteractionPost.fromJson(e))
+          .toList();
+
+  List<PostSave> saves =
+      (data['saves'] as List).map((e) => PostSave.fromJson(e)).toList();
+
+  List<PostShare> shares =
+      (data['shares'] as List).map((e) => PostShare.fromJson(e)).toList();
+
+}
+
 
 String postEntryFromJson(List<PostEntry> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 class PostEntry {
@@ -13,17 +37,17 @@ class PostEntry {
     DateTime? createdAt;
     DateTime? updatedAt;
     bool isDeleted;
-    int userId;
+    String userId;
     int likesCount;
     int dislikesCount;
     PostEntry({
           required this.id,
           required this.title,
           required this.content,
-          required this.image,
-          required this.video,
+          this.image,
+          this.video,
           required this.createdAt,
-          required this.updatedAt,
+          this.updatedAt,
           required this.isDeleted,
           required this.userId,
           this.likesCount=0,
@@ -60,13 +84,12 @@ class PostEntry {
       "dislikes_count": dislikesCount,
     };
 }
-List<InteractionPost> interactions = 
-  (data["interactions"] as List).map((e) => InteractionPost.fromJson(e)).toList();
+
 
 String interactionPostFromJson(List<InteractionPost> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 class InteractionPost{
   String postId;
-  int userId;
+  String userId;
   DateTime? createdAt;
   String interactionType;
   InteractionPost({
@@ -88,15 +111,14 @@ class InteractionPost{
     "user_id": userId,
     "created_at": createdAt?.toIso8601String(),
     "interaction_type": interactionType,
-  }
+  };
 }
-List<PostSave> saves = 
-  (data["saves"] as List).map((e) => PostSave.fromJson(e)).toList();
+
 
 String postSaveFromJson(List<PostSave> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 class PostSave{
   String postId;
-  int userId;
+  String userId;
   DateTime? createdAt;
   PostSave({
     required this.postId,
@@ -114,14 +136,13 @@ class PostSave{
     "post_id": postId,
     "user_id": userId,
     "created_at": createdAt?.toIso8601String(),
-  }
+  };
 }
-List<PostShare> shares = 
-  (data["shares"] as List).map((e) => PostShare.fromJson(e)).toList();
+
 String postShareFromJson(List<PostShare> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 class PostShare{
   String postId;
-  int userId;
+  String userId;
   DateTime? createdAt;
   PostShare({
     required this.postId,
@@ -139,5 +160,5 @@ class PostShare{
     "post_id": postId,
     "user_id": userId,
     "created_at": createdAt?.toIso8601String(),
-  }
+  };
 }
