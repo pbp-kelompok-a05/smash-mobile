@@ -1,22 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:smash_mobile/models/comment.dart';
 
 class CommentCard extends StatelessWidget {
-  final String content;
+  final Comment comment;
   final Image? profileImage;
-  final String author;
   final int likeCount;
   final int dislikeCount;
-  final DateTime timestamp;
   final VoidCallback onTap;
 
   const CommentCard({
     super.key,
-    required this.content,
+    required this.comment,
     this.profileImage,
-    required this.author,
-    required this.likeCount,
-    required this.dislikeCount,
-    required this.timestamp,
+    this.likeCount = 0,
+    this.dislikeCount = 0,
     required this.onTap,
   });
 
@@ -67,15 +64,15 @@ class CommentCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            author,
-                            style: TextStyle(
+                            comment.author,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${timestamp.toLocal()}',
+                            '${comment.createdAt.toLocal()}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -84,20 +81,23 @@ class CommentCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(content, style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  comment.content,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Icon(Icons.thumb_up, size: 16, color: Colors.black),
+                    const Icon(Icons.thumb_up, size: 16, color: Colors.black),
                     const SizedBox(width: 4),
                     Text('$likeCount'),
                     const SizedBox(width: 16),
-                    Icon(Icons.thumb_down, size: 16, color: Colors.black),
+                    const Icon(Icons.thumb_down, size: 16, color: Colors.black),
                     const SizedBox(width: 4),
                     Text('$dislikeCount'),
-                    Spacer(),
-                    Icon(Icons.reply, size: 16, color: Colors.black),
+                    const Spacer(),
+                    const Icon(Icons.reply, size: 16, color: Colors.black),
                   ],
                 ),
               ],

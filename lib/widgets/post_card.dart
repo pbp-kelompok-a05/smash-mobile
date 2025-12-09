@@ -1,28 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:smash_mobile/models/post.dart';
 
 class PostCard extends StatelessWidget {
-  final String title;
-  final String content;
+  final Post post;
   final Image? profileImage;
-  final Image? image;
-  final String author;
-  final int likeCount;
-  final int dislikeCount;
-  final int commentCount;
-  final DateTime timestamp;
   final VoidCallback onTap;
 
   const PostCard({
     super.key,
-    required this.title,
-    required this.content,
+    required this.post,
     this.profileImage,
-    this.image,
-    required this.author,
-    required this.likeCount,
-    required this.dislikeCount,
-    required this.commentCount,
-    required this.timestamp,
     required this.onTap,
   });
 
@@ -73,15 +60,15 @@ class PostCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            title,
-                            style: TextStyle(
+                            post.title,
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'by $author - ${timestamp.toLocal()}',
+                            'by ${post.author} - ${post.createdAt.toLocal()}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -89,34 +76,40 @@ class PostCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (image != null) ...[
+                if (post.imageUrl != null) ...[
                   const SizedBox(height: 12),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: image,
+                    child: Image.network(
+                      post.imageUrl.toString(),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.shrink(),
+                    ),
                   ),
                 ],
                 const SizedBox(height: 12),
-                Text(content, style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  post.content,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Icon(Icons.thumb_up, size: 16, color: Colors.black),
+                    const Icon(Icons.thumb_up, size: 16, color: Colors.black),
                     const SizedBox(width: 4),
-                    Text('$likeCount'),
+                    Text('${post.likesCount}'),
                     const SizedBox(width: 16),
-                    Icon(Icons.thumb_down, size: 16, color: Colors.black),
+                    const Icon(Icons.thumb_down, size: 16, color: Colors.black),
                     const SizedBox(width: 4),
-                    Text('$dislikeCount'),
+                    Text('${post.dislikesCount}'),
                     const SizedBox(width: 16),
-                    Icon(Icons.comment, size: 16, color: Colors.black),
-                    const SizedBox(width: 4),
-                    Text('$commentCount'),
+                    const Icon(Icons.comment, size: 16, color: Colors.black),
                     const SizedBox(width: 16),
-                    Icon(Icons.bookmark, size: 16, color: Colors.black),
-                    Spacer(),
-                    Icon(Icons.share, size: 16, color: Colors.black),
+                    const Icon(Icons.bookmark, size: 16, color: Colors.black),
+                    const Spacer(),
+                    const Icon(Icons.share, size: 16, color: Colors.black),
                   ],
                 ),
               ],

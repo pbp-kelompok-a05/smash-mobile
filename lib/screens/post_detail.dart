@@ -1,33 +1,40 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:smash_mobile/models/post.dart';
+import 'package:smash_mobile/models/comment.dart';
+import 'package:smash_mobile/widgets/comment_card.dart';
+import 'package:smash_mobile/services/post_service.dart';
 
 class PostDetailScreen extends StatelessWidget {
-  final String title;
-  final String content;
+  final Post post;
   final Image? profileImage;
-  final Image? image;
-  final String author;
-  final int likeCount;
-  final int dislikeCount;
-  final int commentCount;
-  final DateTime timestamp;
 
-  const PostDetailScreen({
-    super.key,
-    required this.title,
-    required this.content,
-    this.profileImage,
-    this.image,
-    required this.author,
-    required this.likeCount,
-    required this.dislikeCount,
-    required this.commentCount,
-    required this.timestamp,
-  });
+  const PostDetailScreen({super.key, required this.post, this.profileImage});
+
+  Future<List<Comment>> fetchComments(String postId) async {
+    final url = PostService.commentsUrl(postId);
+    final res = await http.get(Uri.parse(url));
+    if (res.statusCode != 200) {
+      throw Exception('Failed to load comments');
+    }
+
+    final body = res.body;
+    final decoded = json.decode(body);
+    // Expecting a list of comment objects
+    final List<dynamic> items = decoded is List
+        ? decoded
+        : (decoded['comments'] ?? []);
+    return items
+        .map((c) => Comment.fromJson(Map<String, dynamic>.from(c)))
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: Text(post.title)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
@@ -60,7 +67,7 @@ class PostDetailScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          author,
+                          post.author,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -68,7 +75,7 @@ class PostDetailScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Posted on: ${timestamp.toLocal()}',
+                          'Posted on: ${post.createdAt.toLocal()}',
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 12,
@@ -81,42 +88,76 @@ class PostDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                title,
+                post.title,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 12),
-              if (image != null)
+              if (post.imageUrl != null)
                 Center(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: image,
+                    child: Image.network(post.imageUrl.toString()),
                   ),
                 ),
               const SizedBox(height: 16),
-              Text(content, style: const TextStyle(fontSize: 16)),
+              Text(post.content, style: const TextStyle(fontSize: 16)),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Icon(Icons.thumb_up, size: 16, color: Colors.black),
                   const SizedBox(width: 4),
-                  Text('$likeCount'),
+                  Text('${post.likesCount}'),
                   const SizedBox(width: 16),
                   Icon(Icons.thumb_down, size: 16, color: Colors.black),
                   const SizedBox(width: 4),
-                  Text('$dislikeCount'),
+                  Text('${post.dislikesCount}'),
                   const SizedBox(width: 16),
                   Icon(Icons.comment, size: 16, color: Colors.black),
                   const SizedBox(width: 4),
-                  Text('$commentCount'),
+                  Text('${post.sharesCount}'),
                   const SizedBox(width: 16),
                   Icon(Icons.bookmark, size: 16, color: Colors.black),
                   Spacer(),
                   Icon(Icons.share, size: 16, color: Colors.black),
                 ],
+              ),
+              const SizedBox(height: 24),
+              const Divider(),
+              const SizedBox(height: 8),
+              const Text(
+                'Comments',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              FutureBuilder<List<Comment>>(
+                future: fetchComments(post.id),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(
+                      child: Text('Error loading comments: ${snapshot.error}'),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text('No comments'));
+                  }
+
+                  final comments = snapshot.data!;
+                  return ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: comments.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, idx) {
+                      final c = comments[idx];
+                      return CommentCard(comment: c, onTap: () {});
+                    },
+                  );
+                },
               ),
             ],
           ),

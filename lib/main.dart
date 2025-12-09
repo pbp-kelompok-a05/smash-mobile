@@ -60,41 +60,18 @@ class _MyHomePageState extends State<MyHomePage> {
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text('No posts found'));
           } else {
+            final posts = snapshot.data!;
             return ListView.builder(
-              itemCount: snapshot.data!.length,
+              itemCount: posts.length,
               itemBuilder: (context, index) {
-                final post = snapshot.data![index];
-                // Construct image URL if image exists
-                // Assuming the image path from Django starts with /media/
-                final imageUrl = post.image != null
-                    ? 'http://127.0.0.1:8000${post.image}'
-                    : null;
-
+                final post = posts[index];
                 return PostCard(
-                  title: post.title,
-                  content: post.content,
-                  author: post.user,
-                  image: imageUrl != null ? Image.network(imageUrl) : null,
-                  likeCount: post.likesCount,
-                  dislikeCount: post.dislikesCount,
-                  commentCount: post.commentCount,
-                  timestamp: post.createdAt,
+                  post: post,
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => PostDetailScreen(
-                          title: post.title,
-                          content: post.content,
-                          author: post.user,
-                          image: imageUrl != null
-                              ? Image.network(imageUrl)
-                              : null,
-                          likeCount: post.likesCount,
-                          dislikeCount: post.dislikesCount,
-                          commentCount: post.commentCount,
-                          timestamp: post.createdAt,
-                        ),
+                        builder: (context) => PostDetailScreen(post: post),
                       ),
                     );
                   },
