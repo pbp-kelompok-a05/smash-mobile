@@ -1,8 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:smash_mobile/models/post.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:smash_mobile/models/comment.dart';
 import 'package:smash_mobile/widgets/comment_card.dart';
 import 'package:smash_mobile/services/post_service.dart';
+
+String? _youtubeThumbnail(String url) {
+  try {
+    final uri = Uri.parse(url);
+    if ((uri.host.contains('youtube.com') &&
+        uri.queryParameters['v'] != null)) {
+      final id = uri.queryParameters['v']!;
+      return 'https://img.youtube.com/vi/$id/hqdefault.jpg';
+    }
+    if (uri.host.contains('youtu.be')) {
+      final id = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
+      if (id != null && id.isNotEmpty)
+        return 'https://img.youtube.com/vi/$id/hqdefault.jpg';
+    }
+  } catch (_) {}
+  return null;
+}
+
+Future<void> _openUrl(String url) async {
+  final uri = Uri.parse(url);
+  if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    // ignore: avoid_print
+    print('Could not launch $url');
+  }
+}
 
 class PostDetailScreen extends StatelessWidget {
   final Post post;
@@ -115,6 +141,64 @@ class PostDetailScreen extends StatelessWidget {
                                 fit: BoxFit.cover,
                               ),
                             ),
+                          if (post.videoLink != null &&
+                              post.videoLink!.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Builder(
+                              builder: (context) {
+                                final thumb = _youtubeThumbnail(
+                                  post.videoLink!,
+                                );
+                                return GestureDetector(
+                                  onTap: () => _openUrl(post.videoLink!),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      thumb != null
+                                          ? ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Image.network(
+                                                thumb,
+                                                fit: BoxFit.cover,
+                                                width: double.infinity,
+                                                height: 200,
+                                                errorBuilder: (_, __, ___) =>
+                                                    Container(
+                                                      height: 200,
+                                                      color: Colors.black12,
+                                                    ),
+                                              ),
+                                            )
+                                          : Container(
+                                              height: 200,
+                                              decoration: BoxDecoration(
+                                                color: Colors.black12,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: const Center(
+                                                child: Icon(
+                                                  Icons.play_arrow,
+                                                  size: 48,
+                                                ),
+                                              ),
+                                            ),
+                                      CircleAvatar(
+                                        radius: 28,
+                                        backgroundColor: Colors.black45,
+                                        child: const Icon(
+                                          Icons.play_arrow,
+                                          color: Colors.white,
+                                          size: 32,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                           const SizedBox(height: 12),
                           Text(
                             post.content,
