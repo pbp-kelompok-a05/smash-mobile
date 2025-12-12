@@ -1,12 +1,16 @@
 // ignore_for_file: depend_on_referenced_packages
 
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:smash_mobile/models/profile_entry.dart';
 
 import 'package:smash_mobile/profile/profile_page.dart';
+import 'package:smash_mobile/profile/profile_api.dart';
+import 'package:smash_mobile/widgets/navbar.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({
@@ -25,10 +29,10 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   final _usernameController = TextEditingController();
   final _bioController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
   bool _isSaving = false;
+  bool _isChangingPass = false;
   File? _selectedImage;
+  Uint8List? _selectedBytes;
   bool _removePhoto = false;
 
   @override
@@ -38,11 +42,167 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _bioController.text = widget.profile?.bio ?? '';
   }
 
+  void _showChangePasswordDialog() {
+    final oldCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        bool obscureOld = true;
+        bool obscureNew = true;
+        bool obscureConfirm = true;
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            InputDecoration dec(String hint) => InputDecoration(
+                  hintText: hint,
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide:
+                        BorderSide(color: Colors.grey.shade300, width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide:
+                        BorderSide(color: Colors.teal.shade400, width: 1.2),
+                  ),
+                );
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text('Change Password'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Masukkan password lama lalu password baru yang ingin digunakan.',
+                    style: TextStyle(fontSize: 13.5, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: oldCtrl,
+                    obscureText: obscureOld,
+                    decoration: dec('Old Password').copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                            obscureOld ? Icons.visibility_off : Icons.visibility),
+                        onPressed: () => setStateDialog(
+                            () => obscureOld = !obscureOld),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: newCtrl,
+                    obscureText: obscureNew,
+                    decoration: dec('New Password').copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                            obscureNew ? Icons.visibility_off : Icons.visibility),
+                        onPressed: () => setStateDialog(
+                            () => obscureNew = !obscureNew),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: confirmCtrl,
+                    obscureText: obscureConfirm,
+                    decoration: dec('Confirm Password').copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureConfirm
+                            ? Icons.visibility_off
+                            : Icons.visibility),
+                        onPressed: () => setStateDialog(
+                            () => obscureConfirm = !obscureConfirm),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: _isChangingPass
+                      ? null
+                      : () async {
+                          final oldPass = oldCtrl.text.trim();
+                          final newPass = newCtrl.text.trim();
+                          final confirmPass = confirmCtrl.text.trim();
+                          if (oldPass.isEmpty ||
+                              newPass.isEmpty ||
+                              confirmPass.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content:
+                                      Text('Semua kolom password wajib diisi.')),
+                            );
+                            return;
+                          }
+                          if (newPass != confirmPass) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Konfirmasi password tidak cocok.')),
+                            );
+                            return;
+                          }
+                          setState(() => _isChangingPass = true);
+                          try {
+                            await widget.api.changePassword(
+                              oldPassword: oldPass,
+                              newPassword: newPass,
+                              confirmPassword: confirmPass,
+                            );
+                            if (mounted) {
+                              Navigator.of(context).pop();
+                              Navigator.of(context).maybePop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Password berhasil diperbarui.')),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(
+                                        'Gagal memperbarui password: $e')),
+                              );
+                            }
+                          } finally {
+                            if (mounted) {
+                              setState(() => _isChangingPass = false);
+                            }
+                          }
+                        },
+                  child: const Text('Update Password'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _usernameController.dispose();
     _bioController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
@@ -50,9 +210,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD2F3E0),
-      appBar: CustomNavBar(
+      appBar: NavBar(
+        isLoggedIn: true,
         username: widget.profile?.username ?? 'User',
-        photoUrl: widget.profile?.profilePhoto,
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -67,26 +227,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             children: [
               const SizedBox(height: 12),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 48,
-                    backgroundColor: Colors.white,
-                    child: ClipOval(
-                      child: _avatarPreview(),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 48,
+                      backgroundColor: Colors.white,
+                      child: ClipOval(
+                        child: _avatarPreview(),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    widget.profile?.username ?? 'User',
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87,
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.profile?.username ?? 'User',
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black87,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               _label('Username'),
@@ -106,9 +269,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               ),
               const SizedBox(height: 16),
-              _label('Change password'),
-              const SizedBox(height: 6),
-              _passwordField(),
+              _changePasswordCTA(),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -147,6 +308,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Widget _avatarPreview() {
+    if (_selectedBytes != null) {
+      return Image.memory(
+        _selectedBytes!,
+        fit: BoxFit.cover,
+        width: 86,
+        height: 86,
+      );
+    }
     if (_selectedImage != null) {
       return Image.file(
         _selectedImage!,
@@ -155,9 +324,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
         height: 86,
       );
     }
-    if (widget.profile?.profilePhoto.isNotEmpty ?? false) {
+    final photo = widget.profile?.profilePhoto;
+    if (photo != null && photo.isNotEmpty) {
       return Image.network(
-        widget.profile!.profilePhoto,
+        photo,
         fit: BoxFit.cover,
         width: 86,
         height: 86,
@@ -165,11 +335,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
             Image.asset('assets/avatar.png', fit: BoxFit.cover),
       );
     }
-    return Image.asset(
-      'assets/avatar.png',
-      fit: BoxFit.cover,
+    return Container(
       width: 86,
       height: 86,
+      color: Colors.grey.shade200,
+      child: Icon(Icons.person, size: 36, color: Colors.grey.shade600),
     );
   }
 
@@ -180,10 +350,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
       imageQuality: 85,
     );
     if (picked != null) {
-      setState(() {
-        _selectedImage = File(picked.path);
-        _removePhoto = false;
-      });
+      try {
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          _selectedBytes = bytes;
+          _selectedImage = null;
+          _removePhoto = false;
+        });
+      } catch (_) {
+        setState(() {
+          _selectedImage = File(picked.path);
+          _selectedBytes = null;
+          _removePhoto = false;
+        });
+      }
     }
   }
 
@@ -195,10 +375,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final updated = await widget.api.updateProfile(
         username: _usernameController.text.trim(),
         bio: _bioController.text.trim(),
-        password: _passwordController.text.trim().isEmpty
-            ? null
-            : _passwordController.text.trim(),
         profilePhoto: _selectedImage,
+        profileBytes: _selectedBytes,
         removePhoto: _removePhoto,
       );
       if (mounted) {
@@ -221,32 +399,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
-  Widget _passwordField() {
-    return TextField(
-      controller: _passwordController,
-      obscureText: _obscurePassword,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade400, width: 1),
+  Widget _changePasswordCTA() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            foregroundColor: Colors.black87,
+            side: BorderSide(color: Colors.grey.shade400),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          icon: const Icon(Icons.lock_outline),
+          label: const Text(
+            'Change Password?',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          onPressed: _isChangingPass ? null : _showChangePasswordDialog,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.black87, width: 1.2),
-        ),
-        suffixIcon: IconButton(
-          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-          onPressed: () {
-            setState(() {
-              _obscurePassword = !_obscurePassword;
-            });
-          },
-        ),
-        hintText: 'Enter new password',
-      ),
+      ],
     );
   }
 
@@ -322,17 +495,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ),
           const Spacer(),
           IconButton(
-            icon: Icon(
-              _removePhoto ? Icons.check_box : Icons.check_box_outline_blank,
-              color: Colors.grey.shade600,
-            ),
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
             onPressed: () {
               setState(() {
-                _removePhoto = !_removePhoto;
-                if (_removePhoto) {
-                  _selectedImage = null;
-                }
+                _removePhoto = true;
+                _selectedImage = null;
+                _selectedBytes = null;
               });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Foto profil akan dihapus saat disimpan')),
+              );
             },
             tooltip: 'Hapus foto profil',
           ),
