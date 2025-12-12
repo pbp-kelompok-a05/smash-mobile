@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:smash_mobile/models/post.dart';
+import 'package:smash_mobile/models/comment.dart';
 
 class PostService {
   // Use 10.0.2.2 for Android emulator, 127.0.0.1 for iOS simulator/web
@@ -49,6 +50,37 @@ class PostService {
           .toList();
     } catch (e) {
       throw Exception('Error fetching posts: $e');
+    }
+  }
+
+  Future<List<Comment>> fetchComments(String postId) async {
+    final url = commentsUrl(postId);
+    try {
+      final uri = Uri.parse(url);
+      final res = await http.get(uri);
+      if (res.statusCode != 200) {
+        throw Exception(
+          'Failed to load comments. Status: ${res.statusCode} Body: ${res.body}',
+        );
+      }
+
+      dynamic decoded;
+      try {
+        decoded = json.decode(res.body);
+      } catch (e) {
+        throw Exception(
+          'Failed to decode comments JSON: $e. Body: ${res.body}',
+        );
+      }
+
+      final List<dynamic> items = decoded is List
+          ? decoded
+          : (decoded['comments'] ?? []);
+      return items
+          .map((c) => Comment.fromJson(Map<String, dynamic>.from(c)))
+          .toList();
+    } catch (e) {
+      throw Exception('Error fetching comments from $url: $e');
     }
   }
 }

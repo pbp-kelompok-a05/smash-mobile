@@ -13,23 +13,7 @@ class PostDetailScreen extends StatelessWidget {
 
   const PostDetailScreen({super.key, required this.post, this.profileImage});
 
-  Future<List<Comment>> fetchComments(String postId) async {
-    final url = PostService.commentsUrl(postId);
-    final res = await http.get(Uri.parse(url));
-    if (res.statusCode != 200) {
-      throw Exception('Failed to load comments');
-    }
-
-    final body = res.body;
-    final decoded = json.decode(body);
-    // Expecting a list of comment objects
-    final List<dynamic> items = decoded is List
-        ? decoded
-        : (decoded['comments'] ?? []);
-    return items
-        .map((c) => Comment.fromJson(Map<String, dynamic>.from(c)))
-        .toList();
-  }
+  // Use PostService to fetch comments
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +118,7 @@ class PostDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               FutureBuilder<List<Comment>>(
-                future: fetchComments(post.id),
+                future: PostService().fetchComments(post.id),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
