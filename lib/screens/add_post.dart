@@ -26,6 +26,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
   Uint8List? _pickedImageBytes;
   final ImagePicker _imagePicker = ImagePicker();
+  XFile? _pickedXFile;
 
   bool _submitting = false;
 
@@ -66,6 +67,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
       final bytes = await xfile.readAsBytes();
       setState(() {
         _pickedImageBytes = bytes;
+        _pickedXFile = xfile;
         _selectedImageOption = 'Upload from device';
       });
     } catch (e) {
@@ -82,12 +84,26 @@ class _AddPostScreenState extends State<AddPostScreen> {
     final content = _contentController.text.trim();
     final video = _videoController.text.trim();
 
+    String? inferredMime;
+    if (_pickedXFile != null) {
+      final p = _pickedXFile!.path.toLowerCase();
+      if (p.endsWith('.png'))
+        inferredMime = 'image/png';
+      else if (p.endsWith('.jpg') || p.endsWith('.jpeg'))
+        inferredMime = 'image/jpeg';
+      else if (p.endsWith('.webp'))
+        inferredMime = 'image/webp';
+      else if (p.endsWith('.gif'))
+        inferredMime = 'image/gif';
+    }
+
     PostService()
         .createPost(
           title: title,
           content: content,
           videoLink: video.isEmpty ? null : video,
           imageBytes: _pickedImageBytes,
+          imageMime: inferredMime,
           userId: '1', // TODO: replace with actual authenticated user id
         )
         .then((resp) {
@@ -204,9 +220,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
                                                 color: Colors.white,
                                                 size: 18,
                                               ),
-                                              onPressed: () => setState(
-                                                () => _pickedImageBytes = null,
-                                              ),
+                                              onPressed: () => setState(() {
+                                                _pickedImageBytes = null;
+                                                _pickedXFile = null;
+                                              }),
                                             ),
                                           ),
                                         ),

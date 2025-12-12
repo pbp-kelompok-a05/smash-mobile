@@ -44,6 +44,7 @@ class PostService {
     required String content,
     String? videoLink,
     List<int>? imageBytes,
+    String? imageMime,
     String? userId,
   }) async {
     final url = createPostUrl();
@@ -55,7 +56,9 @@ class PostService {
     };
 
     if (imageBytes != null) {
-      body['image'] = base64Encode(imageBytes);
+      final b64 = base64Encode(imageBytes);
+      final mime = imageMime ?? 'image/png';
+      body['image'] = 'data:$mime;base64,$b64';
     }
 
     try {
