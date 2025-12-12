@@ -30,16 +30,77 @@ Future<void> _openUrl(String url) async {
   }
 }
 
-class PostDetailScreen extends StatelessWidget {
+class PostDetailScreen extends StatefulWidget {
   final Post post;
   final Image? profileImage;
 
   const PostDetailScreen({super.key, required this.post, this.profileImage});
 
-  // Use PostService to fetch comments
+  @override
+  State<PostDetailScreen> createState() => _PostDetailScreenState();
+}
+
+class _PostDetailScreenState extends State<PostDetailScreen> {
+  late Future<List<Comment>> _commentsFuture;
+  final TextEditingController _commentController = TextEditingController();
+  bool _posting = false;
+
+  Widget _section({required Widget child, Color? color}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color ?? Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        ],
+      ),
+      padding: const EdgeInsets.all(12),
+      child: child,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _commentsFuture = PostService().fetchComments(widget.post.id);
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitComment() async {
+    final text = _commentController.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _posting = true);
+    try {
+      await PostService().createComment(
+        postId: widget.post.id,
+        content: text,
+        userId: '1',
+      );
+      _commentController.clear();
+      setState(() {
+        _commentsFuture = PostService().fetchComments(widget.post.id);
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Comment posted')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
+    } finally {
+      setState(() => _posting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final post = widget.post;
+    final profileImage = widget.profileImage;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -228,8 +289,39 @@ class PostDetailScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
+                  _section(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _commentController,
+                            decoration: const InputDecoration(
+                              hintText: 'Add a comment...',
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                        _posting
+                            ? const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.send),
+                                onPressed: _submitComment,
+                              ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   FutureBuilder<List<Comment>>(
-                    future: PostService().fetchComments(post.id),
+                    future: _commentsFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());

@@ -136,4 +136,33 @@ class PostService {
       throw Exception('Error fetching comments from $url: $e');
     }
   }
+
+  Future<Map<String, dynamic>> createComment({
+    required String postId,
+    required String content,
+    String? userId,
+    String? parentId,
+  }) async {
+    final url = '${serverRoot}create_flutter_comment/';
+    final body = <String, dynamic>{
+      'post_id': postId,
+      'content': content,
+      'user_id': userId ?? '1',
+    };
+    if (parentId != null) body['parent_id'] = parentId;
+
+    try {
+      final res = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(body),
+      );
+      if (res.statusCode == 201 || res.statusCode == 200) {
+        return json.decode(res.body) as Map<String, dynamic>;
+      }
+      throw Exception('Create comment failed: ${res.statusCode} ${res.body}');
+    } catch (e) {
+      throw Exception('Error creating comment: $e');
+    }
+  }
 }
