@@ -96,13 +96,18 @@ class _MyHomePageState extends State<MyHomePage> {
                               ),
                               elevation: 2,
                             ),
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              final result = await Navigator.push<bool?>(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const AddPostScreen(),
                                 ),
                               );
+                              if (result == true) {
+                                setState(() {
+                                  _postsFuture = _postService.fetchPosts();
+                                });
+                              }
                             },
                             child: const Text(
                               'Add New Post',

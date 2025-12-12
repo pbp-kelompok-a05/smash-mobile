@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
+import 'dart:convert';
+import 'package:smash_mobile/services/post_service.dart';
 
 class AddPostScreen extends StatefulWidget {
   const AddPostScreen({super.key});
@@ -76,14 +78,31 @@ class _AddPostScreenState extends State<AddPostScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _submitting = true);
 
-    // Skeleton -- replace with real upload / API call
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() => _submitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Post submitted (skeleton)')),
-      );
-      Navigator.of(context).pop();
-    });
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+    final video = _videoController.text.trim();
+
+    PostService()
+        .createPost(
+          title: title,
+          content: content,
+          videoLink: video.isEmpty ? null : video,
+          imageBytes: _pickedImageBytes,
+          userId: '1', // TODO: replace with actual authenticated user id
+        )
+        .then((resp) {
+          setState(() => _submitting = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Post created successfully')),
+          );
+          Navigator.of(context).pop(true);
+        })
+        .catchError((err) {
+          setState(() => _submitting = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to create post: $err')),
+          );
+        });
   }
 
   @override

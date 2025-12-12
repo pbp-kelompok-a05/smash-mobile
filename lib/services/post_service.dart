@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:smash_mobile/models/post.dart';
 import 'package:smash_mobile/models/comment.dart';
+import 'dart:convert';
 
 class PostService {
   // Use 10.0.2.2 for Android emulator, 127.0.0.1 for iOS simulator/web
@@ -22,6 +23,55 @@ class PostService {
   }
 
   static String commentsUrl(String postId) => '${baseUrl}comments/$postId';
+
+  static String get serverRoot {
+    if (overrideBaseUrl.isNotEmpty) {
+      return overrideBaseUrl
+          .replaceAll(RegExp(r'/json/?\$'), '/json/')
+          .replaceAll(RegExp(r'/json/?$'), '/');
+    }
+    if (kIsWeb) return 'http://127.0.0.1:8000/';
+    try {
+      if (Platform.isAndroid) return 'http://10.0.2.2:8000/';
+    } catch (_) {}
+    return 'http://127.0.0.1:8000/';
+  }
+
+  String createPostUrl() => '${serverRoot}create_flutter_post/';
+
+  Future<Map<String, dynamic>> createPost({
+    required String title,
+    required String content,
+    String? videoLink,
+    List<int>? imageBytes,
+    String? userId,
+  }) async {
+    final url = createPostUrl();
+    final body = <String, dynamic>{
+      'title': title,
+      'content': content,
+      'video_link': videoLink ?? '',
+      'user_id': userId ?? '1',
+    };
+
+    if (imageBytes != null) {
+      body['image'] = base64Encode(imageBytes);
+    }
+
+    try {
+      final res = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(body),
+      );
+      if (res.statusCode == 201 || res.statusCode == 200) {
+        return json.decode(res.body) as Map<String, dynamic>;
+      }
+      throw Exception('Create post failed: ${res.statusCode} ${res.body}');
+    } catch (e) {
+      throw Exception('Error creating post: $e');
+    }
+  }
 
   Future<List<Post>> fetchPosts() async {
     try {
