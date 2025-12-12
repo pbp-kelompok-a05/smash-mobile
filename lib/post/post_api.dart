@@ -1,0 +1,245 @@
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:smash_mobile/models/Filtering_entry.dart';
+
+class PostApi {
+  PostApi({required this.request, String? baseUrl})
+      : baseUrl = baseUrl ?? 'http://localhost:8000';
+
+  final CookieRequest request;
+  final String baseUrl;
+  static const String _defaultAvatarPath = '/static/images/user-profile.png';
+
+  Future<List<ProfileFeedItem>> searchPosts(String query) async {
+    final uri = Uri.parse('$baseUrl/post/api/search/')
+        .replace(queryParameters: {'q': query});
+    final response = await _safeGet(uri);
+
+    if (response is Map<String, dynamic> && response['status'] == 'success') {
+      final posts = response['posts'] as List<dynamic>? ?? [];
+      return posts.map((item) {
+        final map = Map<String, dynamic>.from(item as Map);
+        return ProfileFeedItem(
+          id: map['id'] ?? 0,
+          title: map['title'] ?? '',
+          content: map['content'] ?? '',
+          image: map['image'] as String?,
+          videoLink: map['video_link'] as String?,
+          user: map['user'] ?? '',
+          userId: map['user_id'] ?? 0,
+          createdAt:
+              DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
+          commentCount: map['comment_count'] ?? 0,
+          likesCount: map['likes_count'] ?? 0,
+          dislikesCount: map['dislikes_count'] ?? 0,
+          sharesCount: map['shares_count'] ?? 0,
+          profilePhoto: map['profile_photo'] as String?,
+          userInteraction: null,
+          isSaved: false,
+          canEdit: false,
+        );
+      }).toList();
+    }
+    throw Exception('Gagal mencari post.');
+  }
+
+  Future<List<NotificationItem>> fetchNotifications() async {
+    final uri = Uri.parse('$baseUrl/post/api/notifications/');
+    final response = await _safeGet(uri);
+
+    if (response is Map<String, dynamic> && response['status'] == 'success') {
+      final list = response['notifications'] as List<dynamic>? ?? [];
+      return list
+          .map((item) => NotificationItem.fromJson(
+                Map<String, dynamic>.from(item as Map),
+                resolveMediaUrl: _resolveMediaUrl,
+                defaultAvatarUrl: '$baseUrl$_defaultAvatarPath',
+              ))
+          .toList();
+    }
+    throw Exception('INVALID_RESPONSE');
+  }
+
+  Future<ProfileFeedItem> fetchPostDetail(int postId) async {
+    final uri = Uri.parse('$baseUrl/post/api/posts/$postId/');
+    final response = await _safeGet(uri);
+    if (response is Map<String, dynamic> &&
+        response['status'] == 'success' &&
+        response['post'] != null) {
+      final map = Map<String, dynamic>.from(response['post']);
+      return ProfileFeedItem(
+        id: map['id'] ?? 0,
+        title: map['title'] ?? '',
+        content: map['content'] ?? '',
+        image: map['image'] as String?,
+        videoLink: map['video_link'] as String?,
+        user: map['user'] ?? '',
+        userId: map['user_id'] ?? 0,
+        createdAt:
+            DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
+        commentCount: map['comment_count'] ?? 0,
+        likesCount: map['likes_count'] ?? 0,
+        dislikesCount: map['dislikes_count'] ?? 0,
+        sharesCount: map['shares_count'] ?? 0,
+        profilePhoto: map['profile_photo'] as String?,
+        userInteraction: map['user_interaction'] as String?,
+        isSaved: map['is_saved'] ?? false,
+        canEdit: map['can_edit'] ?? false,
+      );
+    }
+    throw Exception('Gagal mengambil detail post.');
+  }
+
+  Future<dynamic> _safeGet(Uri uri) async {
+    try {
+      return await request.get(uri.toString());
+    } on FormatException {
+      throw Exception('INVALID_RESPONSE');
+    }
+  }
+
+  String? _resolveMediaUrl(String? url) {
+    if (url == null || url.trim().isEmpty) return null;
+    final trimmed = url.trim();
+    if (trimmed.startsWith('http')) return trimmed;
+    if (trimmed.startsWith('/')) return '$baseUrl$trimmed';
+    return '$baseUrl/$trimmed';
+  }
+}
+
+class NotificationItem {
+  NotificationItem({
+    required this.type,
+    required this.actor,
+    required this.postTitle,
+    required this.postId,
+    this.actorId,
+    this.actorProfileUrl,
+    this.actorPhoto,
+    this.fallbackPhoto,
+    this.content,
+    required this.message,
+    this.timestamp,
+  });
+
+  final String type;
+  final String actor;
+  final String postTitle;
+  final int postId;
+  final int? actorId;
+  final String? actorProfileUrl;
+  final String? actorPhoto;
+  final String? fallbackPhoto;
+  final String? content;
+  final String message;
+  final DateTime? timestamp;
+
+  factory NotificationItem.fromJson(
+    Map<String, dynamic> json, {
+    String? Function(String?)? resolveMediaUrl,
+    String? defaultAvatarUrl,
+  }) {
+    final resolver = resolveMediaUrl ?? (s) => s;
+    int? toInt(dynamic v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      if (v is String) {
+        return int.tryParse(v);
+      }
+      return null;
+    }
+
+    String? extractProfileUrl() {
+      final candidates = [
+        json['actor_profile_url'],
+        json['profile_url'],
+        json['actor_url'],
+      ];
+      for (final c in candidates) {
+        if (c is String && c.trim().isNotEmpty) return c.trim();
+      }
+      if (json['actor'] is Map<String, dynamic>) {
+        final map = Map<String, dynamic>.from(json['actor'] as Map);
+        final link = map['profile_url'] ?? map['url'];
+        if (link is String && link.trim().isNotEmpty) return link.trim();
+      }
+      return null;
+    }
+
+    int? extractActorId() {
+      final keys = [
+        json['actor_id'],
+        json['user_id'],
+        json['actor_user_id'],
+        json['actorId'],
+        json['userId'],
+      ];
+      for (final candidate in keys) {
+        final parsed = toInt(candidate);
+        if (parsed != null) return parsed;
+      }
+      if (json['actor'] is Map<String, dynamic>) {
+        return toInt((json['actor'] as Map)['id']);
+      }
+      // Attempt to parse from actor_profile_url like /profil/5/ or /profil/api/profile/5/
+      final profileUrl = extractProfileUrl();
+      if (profileUrl != null) {
+        final match = RegExp(r'/profil/(?:api/profile/)?(\d+)/')
+            .firstMatch(profileUrl);
+        if (match != null) {
+          return int.tryParse(match.group(1) ?? '');
+        }
+      }
+      return null;
+    }
+
+    String extractActorName() {
+      if (json['actor'] is Map<String, dynamic>) {
+        final map = Map<String, dynamic>.from(json['actor'] as Map);
+        return map['username'] ?? map['name'] ?? '';
+      }
+      return json['actor'] ?? '';
+    }
+
+    String? pickPhoto() {
+      if (json['actor'] is Map<String, dynamic>) {
+        final map = Map<String, dynamic>.from(json['actor'] as Map);
+        final inlinePhoto = map['profile_photo'] ?? map['photo'];
+        if (inlinePhoto is String && inlinePhoto.trim().isNotEmpty) {
+          final resolved = resolver(inlinePhoto);
+          if (resolved != null && resolved.isNotEmpty) return resolved;
+        }
+      }
+      final candidates = [
+        json['actor_profile_photo_url'],
+        json['actor_photo_url'],
+        json['actor_photo'],
+        json['actor_profile_photo'],
+        json['profile_photo'],
+        json['user_photo'],
+        json['profile_photo_url'],
+      ];
+      for (final c in candidates) {
+        if (c is String && c.trim().isNotEmpty) {
+          final resolved = resolver(c);
+          if (resolved != null && resolved.isNotEmpty) return resolved;
+        }
+      }
+      return defaultAvatarUrl;
+    }
+
+    return NotificationItem(
+      type: json['type'] ?? '',
+      actor: extractActorName(),
+      postTitle: json['post_title'] ?? '',
+      postId: json['post_id'] ?? 0,
+      actorId: extractActorId(),
+      actorProfileUrl: extractProfileUrl(),
+      actorPhoto: pickPhoto(),
+      fallbackPhoto: defaultAvatarUrl,
+      content: json['content'] as String?,
+      message: json['message'] ?? '',
+      timestamp:
+          DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
+    );
+  }
+}
