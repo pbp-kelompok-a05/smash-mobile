@@ -70,15 +70,42 @@ class LeftDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Logout'),
-            onTap: () {
-              Navigator.pop(context);
+            onTap: () async {
+              Navigator.pop(context); // tutup drawer dulu
               final request = context.read<CookieRequest>();
-              request.logout('http://localhost:8000/authentication/logout/');
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const SmashLoginPage()),
-                (route) => false,
-              );
+              try {
+                final response = await request.logout(
+                  'http://localhost:8000/authentication/logout/',
+                );
+
+                final success =
+                    (response is Map && response['status'] == true) || response == true;
+
+                if (!context.mounted) return;
+
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Logout berhasil')),
+                  );
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SmashLoginPage()),
+                    (route) => false,
+                  );
+                } else {
+                  final message = (response is Map && response['message'] != null)
+                      ? response['message'].toString()
+                      : 'Logout gagal';
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(message)),
+                  );
+                }
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Terjadi kesalahan saat logout: $e')),
+                );
+              }
             },
           ),
         ],
