@@ -157,15 +157,17 @@ class ProfileApi {
   }
 
   Future<void> changePassword({
+    required String username,
     required String oldPassword,
     required String newPassword,
     required String confirmPassword,
   }) async {
-    final url = '$baseUrl/profil/api/change-password/';
+    final url = '$baseUrl/authentication/change_password/';
     final response = await request.post(url, {
+      'username': username,
       'old_password': oldPassword,
-      'new_password': newPassword,
-      'confirm_password': confirmPassword,
+      'new_password1': newPassword,
+      'new_password2': confirmPassword,
     });
     if (response is Map<String, dynamic>) {
       final ok = response['status'] == true;
@@ -175,6 +177,25 @@ class ProfileApi {
       return;
     }
     throw Exception('Respon tidak valid saat mengubah password.');
+  }
+
+  Future<void> deleteAccount({
+    required String username,
+    required String password,
+  }) async {
+    final url = '$baseUrl/authentication/delete_account/';
+    final response = await request.post(url, {
+      'username': username,
+      'password': password,
+    });
+    if (response is Map<String, dynamic>) {
+      final ok = response['status'] == true;
+      if (!ok) {
+        throw Exception(response['message'] ?? 'Gagal menghapus akun.');
+      }
+      return;
+    }
+    throw Exception('Respon tidak valid saat menghapus akun.');
   }
 
   /// Melengkapi URL media relatif agar menjadi absolut ke server Django.
