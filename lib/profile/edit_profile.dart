@@ -35,6 +35,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   bool _isSaving = false;
   bool _isChangingPass = false;
   bool _isLoggingOut = false;
+  bool _isDeletingAccount = false;
   File? _selectedImage;
   Uint8List? _selectedBytes;
   bool _removePhoto = false;
@@ -200,6 +201,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           setState(() => _isChangingPass = true);
                           try {
                             await widget.api.changePassword(
+                              username:  widget.profile?.username ?? '',
                               oldPassword: oldPass,
                               newPassword: newPass,
                               confirmPassword: confirmPass,
@@ -233,6 +235,99 @@ class _EditProfilePageState extends State<EditProfilePage> {
             );
           },
         );
+      },
+    );
+  }
+
+  void _showDeleteAccountDialog() {
+    final passwordCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        bool obscure = true;
+        return StatefulBuilder(builder: (context, setStateDialog) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text('Delete Account'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Masukkan password untuk konfirmasi penghapusan akun. Tindakan ini tidak dapat dibatalkan.',
+                  style: TextStyle(fontSize: 13.5),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: passwordCtrl,
+                  obscureText: obscure,
+                  decoration: InputDecoration(
+                    hintText: 'Password',
+                    filled: true,
+                    fillColor: Colors.white,
+                    suffixIcon: IconButton(
+                      icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () => setStateDialog(() => obscure = !obscure),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: _isDeletingAccount
+                    ? null
+                    : () async {
+                        final pass = passwordCtrl.text.trim();
+                        if (pass.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Password wajib diisi untuk konfirmasi.')),
+                          );
+                          return;
+                        }
+                        Navigator.of(ctx).pop(); // tutup dialog input
+                        setState(() => _isDeletingAccount = true);
+
+                        try {
+                          await widget.api.deleteAccount(
+                            username: widget.profile?.username ?? '',
+                            password: pass,
+                          );
+
+                          // Hapus session di client (opsional) lalu arahkan ke login
+                          final request = Provider.of<CookieRequest>(context, listen: false);
+                          try {
+                            await request.logout('http://localhost:8000/authentication/logout/');
+                          } catch (_) {}
+
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Akun berhasil dihapus.')),
+                          );
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (_) => const SmashLoginPage()),
+                            (route) => false,
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Gagal menghapus akun: $e')),
+                          );
+                        } finally {
+                          if (mounted) setState(() => _isDeletingAccount = false);
+                        }
+                      },
+                child: _isDeletingAccount
+                    ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Delete Account'),
+              ),
+            ],
+          );
+        });
       },
     );
   }
@@ -334,6 +429,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               const SizedBox(height: 16),
               _changePasswordCTA(),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: BorderSide(color: Colors.red.shade300),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: _isDeletingAccount ? null : _showDeleteAccountDialog,
+                  child: const Text('Delete Account', style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ),
               const SizedBox(height: 24),
               Row(
                 children: [
