@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:smash_mobile/screens/menu.dart';
 import 'package:smash_mobile/screens/register.dart';
 
 void main() {
@@ -146,6 +149,10 @@ class _SignInFormState extends State<_SignInForm> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _obscure = true;
+  bool _isSubmitting = false;
+
+  static const String _baseUrl = 'http://localhost:8000';
+  static const String _loginPath = '/authentication/login/';
 
   @override
   void dispose() {
@@ -222,9 +229,9 @@ class _SignInFormState extends State<_SignInForm> {
           TextFormField(
             controller: _emailCtrl,
             keyboardType: TextInputType.emailAddress,
-            decoration: _inputDecoration('Enter your email'),
+            decoration: _inputDecoration('Enter your username'),
             validator: (v) {
-              if (v == null || v.isEmpty) return 'Please enter email';
+              if (v == null || v.isEmpty) return 'Please enter username';
               return null;
             },
           ),
@@ -267,14 +274,7 @@ class _SignInFormState extends State<_SignInForm> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState?.validate() ?? false) {
-                  // contoh aksi: hanya tunjukkan snackbar
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Signing in...')),
-                  );
-                }
-              },
+              onPressed: _isSubmitting ? null : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -283,10 +283,20 @@ class _SignInFormState extends State<_SignInForm> {
                 ),
                 elevation: 4,
               ),
-              child: const Text(
-                'Sign In',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Sign In',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
             ),
           ),
           const SizedBox(height: 14),
@@ -326,6 +336,47 @@ class _SignInFormState extends State<_SignInForm> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _isSubmitting = true);
+    final request = context.read<CookieRequest>();
+    final username = _emailCtrl.text.trim();
+    final password = _passCtrl.text.trim();
+    try {
+      final response = await request.login('$_baseUrl$_loginPath', {
+        'username': username,
+        'password': password,
+      });
+      if (!mounted) return;
+      final success =
+          (response is Map && response['status'] == true) || response == true;
+      if (success) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => MyHomePage()),
+        );
+      } else {
+        final message = (response is Map && response['message'] != null)
+            ? response['message'].toString()
+            : 'Login gagal, periksa username dan password.';
+        _showError(message);
+      }
+    } catch (e) {
+      if (mounted) {
+        _showError(
+            'Login gagal: pastikan backend berjalan di $_baseUrl$_loginPath\n$e');
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 }

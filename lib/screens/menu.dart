@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smash_mobile/widgets/left_drawer.dart';
 
 class MyHomePage extends StatelessWidget {
   MyHomePage({super.key});
@@ -12,12 +13,23 @@ class MyHomePage extends StatelessWidget {
     ItemHomepage("Logout", Icons.logout, Colors.red),
   ];
 
+  void _handleMenuTap(BuildContext context, ItemHomepage item) {
+    var message = '${item.name} is coming soon';
+    if (item.name == 'Logout') {
+      message = 'Logout placeholder';
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   // Mengintegrasikan infocard dan itemcard untuk ditampilkan di MyHomePage
   @override
   Widget build(BuildContext context) {
     // Scaffold menyediakan struktur dasar halaman dengan AppBar dan body.
-    return Scaffold(     
-      backgroundColor: Colors.grey[900], 
+    return Scaffold(
+      drawer: const LeftDrawer(),
+      backgroundColor: Colors.grey[900],
       // AppBar adalah bagian atas halaman yang menampilkan judul.
       appBar: AppBar(
         // Judul aplikasi "Smash" dengan teks putih dan tebal.
@@ -27,7 +39,8 @@ class MyHomePage extends StatelessWidget {
         ),
         // Warna latar belakang AppBar diambil dari skema warna tema aplikasi.
         backgroundColor: Theme.of(context).colorScheme.primary,
-      ),    
+        foregroundColor: Colors.white,
+      ),
       // Body halaman dengan padding di sekelilingnya.
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -36,8 +49,24 @@ class MyHomePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Row untuk menampilkan 3 InfoCard secara horizontal.
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,              
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              alignment: WrapAlignment.center,
+              children: const [
+                InfoCard(
+                  title: 'Latest Posts',
+                  content: 'Catch up with the newest discussions.',
+                ),
+                InfoCard(
+                  title: 'Your Hub',
+                  content: 'Access your padel profile quickly.',
+                ),
+                InfoCard(
+                  title: 'Create',
+                  content: 'Share a new post with the community.',
+                ),
+              ],
             ),
 
             // Memberikan jarak vertikal 16 unit.
@@ -50,10 +79,10 @@ class MyHomePage extends StatelessWidget {
                 children: [
                   // Menampilkan teks sambutan dengan gaya tebal dan ukuran 18.
                   Padding(
-                    padding: EdgeInsets.only(top: 16.0),
+                    padding: const EdgeInsets.only(top: 16.0),
                     child: Column(
-                      children: [
-                        const Text(
+                      children: const [
+                        Text(
                           'WELCOME TO',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -62,7 +91,7 @@ class MyHomePage extends StatelessWidget {
                             color: Colors.grey,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           "🏆Smash🏆",
                           style: TextStyle(
@@ -72,13 +101,13 @@ class MyHomePage extends StatelessWidget {
                             letterSpacing: 1.5,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text(
                           "Your Ultimate Football Store",
                           style: TextStyle(
                             fontStyle: FontStyle.italic,
                             fontSize: 14.0,
-                            color: Colors.grey,                            
+                            color: Colors.grey,
                           ),
                         )
                       ],
@@ -93,7 +122,16 @@ class MyHomePage extends StatelessWidget {
                     mainAxisSpacing: 10,
                     crossAxisCount: 3,
                     // Agar grid menyesuaikan tinggi kontennya.
-                    shrinkWrap: true,               
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: items
+                        .map(
+                          (item) => ItemCard(
+                            item: item,
+                            onTap: () => _handleMenuTap(context, item),
+                          ),
+                        )
+                        .toList(),
                   ),
                 ],
               ),
@@ -105,46 +143,81 @@ class MyHomePage extends StatelessWidget {
   }
 }
 
-// Penambahan class InfoCard untuk membuat card sederhana yang sudah didefinisikan tadi
 class InfoCard extends StatelessWidget {
-  // Kartu informasi yang menampilkan title dan content.
-
-  final String title; // Judul kartu.
-  final String content; // Isi kartu.
+  final String title;
+  final String content;
 
   const InfoCard({super.key, required this.title, required this.content});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      // Membuat kotak kartu dengan bayangan dibawahnya.
       elevation: 2.0,
-      child: Container(
-        // Mengatur ukuran dan jarak di dalam kartu.
-        width:
-            MediaQuery.of(context).size.width /
-            3.5, // menyesuaikan dengan lebar device yang digunakan.
-        padding: const EdgeInsets.all(16.0),
-        // Menyusun title dan content secara vertikal.
-        child: Column(
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8.0),
-            Text(content),
-          ],
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width / 3.5,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8.0),
+              Text(content, textAlign: TextAlign.center),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// Membuat button card sederhana dengan icon
 class ItemHomepage {
   final String name;
   final IconData icon;
-
-  // Menambahkan attribute warna untuk itemHomePage
   final Color color;
 
   ItemHomepage(this.name, this.icon, this.color);
+}
+
+class ItemCard extends StatelessWidget {
+  final ItemHomepage item;
+  final VoidCallback onTap;
+
+  const ItemCard({super.key, required this.item, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: item.color.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: item.color.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Icon(item.icon, color: item.color, size: 28),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                item.name,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

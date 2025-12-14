@@ -1,17 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:smash_mobile/profile/profile_page.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:smash_mobile/screens/login.dart';
+import 'package:smash_mobile/screens/menu.dart';
 
-void main() => runApp(const MyApp());
+void main() => runApp(const SmashApp());
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SmashApp extends StatelessWidget {
+  const SmashApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Profile',
-      theme: ThemeData(fontFamily: 'Poppins'),
-      home: const ProfilePage(),
+    return Provider<CookieRequest>(
+      create: (_) => CookieRequest(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Smash Mobile',
+        theme: ThemeData(
+          fontFamily: 'Poppins',
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          useMaterial3: true,
+        ),
+        home: const SmashLoginPage(),
+        routes: {
+          '/home': (_) => MyHomePage(),
+          '/login': (_) => const SmashLoginPage(),
+        },
+      ),
     );
   }
 }
