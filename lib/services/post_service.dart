@@ -5,7 +5,6 @@ import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:smash_mobile/models/post.dart';
 import 'package:smash_mobile/models/comment.dart';
-import 'dart:convert';
 
 class PostService {
   // Use 10.0.2.2 for Android emulator, 127.0.0.1 for iOS simulator/web
@@ -109,10 +108,41 @@ class PostService {
         final stored = prefs.getString('post_reactions');
         if (stored != null && stored.isNotEmpty) {
           final Map<String, dynamic> reactions = json.decode(stored);
+          var cacheChanged = false;
           for (final p in posts) {
-            if (reactions.containsKey(p.id)) {
-              p.userReaction = reactions[p.id] as String?;
+            final key = p.id.toString();
+            if (!reactions.containsKey(key)) continue;
+            final val = reactions[key];
+            if (val is String) {
+              // legacy format: stored reaction only
+              p.userReaction = val;
+            } else if (val is Map) {
+              // apply user reaction and any cached likes/dislikes, but prefer server comments_count
+              p.userReaction = val['user_reaction'] as String?;
+              try {
+                if (val['likes_count'] != null)
+                  p.likesCount = val['likes_count'] as int;
+              } catch (_) {}
+              try {
+                if (val['dislikes_count'] != null)
+                  p.dislikesCount = val['dislikes_count'] as int;
+              } catch (_) {}
+
+              // Ensure cache reflects authoritative server comments_count
+              final cachedComments = (val['comments_count'] is int)
+                  ? val['comments_count'] as int
+                  : null;
+              if (cachedComments == null || cachedComments != p.commentsCount) {
+                // update cache to match server
+                final newMap = Map<String, dynamic>.from(val);
+                newMap['comments_count'] = p.commentsCount;
+                reactions[key] = newMap;
+                cacheChanged = true;
+              }
             }
+          }
+          if (cacheChanged) {
+            await prefs.setString('post_reactions', json.encode(reactions));
           }
         }
       } catch (_) {}
@@ -123,8 +153,11 @@ class PostService {
     }
   }
 
-  Future<List<Comment>> fetchComments(String postId) async {
-    final url = commentsUrl(postId);
+  Future<List<Comment>> fetchComments(String postId, {String? userId}) async {
+    var url = commentsUrl(postId);
+    if (userId != null && userId.isNotEmpty) {
+      url = '$url?user_id=$userId';
+    }
     try {
       final uri = Uri.parse(url);
       final res = await http.get(uri);
@@ -146,9 +179,39 @@ class PostService {
       final List<dynamic> items = decoded is List
           ? decoded
           : (decoded['comments'] ?? []);
-      return items
+      final comments = items
           .map((c) => Comment.fromJson(Map<String, dynamic>.from(c)))
           .toList();
+
+      // Merge cached comment reactions (persisted similarly to post reactions)
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final stored = prefs.getString('comment_reactions');
+        if (stored != null && stored.isNotEmpty) {
+          final Map<String, dynamic> reactions = json.decode(stored);
+          for (final c in comments) {
+            final key = c.id.toString();
+            if (reactions.containsKey(key)) {
+              final val = reactions[key];
+              if (val is String) {
+                c.userReaction = val;
+              } else if (val is Map) {
+                c.userReaction = val['user_reaction'] as String?;
+                try {
+                  if (val['likes_count'] != null)
+                    c.likesCount = val['likes_count'] as int;
+                } catch (_) {}
+                try {
+                  if (val['dislikes_count'] != null)
+                    c.dislikesCount = val['dislikes_count'] as int;
+                } catch (_) {}
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      return comments;
     } catch (e) {
       throw Exception('Error fetching comments from $url: $e');
     }
@@ -211,10 +274,31 @@ class PostService {
               ? json.decode(stored) as Map<String, dynamic>
               : <String, dynamic>{};
           final ur = result['user_reaction'];
-          if (ur == null) {
-            reactions.remove(postId);
+          final likes = result['likes_count'];
+          final dislikes = result['dislikes_count'];
+          final key = postId.toString();
+          // preserve existing comments_count if present so it isn't lost
+          final existingVal = reactions.containsKey(key)
+              ? reactions[key]
+              : null;
+          final existingComments =
+              (existingVal is Map && existingVal['comments_count'] is int)
+              ? existingVal['comments_count'] as int
+              : null;
+          if (ur == null &&
+              likes == null &&
+              dislikes == null &&
+              existingComments == null) {
+            reactions.remove(key);
           } else {
-            reactions[postId] = ur;
+            final map = <String, dynamic>{
+              'user_reaction': ur,
+              'likes_count': likes,
+              'dislikes_count': dislikes,
+            };
+            if (existingComments != null)
+              map['comments_count'] = existingComments;
+            reactions[key] = map;
           }
           await prefs.setString('post_reactions', json.encode(reactions));
         } catch (_) {}
@@ -245,7 +329,32 @@ class PostService {
         body: json.encode(body),
       );
       if (res.statusCode == 200 || res.statusCode == 201) {
-        return json.decode(res.body) as Map<String, dynamic>;
+        final Map<String, dynamic> result = json.decode(res.body);
+        // persist local comment reaction cache
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final stored = prefs.getString('comment_reactions');
+          final Map<String, dynamic> reactions =
+              stored != null && stored.isNotEmpty
+              ? json.decode(stored) as Map<String, dynamic>
+              : <String, dynamic>{};
+          final ur = result['user_reaction'];
+          final likes = result['likes_count'];
+          final dislikes = result['dislikes_count'];
+          final key = commentId.toString();
+          if (ur == null && likes == null && dislikes == null) {
+            reactions.remove(key);
+          } else {
+            reactions[key] = {
+              'user_reaction': ur,
+              'likes_count': likes,
+              'dislikes_count': dislikes,
+            };
+          }
+          await prefs.setString('comment_reactions', json.encode(reactions));
+        } catch (_) {}
+
+        return result;
       }
       throw Exception('Toggle failed: ${res.statusCode} ${res.body}');
     } catch (e) {

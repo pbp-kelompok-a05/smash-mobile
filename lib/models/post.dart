@@ -18,6 +18,7 @@ class Post {
   int likesCount;
   int dislikesCount;
   int sharesCount;
+  int commentsCount;
   String? userReaction;
   bool isDeleted;
 
@@ -33,12 +34,13 @@ class Post {
     required this.likesCount,
     required this.dislikesCount,
     required this.sharesCount,
+    required this.commentsCount,
     this.userReaction,
     required this.isDeleted,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) => Post(
-    id: json["id"],
+    id: json["id"].toString(),
     title: json["title"],
     content: json["content"],
     author: json["author"],
@@ -49,6 +51,7 @@ class Post {
     likesCount: json["likes_count"],
     dislikesCount: json["dislikes_count"],
     sharesCount: json["shares_count"],
+    commentsCount: json["comments_count"] ?? 0,
     userReaction: json["user_reaction"],
     isDeleted: json["is_deleted"],
   );
@@ -65,6 +68,7 @@ class Post {
     "likes_count": likesCount,
     "dislikes_count": dislikesCount,
     "shares_count": sharesCount,
+    "comments_count": commentsCount,
     "user_reaction": userReaction,
     "is_deleted": isDeleted,
   };

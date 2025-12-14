@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smash_mobile/models/post.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:smash_mobile/models/comment.dart';
 import 'package:smash_mobile/widgets/comment_card.dart';
@@ -46,6 +48,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   bool _posting = false;
   late int likesCount;
   late int dislikesCount;
+  late int commentsCount;
   String? userReaction;
   bool _processing = false;
 
@@ -66,10 +69,44 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _commentsFuture = PostService().fetchComments(widget.post.id);
+    _commentsFuture = PostService().fetchComments(widget.post.id, userId: '1');
     likesCount = widget.post.likesCount;
     dislikesCount = widget.post.dislikesCount;
+    commentsCount = widget.post.commentsCount;
     userReaction = widget.post.userReaction;
+    _loadLocalReactionIfMissing();
+  }
+
+  Future<void> _loadLocalReactionIfMissing() async {
+    if (userReaction != null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString('post_reactions');
+      if (stored == null || stored.isEmpty) return;
+      final Map<String, dynamic> reactions = json.decode(stored);
+      final key = widget.post.id.toString();
+      if (!reactions.containsKey(key)) return;
+      final val = reactions[key];
+      if (val is String) {
+        setState(() => userReaction = val);
+      } else if (val is Map) {
+        setState(() {
+          userReaction = val['user_reaction'] as String?;
+          try {
+            if (val['likes_count'] != null)
+              likesCount = val['likes_count'] as int;
+          } catch (_) {}
+          try {
+            if (val['dislikes_count'] != null)
+              dislikesCount = val['dislikes_count'] as int;
+          } catch (_) {}
+          try {
+            if (val['comments_count'] != null)
+              commentsCount = val['comments_count'] as int;
+          } catch (_) {}
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -89,8 +126,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         userId: '1',
       );
       _commentController.clear();
-      setState(() {
-        _commentsFuture = PostService().fetchComments(widget.post.id);
+        setState(() {
+        _commentsFuture = PostService().fetchComments(widget.post.id, userId: '1');
+        commentsCount += 1;
+        widget.post.commentsCount = commentsCount;
       });
       ScaffoldMessenger.of(
         context,
@@ -437,6 +476,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         }
 
                         final comments = snapshot.data!;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          if (commentsCount != comments.length) {
+                            setState(() {
+                              commentsCount = comments.length;
+                              widget.post.commentsCount = commentsCount;
+                            });
+                          }
+                        });
                         return ListView.separated(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),

@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:smash_mobile/models/comment.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smash_mobile/services/post_service.dart';
 
 class CommentCard extends StatefulWidget {
   final Comment comment;
   final Image? profileImage;
-  final int likeCount;
-  final int dislikeCount;
+
   final VoidCallback onTap;
 
   const CommentCard({
     super.key,
     required this.comment,
     this.profileImage,
-    this.likeCount = 0,
-    this.dislikeCount = 0,
+
     required this.onTap,
   });
 
@@ -31,9 +31,37 @@ class _CommentCardState extends State<CommentCard> {
   @override
   void initState() {
     super.initState();
-    likes = widget.likeCount;
-    dislikes = widget.dislikeCount;
-    userReaction = null;
+    likes = widget.comment.likesCount;
+    dislikes = widget.comment.dislikesCount;
+    userReaction = widget.comment.userReaction;
+    _loadLocalReactionIfMissing();
+  }
+
+  Future<void> _loadLocalReactionIfMissing() async {
+    if (userReaction != null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString('comment_reactions');
+      if (stored == null || stored.isEmpty) return;
+      final Map<String, dynamic> reactions = json.decode(stored);
+      final key = widget.comment.id.toString();
+      if (!reactions.containsKey(key)) return;
+      final val = reactions[key];
+      if (val is String) {
+        setState(() => userReaction = val);
+      } else if (val is Map) {
+        setState(() {
+          userReaction = val['user_reaction'] as String?;
+          try {
+            if (val['likes_count'] != null) likes = val['likes_count'] as int;
+          } catch (_) {}
+          try {
+            if (val['dislikes_count'] != null)
+              dislikes = val['dislikes_count'] as int;
+          } catch (_) {}
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _handleReaction(String action) async {
@@ -71,6 +99,10 @@ class _CommentCardState extends State<CommentCard> {
         likes = (res['likes_count'] ?? likes) as int;
         dislikes = (res['dislikes_count'] ?? dislikes) as int;
         userReaction = res['user_reaction'];
+        // persist to model so callers can observe
+        widget.comment.likesCount = likes;
+        widget.comment.dislikesCount = dislikes;
+        widget.comment.userReaction = userReaction;
       });
     } catch (e) {
       setState(() {
