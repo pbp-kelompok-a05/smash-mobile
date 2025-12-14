@@ -1,8 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
-import 'package:smash_mobile/post/post_api.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/screens/login.dart';
@@ -30,8 +31,15 @@ class _SearchPageState extends State<SearchPage> {
   String _queryTitle = '';
   bool _isLoggingOut = false;
   String? _photoUrl;
+  Uint8List? _photoBytes;
   String? _username;
   bool _isLoggedIn = false;
+  int? _currentUserId;
+  String? _resolvePhoto(String? url) {
+    final resolved = _profileApi.resolveMediaUrl(url) ?? _profileApi.defaultAvatarUrl;
+    if (url == null || url.trim().isEmpty) return resolved;
+    return '$resolved?v=${DateTime.now().millisecondsSinceEpoch}';
+  }
 
   @override
   void initState() {
@@ -64,10 +72,8 @@ class _SearchPageState extends State<SearchPage> {
       _error = null;
       _queryTitle = query;
     });
-    final request = Provider.of<CookieRequest>(context, listen: false);
-    final api = PostApi(request: request);
     try {
-      final items = await api.searchPosts(query);
+      final items = await _searchPosts(query);
       if (!mounted) return;
       setState(() {
         _results = items;
@@ -85,13 +91,66 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
+  Future<List<ProfileFeedItem>> _searchPosts(String query) async {
+    final request = Provider.of<CookieRequest>(context, listen: false);
+    final baseUrl = _profileApi.baseUrl;
+    final endpoints = [
+      '$baseUrl/search/api/',
+      '$baseUrl/search/api',
+      '$baseUrl/post/api/search/',
+      '$baseUrl/post/api/search',
+    ];
+
+    dynamic lastError;
+    for (final path in endpoints) {
+      final uri = Uri.parse(path).replace(queryParameters: {'q': query});
+      try {
+        final res = await request.get(uri.toString());
+        if (res is Map<String, dynamic> && res['status'] == 'success') {
+          final posts = res['posts'] as List<dynamic>? ?? [];
+          return posts.map((raw) {
+            final map = Map<String, dynamic>.from(raw as Map);
+            final resolve = _profileApi.resolveMediaUrl;
+            final avatar =
+                resolve(map['profile_photo'] as String?) ?? _profileApi.defaultAvatarUrl;
+            return ProfileFeedItem(
+              id: map['id'] ?? 0,
+              title: map['title'] ?? '',
+              content: map['content'] ?? '',
+              image: resolve(map['image'] as String?),
+              videoLink: map['video_link'] as String?,
+              user: map['user'] ?? '',
+              userId: map['user_id'] ?? 0,
+              createdAt:
+                  DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
+              commentCount: map['comment_count'] ?? 0,
+              likesCount: map['likes_count'] ?? 0,
+              dislikesCount: map['dislikes_count'] ?? 0,
+              sharesCount: map['shares_count'] ?? 0,
+              profilePhoto: avatar,
+              userInteraction: null,
+              isSaved: map['is_saved'] ?? false,
+              canEdit: map['can_edit'] ?? false,
+            );
+          }).toList();
+        }
+        lastError = res;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw Exception('Gagal mencari post: $lastError');
+  }
+
   Future<void> _loadProfileHeader() async {
     final request = Provider.of<CookieRequest>(context, listen: false);
     _isLoggedIn = request.loggedIn;
     if (!request.loggedIn) {
       setState(() {
         _photoUrl = null;
+        _photoBytes = null;
         _username = null;
+        _currentUserId = null;
       });
       return;
     }
@@ -100,13 +159,17 @@ class _SearchPageState extends State<SearchPage> {
       final profile = await profileApi.fetchProfile();
       if (!mounted) return;
       setState(() {
-        _photoUrl = profileApi.resolvePhotoUrl(profile.profilePhoto);
+        _photoUrl = _resolvePhoto(profile.profilePhoto);
+        _photoBytes = null;
         _username = profile.username;
+        _currentUserId = profile.id;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _photoUrl = profileApi.defaultAvatarUrl;
+        _currentUserId = null;
+        _photoBytes = null;
       });
     }
   }
@@ -148,6 +211,16 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     final request = context.watch<CookieRequest>();
+    final loggedInNow = request.loggedIn;
+    if (_isLoggedIn != loggedInNow) {
+      _isLoggedIn = loggedInNow;
+      if (_isLoggedIn) {
+        _loadProfileHeader();
+      } else {
+        _photoUrl = null;
+        _username = null;
+      }
+    }
     return Scaffold(
       key: _scaffoldKey,
       drawer: const LeftDrawer(),
@@ -157,6 +230,7 @@ class _SearchPageState extends State<SearchPage> {
         isLoggedIn: _isLoggedIn,
         username: _username,
         photoUrl: _photoUrl,
+        photoBytes: _photoBytes,
         searchController: _controller,
         onSearchSubmit: (_) => _performSearch(),
         onLogin: _openLogin,
@@ -202,21 +276,14 @@ class _SearchPageState extends State<SearchPage> {
                     itemBuilder: (context, index) {
                       final item = _results[index];
                       final imageUrl = _profileApi.resolveMediaUrl(item.image);
-                      final avatar =
-                          _profileApi.resolveMediaUrl(item.profilePhoto) ??
-                              _profileApi.defaultAvatarUrl;
                       return PostCard(
                         item: item,
-                        avatarUrl: avatar,
+                        defaultAvatar: _profileApi.defaultAvatarUrl,
+                        resolveAvatar: _profileApi.resolveMediaUrl,
                         imageUrl: imageUrl,
-                        showMenu: false,
-                        onProfileTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ProfilePage(userId: item.userId),
-                            ),
-                          );
-                        },
+                        showMenu: true,
+                        currentUserId: _currentUserId,
+                        profilePageBuilder: (id) => ProfilePage(userId: id),
                       );
                     },
                   ),

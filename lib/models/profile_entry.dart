@@ -36,12 +36,14 @@ class ProfileData {
   final String username;
   final String bio;
   final String? profilePhoto;
+  final DateTime? joinedOn;
 
   ProfileData({
     required this.id,
     required this.username,
     required this.bio,
     this.profilePhoto,
+    this.joinedOn,
   });
 
   factory ProfileData.fromJson(Map<String, dynamic> json) => ProfileData(
@@ -49,6 +51,7 @@ class ProfileData {
         username: (json['username'] ?? '').toString(),
         bio: (json['bio'] ?? '').toString(),
         profilePhoto: json['profile_photo'] as String?,
+        joinedOn: DateTime.tryParse((json['joined_on'] ?? '').toString()),
       );
 
   Map<String, dynamic> toJson() => {
@@ -56,5 +59,6 @@ class ProfileData {
         'username': username,
         'bio': bio,
         'profile_photo': profilePhoto,
+        'joined_on': joinedOn?.toIso8601String(),
       };
 }

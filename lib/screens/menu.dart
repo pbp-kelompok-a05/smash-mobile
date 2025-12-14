@@ -1,8 +1,29 @@
-import 'package:flutter/material.dart';
-import 'package:smash_mobile/widgets/left_drawer.dart';
+import 'dart:typed_data';
 
-class MyHomePage extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:smash_mobile/screens/login.dart';
+import 'package:smash_mobile/screens/register.dart';
+import 'package:smash_mobile/profile/profile_api.dart';
+import 'package:smash_mobile/profile/profile_page.dart';
+import 'package:smash_mobile/widgets/left_drawer.dart';
+import 'package:smash_mobile/widgets/navbar.dart';
+
+class MyHomePage extends StatefulWidget {
   MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  String? _photoUrl;
+  String? _username;
+  bool _isLoggedIn = false;
+  bool _isLoggingOut = false;
+  Uint8List? _photoBytes;
 
   // Menambahkan class ItemHomePage yang berisi tombol-tombol tertentu
   // Implementasi tombol-tombol yang sudah dibuat tadi
@@ -12,6 +33,12 @@ class MyHomePage extends StatelessWidget {
     ItemHomepage("Create Product", Icons.add_circle, Colors.red),
     ItemHomepage("Logout", Icons.logout, Colors.red),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileHeader();
+  }
 
   void _handleMenuTap(BuildContext context, ItemHomepage item) {
     var message = '${item.name} is coming soon';
@@ -23,23 +50,102 @@ class MyHomePage extends StatelessWidget {
     );
   }
 
+  void _openLogin(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SmashLoginPage()),
+    );
+  }
+
+  void _openRegister(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SmashRegisterPage()),
+    );
+  }
+
+  void _openProfile(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProfilePage()),
+    );
+  }
+
+  Future<void> _loadProfileHeader() async {
+    final request = Provider.of<CookieRequest>(context, listen: false);
+    final logged = request.loggedIn;
+    if (!logged) {
+      setState(() {
+        _isLoggedIn = false;
+        _photoUrl = null;
+        _username = null;
+        _photoBytes = null;
+      });
+      return;
+    }
+    final profileApi = ProfileApi(request: request);
+    try {
+      final profile = await profileApi.fetchProfile();
+      if (!mounted) return;
+      setState(() {
+        _isLoggedIn = true;
+        _photoUrl =
+            profileApi.resolveMediaUrl(profile.profilePhoto) ?? profileApi.defaultAvatarUrl;
+        _username = profile.username;
+        _photoBytes = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoggedIn = true;
+        _photoUrl = profileApi.defaultAvatarUrl;
+        _photoBytes = null;
+      });
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    if (_isLoggingOut) return;
+    _isLoggingOut = true;
+    final request = context.read<CookieRequest>();
+    try {
+      await request.logout('http://localhost:8000/authentication/logout/');
+    } catch (_) {}
+    if (!mounted) return;
+    _isLoggingOut = false;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const SmashLoginPage()),
+      (route) => false,
+    );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   // Mengintegrasikan infocard dan itemcard untuk ditampilkan di MyHomePage
   @override
   Widget build(BuildContext context) {
-    // Scaffold menyediakan struktur dasar halaman dengan AppBar dan body.
+    final request = context.watch<CookieRequest>();
+    if (_isLoggedIn != request.loggedIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadProfileHeader();
+      });
+    }
     return Scaffold(
+      key: _scaffoldKey,
       drawer: const LeftDrawer(),
       backgroundColor: Colors.grey[900],
-      // AppBar adalah bagian atas halaman yang menampilkan judul.
-      appBar: AppBar(
-        // Judul aplikasi "Smash" dengan teks putih dan tebal.
-        title: const Text(
-          'Smash 🎾',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        // Warna latar belakang AppBar diambil dari skema warna tema aplikasi.
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+      appBar: NavBar(
+        onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+        isLoggedIn: _isLoggedIn,
+        showCreate: _isLoggedIn,
+        photoUrl: _photoUrl,
+        photoBytes: _photoBytes,
+        username: _username,
+        onLogin: () => _openLogin(context),
+        onRegister: () => _openRegister(context),
+        onLogout: _handleLogout,
+        onProfileTap: () => _openProfile(context),
       ),
       // Body halaman dengan padding di sekelilingnya.
       body: SingleChildScrollView(
