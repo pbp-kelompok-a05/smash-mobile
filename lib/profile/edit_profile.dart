@@ -5,15 +5,14 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:provider/provider.dart';
 import 'package:smash_mobile/models/profile_entry.dart';
-
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
-import 'package:smash_mobile/widgets/navbar.dart';
-import 'package:provider/provider.dart';
-import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:smash_mobile/screens/login.dart';
+import 'package:smash_mobile/widgets/app_top_bar.dart';
+import 'package:smash_mobile/widgets/left_drawer.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({
@@ -30,20 +29,33 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final _usernameController = TextEditingController();
   final _bioController = TextEditingController();
   bool _isSaving = false;
   bool _isChangingPass = false;
+  bool _isLoggingOut = false;
   bool _isDeletingAccount = false;
   File? _selectedImage;
   Uint8List? _selectedBytes;
   bool _removePhoto = false;
+  String? _avatarUrl;
+  static const _fallbackAvatar = 'https://raw.githubusercontent.com/identicons/rustcrate/master/public/images/default.png';
+
+  String _resolvePhotoUrl(String? url) {
+    if (url == null || url.trim().isEmpty) return _fallbackAvatar;
+    final resolved = widget.api.resolveMediaUrl(url);
+    if (resolved == null || resolved.isEmpty) return _fallbackAvatar;
+    final cacheBust = DateTime.now().millisecondsSinceEpoch;
+    return '$resolved?v=$cacheBust';
+  }
 
   @override
   void initState() {
     super.initState();
     _usernameController.text = widget.profile?.username ?? '';
     _bioController.text = widget.profile?.bio ?? '';
+    _avatarUrl = _resolvePhotoUrl(widget.profile?.profilePhoto);
   }
 
   void _showChangePasswordDialog() {
@@ -75,6 +87,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         BorderSide(color: Colors.teal.shade400, width: 1.2),
                   ),
                 );
+            const accent = Color(0xFF9333EA);
+            OutlineInputBorder focusBorder = const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+              borderSide: BorderSide(color: accent, width: 1.6),
+            );
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -85,7 +102,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Masukkan password lama lalu password baru yang ingin digunakan.',
+                    'Enter your current password, then set a new one.',
                     style: TextStyle(fontSize: 13.5, color: Colors.black87),
                   ),
                   const SizedBox(height: 12),
@@ -99,8 +116,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         onPressed: () => setStateDialog(
                             () => obscureOld = !obscureOld),
                       ),
+                      focusedBorder: focusBorder,
                     ),
-                  ),
+                    ),
                   const SizedBox(height: 10),
                   TextField(
                     controller: newCtrl,
@@ -112,6 +130,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         onPressed: () => setStateDialog(
                             () => obscureNew = !obscureNew),
                       ),
+                      focusedBorder: focusBorder,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -126,19 +145,35 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         onPressed: () => setStateDialog(
                             () => obscureConfirm = !obscureConfirm),
                       ),
+                      focusedBorder: focusBorder,
                     ),
                   ),
                 ],
               ),
               actions: [
-                TextButton(
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey.shade700,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: const Color(0xFF9333EA),
                     foregroundColor: Colors.white,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 3,
                   ),
                   onPressed: _isChangingPass
                       ? null
@@ -193,7 +228,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               setState(() => _isChangingPass = false);
                             }
                           }
-                        },
+                  },
                   child: const Text('Update Password'),
                 ),
               ],
@@ -307,37 +342,60 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: const LeftDrawer(),
       backgroundColor: const Color(0xFFD2F3E0),
-      appBar: NavBar(
-        isLoggedIn: true,
-        username: widget.profile?.username ?? 'User',
+      appBar: AppTopBar(
+        title: 'Edit Profile',
+        onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFD2F3E0), Color(0xFFFFE2E2)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+        color: Colors.white,
         child: SafeArea(
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
             children: [
-              const SizedBox(height: 12),
+              const SizedBox(height: 2),
               Center(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     CircleAvatar(
-                      radius: 48,
+                      radius: 58,
                       backgroundColor: Colors.white,
                       child: ClipOval(
-                        child: _avatarPreview(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            _avatarPreview(size: 116),
+                            Container(
+              width: 116,
+              height: 116,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 6,
+                ),
+              ),
+            ),
+            Container(
+              width: 124,
+              height: 124,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 2,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+                    const SizedBox(height: 0),
                     Text(
                       widget.profile?.username ?? 'User',
                       style: const TextStyle(
@@ -349,10 +407,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               _label('Username'),
               const SizedBox(height: 6),
-              _textField(_usernameController),
+              _textField(
+                _usernameController,
+                hintText: 'Username cannot be blank',
+              ),
               const SizedBox(height: 16),
               _label('Photo profile'),
               const SizedBox(height: 6),
@@ -383,33 +444,57 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF202726),
-                    foregroundColor: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.grey.shade700,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      onPressed: _isSaving
+                          ? null
+                          : () {
+                              Navigator.of(context).pop();
+                            },
+                      child: const Text('Cancel'),
                     ),
                   ),
-                  onPressed: _isSaving ? null : _submit,
-                  child: _isSaving
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'Update',
-                          style: TextStyle(fontWeight: FontWeight.w700),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9333EA),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                ),
+                        elevation: 3,
+                      ),
+                      onPressed: _isSaving ? null : _submit,
+                      child: _isSaving
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Update',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
             ],
@@ -419,39 +504,41 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Widget _avatarPreview() {
+  Widget _avatarPreview({double size = 86}) {
     if (_selectedBytes != null) {
       return Image.memory(
         _selectedBytes!,
         fit: BoxFit.cover,
-        width: 86,
-        height: 86,
+        width: size,
+        height: size,
       );
     }
     if (_selectedImage != null) {
       return Image.file(
         _selectedImage!,
         fit: BoxFit.cover,
-        width: 86,
-        height: 86,
+        width: size,
+        height: size,
       );
     }
     final photo = widget.profile?.profilePhoto;
-    if (photo != null && photo.isNotEmpty) {
-      return Image.network(
-        photo,
-        fit: BoxFit.cover,
-        width: 86,
-        height: 86,
-        errorBuilder: (_, __, ___) =>
-            Image.asset('assets/avatar.png', fit: BoxFit.cover),
-      );
-    }
-    return Container(
-      width: 86,
-      height: 86,
-      color: Colors.grey.shade200,
-      child: Icon(Icons.person, size: 36, color: Colors.grey.shade600),
+    final url = (!_removePhoto && photo != null && photo.isNotEmpty)
+        ? _avatarUrl ?? _resolvePhotoUrl(photo)
+        : _fallbackAvatar;
+    return Image.network(
+      url ?? _fallbackAvatar,
+      fit: BoxFit.cover,
+      width: size,
+      height: size,
+      errorBuilder: (_, __, ___) {
+        return Container(
+          width: size,
+          height: size,
+          color: Colors.grey.shade200,
+          child:
+              Icon(Icons.person, size: size * 0.42, color: Colors.grey.shade600),
+        );
+      },
     );
   }
 
@@ -468,12 +555,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
           _selectedBytes = bytes;
           _selectedImage = null;
           _removePhoto = false;
+          _avatarUrl = null;
         });
       } catch (_) {
         setState(() {
           _selectedImage = File(picked.path);
           _selectedBytes = null;
           _removePhoto = false;
+          _avatarUrl = null;
         });
       }
     }
@@ -492,6 +581,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         removePhoto: _removePhoto,
       );
       if (mounted) {
+        _avatarUrl = _resolvePhotoUrl(updated.profilePhoto);
+        _selectedBytes = null;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profil berhasil diperbarui')),
         );
@@ -511,6 +602,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+  Future<void> _handleLogout() async {
+    if (_isLoggingOut) return;
+    _isLoggingOut = true;
+    final request = context.read<CookieRequest>();
+    try {
+      await request.logout('http://localhost:8000/authentication/logout/');
+    } catch (_) {}
+    if (!mounted) return;
+    _isLoggingOut = false;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const SmashLoginPage()),
+      (route) => false,
+    );
+  }
+
+  void _openProfile() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const ProfilePage()),
+    );
+  }
+
   Widget _changePasswordCTA() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -518,8 +632,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         OutlinedButton.icon(
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            foregroundColor: Colors.black87,
-            side: BorderSide(color: Colors.grey.shade400),
+            foregroundColor: const Color(0xFF9333EA),
+            side: const BorderSide(color: Color(0xFF9333EA)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -541,29 +655,43 @@ class _EditProfilePageState extends State<EditProfilePage> {
       style: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w700,
-        color: Colors.black87,
+        color: Color(0xFF444444),
       ),
     );
   }
 
   Widget _textField(TextEditingController controller,
-      {int maxLines = 1, EdgeInsetsGeometry? contentPadding}) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding:
-            contentPadding ?? const EdgeInsets.symmetric(horizontal: 12),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade400, width: 1),
+      {int maxLines = 1,
+      EdgeInsetsGeometry? contentPadding,
+      String? emptyError,
+      String? hintText}) {
+    const accent = Color(0xFF9333EA); // tailwind purple-600
+    return Focus(
+      child: TextField(
+        controller: controller,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding:
+              contentPadding ?? const EdgeInsets.symmetric(horizontal: 12),
+          hintText: hintText,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade400, width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: accent, width: 1.6),
+          ),
+          errorText: null,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.black87, width: 1.2),
-        ),
+        cursorColor: accent,
+        onChanged: (v) {
+          if (emptyError != null && v.trim().isEmpty) {
+            setState(() {});
+          }
+        },
       ),
     );
   }
@@ -613,10 +741,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 _removePhoto = true;
                 _selectedImage = null;
                 _selectedBytes = null;
+                _avatarUrl = _fallbackAvatar;
               });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Foto profil akan dihapus saat disimpan')),
-              );
+              // immediate preview fallback is handled by avatarPreview using default image
             },
             tooltip: 'Hapus foto profil',
           ),

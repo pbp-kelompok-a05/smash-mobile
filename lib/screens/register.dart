@@ -84,7 +84,6 @@ class SmashRegisterPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     return Scaffold(
-      // same background as login
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(

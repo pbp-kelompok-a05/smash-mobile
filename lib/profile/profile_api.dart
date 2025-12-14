@@ -36,7 +36,7 @@ class ProfileApi {
       }
       throw Exception(response['message'] ?? 'Gagal memuat profil.');
     }
-    throw Exception('Respon tidak valid saat memuat profil.');
+    throw Exception('Respon tidak valid saat memuat profil: $response');
   }
 
   Future<FilteringEntry> fetchProfilePosts({
@@ -45,32 +45,77 @@ class ProfileApi {
     int perPage = 10,
     int? userId,
   }) async {
-    final uri = Uri.parse('$baseUrl/profil/api/posts/').replace(
-      queryParameters: {
-        'filter': filter,
-        'page': '$page',
-        'per_page': '$perPage',
-        if (userId != null) 'user_id': '$userId',
-      },
-    );
-    final response = await _safeGet(uri);
-    if (response is Map<String, dynamic>) {
-      final status = (response['status'] ?? '').toString().toLowerCase();
-      if (status == 'success') {
-        return FilteringEntry.fromJson(
-          Map<String, dynamic>.from(response),
-        );
+    final query = <String, String>{
+      'filter': filter,
+      'page': '$page',
+      'per_page': '$perPage',
+      if (userId != null) 'user_id': '$userId',
+    };
+
+    final candidates = [
+      // Prefer the new dash-separated API first (matches Django route: api/profile-posts/)
+      '$baseUrl/profil/api/profile-posts/',
+      '$baseUrl/profil/api/profile-posts',
+      '$baseUrl/profil/profile_posts_api/',
+      '$baseUrl/profil/profile_posts_api',
+      '$baseUrl/profil/api/posts/',
+      '$baseUrl/profil/api/posts',
+      '$baseUrl/profile/profile_posts_api/',
+      '$baseUrl/profile/profile_posts_api',
+      '$baseUrl/profile/api/posts/',
+      '$baseUrl/profile/api/posts',
+      '$baseUrl/profile/api/profile-posts/',
+      '$baseUrl/profile/api/profile-posts',
+      '$baseUrl/api/profile/posts/',
+      '$baseUrl/api/profile/posts',
+      '$baseUrl/api/profile/profile-posts/',
+      '$baseUrl/api/profile/profile-posts',
+    ];
+
+    dynamic lastError;
+    for (final path in candidates) {
+      final uri = Uri.parse(path).replace(queryParameters: query);
+      try {
+        final response = await _safeGet(uri);
+        if (response is Map<String, dynamic>) {
+          if (response.containsKey('raw_html')) {
+            lastError = 'HTML response from $path';
+            continue;
+          }
+          final status = (response['status'] ?? '').toString().toLowerCase();
+          if (status == 'success') {
+            return FilteringEntry.fromJson(
+              Map<String, dynamic>.from(response),
+            );
+          }
+          lastError = response['message'] ?? response;
+          continue;
+        }
+        lastError = response;
+      } catch (e) {
+        lastError = e;
       }
-      throw Exception(response['message'] ?? 'Gagal memuat postingan.');
     }
-    throw Exception('Respon tidak valid saat memuat postingan.');
+    throw Exception('Gagal memuat postingan: $lastError');
   }
 
   Future<dynamic> _safeGet(Uri uri) async {
     try {
-      return await request.get(uri.toString());
-    } on FormatException {
-      throw Exception('Respon tidak valid dari server.');
+      final res = await request.get(uri.toString());
+      if (res is String) {
+        final trimmed = res.trimLeft();
+        if (trimmed.startsWith('<')) {
+          return {'raw_html': trimmed, 'uri': uri.toString()};
+        }
+        try {
+          return jsonDecode(res);
+        } catch (_) {
+          return {'raw': res};
+        }
+      }
+      return res;
+    } on FormatException catch (e) {
+      throw Exception('Respon tidak valid dari server: $e');
     }
   }
 
@@ -95,8 +140,8 @@ class ProfileApi {
       final req = http.MultipartRequest('POST', Uri.parse(url));
       // copy cookies / csrf headers from CookieRequest
       final headers = Map<String, String>.from(request.headers);
+      // Ensure cookies are attached (BrowserClient will send same-origin cookies)
       if (!kIsWeb) {
-        // Ensure cookies are attached (not allowed on web)
         final cookieHeader = request.cookies.entries
             .map((e) => '${e.key}=${e.value}')
             .join('; ');
@@ -104,14 +149,15 @@ class ProfileApi {
           headers['Cookie'] = cookieHeader;
         }
       }
-      headers.putIfAbsent(
-        'X-CSRFToken',
-        () => (request.headers['X-CSRFToken'] ??
-                request.cookies['csrftoken']?.toString() ??
-                request.cookies['csrf']?.toString() ??
-                '')
-            .toString(),
-      );
+      final csrfToken = (request.headers['X-CSRFToken'] ??
+              request.cookies['csrftoken']?.toString() ??
+              request.cookies['csrf']?.toString() ??
+              '')
+          .toString();
+      if (csrfToken.isNotEmpty) {
+        headers['X-CSRFToken'] = csrfToken;
+      }
+      headers.putIfAbsent('Referer', () => baseUrl);
       req.headers.addAll(headers);
       fields.forEach((k, v) => req.fields[k] = v);
       if (profileBytes != null) {
@@ -134,11 +180,15 @@ class ProfileApi {
       } else {
         client = http.Client();
       }
-      final streamed = await client.send(req);
-      final body = await streamed.stream.bytesToString();
-      response = jsonDecode(body);
-      if (streamed.statusCode == 401) {
-        throw Exception('Authentication required.');
+      try {
+        final streamed = await client.send(req);
+        final body = await streamed.stream.bytesToString();
+        response = jsonDecode(body);
+        if (streamed.statusCode == 401) {
+          throw Exception('Authentication required.');
+        }
+      } finally {
+        client.close();
       }
     } else {
       response = await request.post(url, fields);

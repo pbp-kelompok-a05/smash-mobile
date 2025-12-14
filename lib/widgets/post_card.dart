@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
+import 'package:smash_mobile/widgets/default_avatar.dart';
 
 class PostCard extends StatelessWidget {
   const PostCard({
@@ -8,20 +9,44 @@ class PostCard extends StatelessWidget {
     this.avatarUrl,
     this.imageUrl,
     this.onProfileTap,
+    this.profilePageBuilder,
+    this.defaultAvatar,
+    this.resolveAvatar,
+    this.bustAvatarCache = true,
+    this.currentUserId,
     this.onEdit,
     this.onDelete,
     this.showMenu = false,
     this.showFooterActions = true,
+    this.enableInteractions = true,
+    this.onLike,
+    this.onDislike,
+    this.onSave,
+    this.onShare,
+    this.onReport,
+    this.onComment,
   });
 
   final ProfileFeedItem item;
   final String? avatarUrl;
   final String? imageUrl;
   final VoidCallback? onProfileTap;
+  final Widget Function(int userId)? profilePageBuilder;
+  final String? defaultAvatar;
+  final String? Function(String?)? resolveAvatar;
+  final bool bustAvatarCache;
+  final int? currentUserId;
   final ValueChanged<ProfileFeedItem>? onEdit;
   final ValueChanged<ProfileFeedItem>? onDelete;
   final bool showMenu;
   final bool showFooterActions;
+  final bool enableInteractions;
+  final VoidCallback? onLike;
+  final VoidCallback? onDislike;
+  final VoidCallback? onSave;
+  final VoidCallback? onShare;
+  final VoidCallback? onReport;
+  final VoidCallback? onComment;
 
   String _formattedDate(DateTime dt) {
     final local = dt.toLocal();
@@ -45,211 +70,212 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedAvatar = (avatarUrl != null && avatarUrl!.isNotEmpty)
-        ? avatarUrl
-        : null;
+    final resolvedAvatar = _pickAvatar();
+    final avatarWithCacheBust = _bustCache(resolvedAvatar);
     final imageLink = imageUrl ?? item.image;
     final videoLink = item.videoLink ?? '';
     final isLiked = item.userInteraction == 'like';
     final isDisliked = item.userInteraction == 'dislike';
+    final likeEnabled = enableInteractions && onLike != null;
+    final dislikeEnabled = enableInteractions && onDislike != null;
+    final commentEnabled = enableInteractions && onComment != null;
+    final saveEnabled = enableInteractions && onSave != null;
+    final reportEnabled = enableInteractions && onReport != null;
+    final shareEnabled = enableInteractions && onShare != null;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFFF7FDF9),
+        border: Border.all(color: const Color(0xFFE2F5EB)),
+      ),
       child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+        elevation: 0,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  InkWell(
-                    onTap: onProfileTap,
-                    borderRadius: BorderRadius.circular(22),
-                    child: _avatar(resolvedAvatar),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title.isNotEmpty ? item.title : item.user,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black87,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      InkWell(
+                        onTap: () => _handleProfileTap(context),
+                        borderRadius: BorderRadius.circular(22),
+                        child: _avatar(avatarWithCacheBust),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _handleProfileTap(context),
+                          behavior: HitTestBehavior.opaque,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.title.isNotEmpty ? item.title : item.user,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${item.user} • ${_formattedDate(item.createdAt)}',
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${item.user}  |  ${_formattedDate(item.createdAt)}',
-                          style: const TextStyle(
-                            color: Colors.black54,
-                            fontSize: 12,
-                          ),
+                      ),
+                      if (_canShowMenu)
+                        _PostActionsMenu(
+                          onSelected: (action) {
+                            if (action == 'edit') {
+                              onEdit?.call(item);
+                            } else if (action == 'delete') {
+                              onDelete?.call(item);
+                            }
+                          },
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    item.content,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.4,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  if (imageLink != null && imageLink.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        imageLink,
+                        height: 190,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ] else if (videoLink.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _YoutubePreview(
+                      url: videoLink,
+                      onTap: () => _openLink(videoLink, context),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: Color(0xFFECECEC)),
+            if (showFooterActions)
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        _countText('${item.likesCount}', 'likes'),
+                        const SizedBox(width: 16),
+                        _countText('${item.dislikesCount}', 'dislikes'),
+                        const SizedBox(width: 16),
+                        _countText('${item.commentCount}', 'comments'),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _action(
+                          icon: Icons.thumb_up_alt_rounded,
+                          label: isLiked ? 'Liked' : 'Like',
+                          color: isLiked
+                              ? Colors.pink.shade400
+                              : likeEnabled
+                                  ? Colors.grey
+                                  : Colors.grey.shade400,
+                          onTap: likeEnabled ? onLike : null,
+                          bold: isLiked,
+                          enabled: likeEnabled,
+                        ),
+                        _action(
+                          icon: Icons.thumb_down_alt_rounded,
+                          label: isDisliked ? 'Disliked' : 'Dislike',
+                          color: isDisliked
+                              ? Colors.red.shade400
+                              : dislikeEnabled
+                                  ? Colors.grey
+                                  : Colors.grey.shade400,
+                          onTap: dislikeEnabled ? onDislike : null,
+                          bold: isDisliked,
+                          enabled: dislikeEnabled,
+                        ),
+                        _action(
+                          icon: Icons.chat_bubble_outline,
+                          label: 'Comment',
+                          color: commentEnabled
+                              ? Colors.grey.shade700
+                              : Colors.grey,
+                          onTap: commentEnabled ? onComment : null,
+                          enabled: commentEnabled,
+                        ),
+                        _action(
+                          icon: item.isSaved
+                              ? Icons.bookmark
+                              : Icons.bookmark_border,
+                          label: item.isSaved ? 'Saved' : 'Save',
+                          color:
+                              item.isSaved ? Colors.blue.shade600 : Colors.grey,
+                          onTap: saveEnabled ? onSave : null,
+                          bold: item.isSaved,
+                          enabled: saveEnabled,
+                        ),
+                        _action(
+                          icon: Icons.report_outlined,
+                          label: 'Report',
+                          color: reportEnabled
+                              ? Colors.grey.shade700
+                              : Colors.grey,
+                          onTap: reportEnabled ? onReport : null,
+                          enabled: reportEnabled,
+                        ),
+                        _action(
+                          icon: Icons.share_outlined,
+                          label: 'Share',
+                          color: shareEnabled
+                              ? Colors.grey.shade700
+                              : Colors.grey,
+                          onTap: shareEnabled ? onShare : null,
+                          enabled: shareEnabled,
                         ),
                       ],
                     ),
-                  ),
-                  if (showMenu && item.canEdit)
-                    _PostActionsMenu(
-                      onSelected: (action) {
-                        if (action == 'edit') {
-                          onEdit?.call(item);
-                        } else if (action == 'delete') {
-                          onDelete?.call(item);
-                        }
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                item.content,
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 1.4,
-                  color: Colors.black87,
-                ),
-              ),
-              if (imageLink != null && imageLink.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    imageLink,
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ] else if (videoLink.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _YoutubePreview(
-                  url: videoLink,
-                  onTap: () => _openLink(videoLink, context),
-                ),
-              ],
-              if (showFooterActions) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Text(
-                      '${item.likesCount}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text('likes', style: TextStyle(fontSize: 13)),
-                    const SizedBox(width: 16),
-                    Text(
-                      '${item.dislikesCount}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text('dislikes', style: TextStyle(fontSize: 13)),
-                    const SizedBox(width: 16),
-                    Text(
-                      '${item.commentCount}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text('comments', style: TextStyle(fontSize: 13)),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.thumb_up,
-                      size: 14,
-                      color: isLiked
-                          ? Colors.pink.shade400
-                          : Colors.grey.shade700,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      'Liked',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isLiked
-                            ? Colors.pink.shade400
-                            : Colors.grey.shade800,
-                        fontWeight: isLiked ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      Icons.thumb_down,
-                      size: 14,
-                      color: isDisliked
-                          ? Colors.red.shade400
-                          : Colors.grey.shade700,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      'Dislike',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDisliked
-                            ? Colors.red.shade400
-                            : Colors.grey.shade800,
-                        fontWeight:
-                            isDisliked ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.comment, size: 14, color: Colors.black87),
-                    const SizedBox(width: 3),
-                    const Text(
-                      'Comment',
-                      style:
-                          TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      item.isSaved ? Icons.bookmark : Icons.bookmark_border,
-                      size: 16,
-                      color: item.isSaved
-                          ? Colors.green.shade600
-                          : Colors.grey.shade800,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      'Saved',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: item.isSaved
-                            ? Colors.green.shade700
-                            : Colors.grey.shade800,
-                        fontWeight:
-                            item.isSaved ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
-                    const Spacer(),
-                    const Icon(Icons.share_outlined, size: 14),
-                  ],
-                ),
-              ],
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
   }
+
+  bool get _canShowMenu =>
+      showMenu && (item.canEdit || (currentUserId != null && item.userId == currentUserId));
 
   Widget _avatar(String? url) {
     final valid = url != null && url.isNotEmpty;
@@ -272,10 +298,96 @@ class PostCard extends StatelessWidget {
   }
 
   Widget _placeholderAvatar() {
-    return Container(
-      color: Colors.grey.shade200,
-      child: Icon(Icons.person, size: 22, color: Colors.grey.shade600),
+    return const DefaultAvatar(size: 44);
+  }
+
+  String? _pickAvatar() {
+    final resolver = resolveAvatar ?? (String? v) => v;
+    final sources = <String?>[
+      item.profilePhoto?.trim(),
+      avatarUrl?.trim(),
+      defaultAvatar,
+    ];
+    for (final src in sources) {
+      if (src == null || src.isEmpty) continue;
+      final resolved = resolver(src);
+      if (resolved != null && resolved.isNotEmpty) return resolved;
+    }
+    return null;
+  }
+
+  String? _bustCache(String? url) {
+    if (!bustAvatarCache || url == null || url.isEmpty) return url;
+    if (defaultAvatar != null && url == defaultAvatar) return url;
+    final hasQuery = url.contains('?');
+    final suffix = 'v=${DateTime.now().millisecondsSinceEpoch}';
+    return hasQuery ? '$url&$suffix' : '$url?$suffix';
+  }
+
+  Widget _countText(String value, String label) {
+    return Row(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 13, color: Colors.black87)),
+      ],
     );
+  }
+
+  Widget _action({
+    required IconData icon,
+    required String label,
+    Color? color,
+    bool bold = false,
+    bool enabled = true,
+    VoidCallback? onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(8),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: enabled ? (color ?? Colors.grey.shade700) : Colors.grey,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                color: enabled ? (color ?? Colors.grey.shade800) : Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleProfileTap(BuildContext context) {
+    if (onProfileTap != null) {
+      onProfileTap!();
+      return;
+    }
+    if (profilePageBuilder != null && item.userId != 0) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => profilePageBuilder!(item.userId),
+        ),
+      );
+    }
   }
 
   String? _youtubeId(String url) {

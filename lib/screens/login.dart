@@ -31,7 +31,6 @@ class SmashLoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     return Scaffold(
-      // background gradient dari hijau pucat ke pink pucat
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(

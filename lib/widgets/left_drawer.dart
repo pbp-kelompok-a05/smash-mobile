@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:smash_mobile/screens/menu.dart';
 import 'package:smash_mobile/screens/login.dart';
+import 'package:smash_mobile/notifications/notifications_page.dart';
 
 class LeftDrawer extends StatelessWidget {
   const LeftDrawer({super.key});
@@ -11,32 +12,33 @@ class LeftDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
+      width: 280,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          const DrawerHeader(
-            // TODO: Bagian drawer header
-            decoration: BoxDecoration(
-              color: Colors.blue,
+          DrawerHeader(
+            decoration: const BoxDecoration(
+              color: Colors.white,
             ),
             child: Column(
-              children: [
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
                 Text(
                   'Smash Mobile',
-                  textAlign: TextAlign.center,
+                  textAlign: TextAlign.left,
                   style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
                   ),
                 ),
-                Padding(padding: EdgeInsets.all(10)),
+                SizedBox(height: 6),
                 Text(
                   "Forum Padel no.1 di Indonesia",
-                  textAlign: TextAlign.center,
+                  textAlign: TextAlign.left,
                   style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
+                    fontSize: 14,
+                    color: Colors.black54,
                   ),
                 ),
               ],
@@ -44,6 +46,8 @@ class LeftDrawer extends StatelessWidget {
           ),
           // TODO: Bagian routing
           ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
             leading: const Icon(Icons.home_outlined),
             title: const Text('Home'),
             // Bagian routing ke halaman MyHomePage
@@ -56,6 +60,8 @@ class LeftDrawer extends StatelessWidget {
             },
           ),
           ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
             leading: const Icon(Icons.person),
             title: const Text('Profile'),
             // Bagian routing ke halaman ProfilePage
@@ -68,44 +74,35 @@ class LeftDrawer extends StatelessWidget {
             },
           ),
           ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+            leading: const Icon(Icons.notifications_none),
+            title: const Text('Notifications'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const NotificationsPage(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
             leading: const Icon(Icons.logout),
             title: const Text('Logout'),
             onTap: () async {
-              Navigator.pop(context); // tutup drawer dulu
+              Navigator.pop(context);
               final request = context.read<CookieRequest>();
               try {
-                final response = await request.logout(
-                  'http://localhost:8000/authentication/logout/',
-                );
-
-                final success =
-                    (response is Map && response['status'] == true) || response == true;
-
-                if (!context.mounted) return;
-
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Logout berhasil')),
-                  );
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SmashLoginPage()),
-                    (route) => false,
-                  );
-                } else {
-                  final message = (response is Map && response['message'] != null)
-                      ? response['message'].toString()
-                      : 'Logout gagal';
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(message)),
-                  );
-                }
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Terjadi kesalahan saat logout: $e')),
-                );
-              }
+                await request.logout('http://localhost:8000/authentication/logout/');
+              } catch (_) {}
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const SmashLoginPage()),
+                (route) => false,
+              );
             },
           ),
         ],

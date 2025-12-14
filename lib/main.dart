@@ -3,6 +3,7 @@ import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:smash_mobile/screens/login.dart';
 import 'package:smash_mobile/screens/menu.dart';
+import 'package:smash_mobile/screens/search.dart';
 
 void main() => runApp(const SmashApp());
 
@@ -21,7 +22,7 @@ class SmashApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
           useMaterial3: true,
         ),
-        home: const SmashLoginPage(),
+        home: MyHomePage(),
         routes: {
           '/home': (_) => MyHomePage(),
           '/login': (_) => const SmashLoginPage(),
