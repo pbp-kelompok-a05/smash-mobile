@@ -126,8 +126,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         userId: '1',
       );
       _commentController.clear();
-        setState(() {
-        _commentsFuture = PostService().fetchComments(widget.post.id, userId: '1');
+      setState(() {
+        _commentsFuture = PostService().fetchComments(
+          widget.post.id,
+          userId: '1',
+        );
         commentsCount += 1;
         widget.post.commentsCount = commentsCount;
       });
