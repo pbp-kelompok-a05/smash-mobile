@@ -1,438 +1,226 @@
 import 'package:flutter/material.dart';
-import 'package:smash_mobile/models/Filtering_entry.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smash_mobile/models/post.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:smash_mobile/services/post_service.dart';
 
-class PostCard extends StatelessWidget {
-  const PostCard({
-    super.key,
-    required this.item,
-    this.avatarUrl,
-    this.imageUrl,
-    this.onProfileTap,
-    this.onEdit,
-    this.onDelete,
-    this.showMenu = false,
-    this.showFooterActions = true,
-  });
-
-  final ProfileFeedItem item;
-  final String? avatarUrl;
-  final String? imageUrl;
-  final VoidCallback? onProfileTap;
-  final ValueChanged<ProfileFeedItem>? onEdit;
-  final ValueChanged<ProfileFeedItem>? onDelete;
-  final bool showMenu;
-  final bool showFooterActions;
-
-  String _formattedDate(DateTime dt) {
-    final local = dt.toLocal();
-    final now = DateTime.now();
-    final diff = now.difference(local);
-
-    if (diff.inSeconds < 60) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-
-    const months = [
-      'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'
-    ];
-    final day = local.day;
-    final month = months[local.month - 1];
-    final year = local.year;
-    final sameYear = year == now.year;
-    return sameYear ? '$month $day' : '$month $day $year';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final resolvedAvatar = (avatarUrl != null && avatarUrl!.isNotEmpty)
-        ? avatarUrl
-        : null;
-    final imageLink = imageUrl ?? item.image;
-    final videoLink = item.videoLink ?? '';
-    final isLiked = item.userInteraction == 'like';
-    final isDisliked = item.userInteraction == 'dislike';
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 2,
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  InkWell(
-                    onTap: onProfileTap,
-                    borderRadius: BorderRadius.circular(22),
-                    child: _avatar(resolvedAvatar),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title.isNotEmpty ? item.title : item.user,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${item.user}  |  ${_formattedDate(item.createdAt)}',
-                          style: const TextStyle(
-                            color: Colors.black54,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (showMenu && item.canEdit)
-                    _PostActionsMenu(
-                      onSelected: (action) {
-                        if (action == 'edit') {
-                          onEdit?.call(item);
-                        } else if (action == 'delete') {
-                          onDelete?.call(item);
-                        }
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                item.content,
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 1.4,
-                  color: Colors.black87,
-                ),
-              ),
-              if (imageLink != null && imageLink.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    imageLink,
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ] else if (videoLink.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _YoutubePreview(
-                  url: videoLink,
-                  onTap: () => _openLink(videoLink, context),
-                ),
-              ],
-              if (showFooterActions) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Text(
-                      '${item.likesCount}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text('likes', style: TextStyle(fontSize: 13)),
-                    const SizedBox(width: 16),
-                    Text(
-                      '${item.dislikesCount}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text('dislikes', style: TextStyle(fontSize: 13)),
-                    const SizedBox(width: 16),
-                    Text(
-                      '${item.commentCount}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text('comments', style: TextStyle(fontSize: 13)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.thumb_up,
-                      size: 14,
-                      color: isLiked
-                          ? Colors.pink.shade400
-                          : Colors.grey.shade700,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      'Liked',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isLiked
-                            ? Colors.pink.shade400
-                            : Colors.grey.shade800,
-                        fontWeight: isLiked ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      Icons.thumb_down,
-                      size: 14,
-                      color: isDisliked
-                          ? Colors.red.shade400
-                          : Colors.grey.shade700,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      'Dislike',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDisliked
-                            ? Colors.red.shade400
-                            : Colors.grey.shade800,
-                        fontWeight:
-                            isDisliked ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.comment, size: 14, color: Colors.black87),
-                    const SizedBox(width: 3),
-                    const Text(
-                      'Comment',
-                      style:
-                          TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      item.isSaved ? Icons.bookmark : Icons.bookmark_border,
-                      size: 16,
-                      color: item.isSaved
-                          ? Colors.green.shade600
-                          : Colors.grey.shade800,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      'Saved',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: item.isSaved
-                            ? Colors.green.shade700
-                            : Colors.grey.shade800,
-                        fontWeight:
-                            item.isSaved ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
-                    const Spacer(),
-                    const Icon(Icons.share_outlined, size: 14),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _avatar(String? url) {
-    final valid = url != null && url.isNotEmpty;
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: valid
-          ? Image.network(
-              url!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _placeholderAvatar(),
-            )
-          : _placeholderAvatar(),
-    );
-  }
-
-  Widget _placeholderAvatar() {
-    return Container(
-      color: Colors.grey.shade200,
-      child: Icon(Icons.person, size: 22, color: Colors.grey.shade600),
-    );
-  }
-
-  String? _youtubeId(String url) {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return null;
+String? _youtubeThumbnail(String url) {
+  try {
+    final uri = Uri.parse(url);
+    // youtube.com/watch?v=ID or youtu.be/ID
+    if ((uri.host.contains('youtube.com') &&
+        uri.queryParameters['v'] != null)) {
+      final id = uri.queryParameters['v']!;
+      return 'https://img.youtube.com/vi/$id/hqdefault.jpg';
+    }
     if (uri.host.contains('youtu.be')) {
-      return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+      final id = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
+      if (id != null && id.isNotEmpty)
+        return 'https://img.youtube.com/vi/$id/hqdefault.jpg';
     }
-    if (uri.queryParameters.containsKey('v')) {
-      return uri.queryParameters['v'];
-    }
-    final segments = uri.pathSegments;
-    if (segments.length >= 2 && segments[0] == 'embed') return segments[1];
-    return null;
-  }
+  } catch (_) {}
+  return null;
+}
 
-  String? _youtubeThumbnail(String url) {
-    final id = _youtubeId(url);
-    if (id == null || id.isEmpty) return null;
-    return 'https://img.youtube.com/vi/$id/0.jpg';
-  }
-
-  Future<void> _openLink(String url, BuildContext context) async {
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Open link is not supported in this build')),
-    );
+Future<void> _openUrl(String url) async {
+  final uri = Uri.parse(url);
+  if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    // ignore: avoid_print
+    print('Could not launch $url');
   }
 }
 
-class _PostActionsMenu extends StatelessWidget {
-  const _PostActionsMenu({required this.onSelected});
-
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      tooltip: 'Actions',
-      onSelected: onSelected,
-      itemBuilder: (context) => const [
-        PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 18, color: Colors.black87),
-              SizedBox(width: 8),
-              Text('Edit'),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 18, color: Colors.red),
-              SizedBox(width: 8),
-              Text(
-                'Delete',
-                style: TextStyle(color: Colors.red),
-              ),
-            ],
-          ),
-        ),
-      ],
-      icon: const Icon(Icons.more_vert, size: 20),
-    );
-  }
-}
-
-class _YoutubePreview extends StatelessWidget {
-  const _YoutubePreview({required this.url, required this.onTap});
-
-  final String url;
+class PostCard extends StatefulWidget {
+  final Post post;
+  final Image? profileImage;
   final VoidCallback onTap;
 
+  const PostCard({
+    super.key,
+    required this.post,
+    this.profileImage,
+    required this.onTap,
+  });
+
+  @override
+  State<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends State<PostCard> {
+  late int likesCount;
+  late int dislikesCount;
+  late int commentsCount;
+  String? userReaction; // 'like' or 'dislike' or null
+  bool _processing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    likesCount = widget.post.likesCount;
+    dislikesCount = widget.post.dislikesCount;
+    commentsCount = widget.post.commentsCount;
+    userReaction = widget.post.userReaction;
+    _loadLocalReactionIfMissing();
+  }
+
+  Future<void> _loadLocalReactionIfMissing() async {
+    if (userReaction != null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString('post_reactions');
+      if (stored == null || stored.isEmpty) return;
+      final Map<String, dynamic> reactions = json.decode(stored);
+      final key = widget.post.id.toString();
+      if (!reactions.containsKey(key)) return;
+      final val = reactions[key];
+      if (val is String) {
+        setState(() {
+          userReaction = val;
+        });
+      } else if (val is Map) {
+        setState(() {
+          userReaction = val['user_reaction'] as String?;
+          try {
+            if (val['likes_count'] != null)
+              likesCount = val['likes_count'] as int;
+          } catch (_) {}
+          try {
+            if (val['dislikes_count'] != null)
+              dislikesCount = val['dislikes_count'] as int;
+          } catch (_) {}
+          try {
+            if (val['comments_count'] != null)
+              commentsCount = val['comments_count'] as int;
+          } catch (_) {}
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _handleReaction(String action) async {
+    if (_processing) return;
+    setState(() => _processing = true);
+
+    final prevLikes = likesCount;
+    final prevDislikes = dislikesCount;
+    final prevReaction = userReaction;
+
+    // optimistic update
+    if (userReaction == action) {
+      // undo
+      if (action == 'like') likesCount = (likesCount - 1).clamp(0, 1 << 31);
+      if (action == 'dislike')
+        dislikesCount = (dislikesCount - 1).clamp(0, 1 << 31);
+      userReaction = null;
+    } else {
+      if (action == 'like') {
+        likesCount += 1;
+        if (userReaction == 'dislike')
+          dislikesCount = (dislikesCount - 1).clamp(0, 1 << 31);
+      } else {
+        dislikesCount += 1;
+        if (userReaction == 'like')
+          likesCount = (likesCount - 1).clamp(0, 1 << 31);
+      }
+      userReaction = action;
+    }
+
+    try {
+      final res = await PostService().togglePostReaction(
+        postId: widget.post.id,
+        action: action,
+        userId: '1',
+      );
+      setState(() {
+        likesCount = (res['likes_count'] ?? likesCount) as int;
+        dislikesCount = (res['dislikes_count'] ?? dislikesCount) as int;
+        userReaction = res['user_reaction'];
+        widget.post.likesCount = likesCount;
+        widget.post.dislikesCount = dislikesCount;
+        widget.post.userReaction = userReaction;
+      });
+    } catch (e) {
+      // revert
+      setState(() {
+        likesCount = prevLikes;
+        dislikesCount = prevDislikes;
+        userReaction = prevReaction;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to toggle: $e')));
+    } finally {
+      setState(() => _processing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final thumb = _youtubeThumb(url);
-    final displayUrl = _compactUrl(url);
-
+    final post = widget.post;
+    final profileImage = widget.profileImage;
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.deepPurple.shade100, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.deepPurple.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: onTap,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  height: 220,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.black12,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(14),
-                    ),
-                    image: thumb != null
-                        ? DecorationImage(
-                            image: NetworkImage(thumb),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.55),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow,
-                    color: Colors.white,
-                    size: 34,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(14),
-              ),
-            ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: widget.onTap,
+        child: Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.link, color: Colors.deepPurple.shade400, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'YouTube Video',
-                      style: TextStyle(
-                        color: Colors.deepPurple.shade600,
-                        fontWeight: FontWeight.w800,
+                    profileImage != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(25),
+                            child: SizedBox(
+                              width: 50,
+                              height: 50,
+                              child: profileImage,
+                            ),
+                          )
+                        : Container(
+                            margin: const EdgeInsets.only(right: 12),
+                            child: CircleAvatar(
+                              radius: 25,
+                              backgroundColor: Colors.grey[300],
+                              child: Icon(
+                                Icons.person,
+                                size: 30,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            post.title,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'by ${post.author} - ${post.createdAt.toLocal()}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
+<<<<<<< HEAD
                 const SizedBox(height: 6),
                 GestureDetector(
                   onTap: onTap,
@@ -466,10 +254,121 @@ class _YoutubePreview extends StatelessWidget {
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
+=======
+                if (post.imageUrl != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      post.imageUrl.toString(),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
+                if (post.videoLink != null && post.videoLink!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Builder(
+                    builder: (context) {
+                      final thumb = _youtubeThumbnail(post.videoLink!);
+                      return GestureDetector(
+                        onTap: () => _openUrl(post.videoLink!),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            thumb != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      thumb,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: 180,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        height: 180,
+                                        color: Colors.black12,
+                                      ),
+                                    ),
+                                  )
+                                : Container(
+                                    height: 180,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black12,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Center(
+                                      child: Icon(Icons.play_arrow, size: 48),
+                                    ),
+                                  ),
+                            CircleAvatar(
+                              radius: 28,
+                              backgroundColor: Colors.black45,
+                              child: const Icon(
+                                Icons.play_arrow,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Text(
+                  post.content,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    IconButton(
+                      onPressed: () => _handleReaction('like'),
+                      icon: Icon(
+                        userReaction == 'like'
+                            ? Icons.thumb_up
+                            : Icons.thumb_up_outlined,
+                        size: 20,
+                        color: userReaction == 'like'
+                            ? Colors.blue
+                            : Colors.black,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text('$likesCount'),
+                    const SizedBox(width: 16),
+                    IconButton(
+                      onPressed: () => _handleReaction('dislike'),
+                      icon: Icon(
+                        userReaction == 'dislike'
+                            ? Icons.thumb_down
+                            : Icons.thumb_down_outlined,
+                        size: 20,
+                        color: userReaction == 'dislike'
+                            ? Colors.red
+                            : Colors.black,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text('$dislikesCount'),
+                    const SizedBox(width: 16),
+                    const Icon(Icons.comment, size: 16, color: Colors.black),
+                    const SizedBox(width: 4),
+                    Text('$commentsCount'),
+                    const SizedBox(width: 12),
+                    const Icon(Icons.bookmark, size: 16, color: Colors.black),
+                    const Spacer(),
+                    const Icon(Icons.share, size: 16, color: Colors.black),
+                  ],
+>>>>>>> 88f626c37a64e9f20ad41da63ce639d913183881
                 ),
               ],
             ),
           ),
+<<<<<<< HEAD
         ],
       ),
     );
@@ -508,4 +407,10 @@ class _YoutubePreview extends StatelessWidget {
     }
     return link;
   }
+=======
+        ),
+      ),
+    );
+  }
+>>>>>>> 88f626c37a64e9f20ad41da63ce639d913183881
 }
