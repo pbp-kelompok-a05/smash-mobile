@@ -18,6 +18,7 @@ class Post {
   int likesCount;
   int dislikesCount;
   int sharesCount;
+  String? userReaction;
   bool isDeleted;
 
   Post({
@@ -32,6 +33,7 @@ class Post {
     required this.likesCount,
     required this.dislikesCount,
     required this.sharesCount,
+    this.userReaction,
     required this.isDeleted,
   });
 
@@ -47,6 +49,7 @@ class Post {
     likesCount: json["likes_count"],
     dislikesCount: json["dislikes_count"],
     sharesCount: json["shares_count"],
+    userReaction: json["user_reaction"],
     isDeleted: json["is_deleted"],
   );
 
@@ -62,6 +65,7 @@ class Post {
     "likes_count": likesCount,
     "dislikes_count": dislikesCount,
     "shares_count": sharesCount,
+    "user_reaction": userReaction,
     "is_deleted": isDeleted,
   };
 }

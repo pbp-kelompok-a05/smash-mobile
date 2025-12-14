@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:smash_mobile/models/comment.dart';
+import 'package:smash_mobile/services/post_service.dart';
 
-class CommentCard extends StatelessWidget {
+class CommentCard extends StatefulWidget {
   final Comment comment;
   final Image? profileImage;
   final int likeCount;
@@ -18,12 +19,80 @@ class CommentCard extends StatelessWidget {
   });
 
   @override
+  State<CommentCard> createState() => _CommentCardState();
+}
+
+class _CommentCardState extends State<CommentCard> {
+  late int likes;
+  late int dislikes;
+  String? userReaction;
+  bool _processing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    likes = widget.likeCount;
+    dislikes = widget.dislikeCount;
+    userReaction = null;
+  }
+
+  Future<void> _handleReaction(String action) async {
+    if (_processing) return;
+    setState(() => _processing = true);
+
+    final prevLikes = likes;
+    final prevDislikes = dislikes;
+    final prevReaction = userReaction;
+
+    // optimistic
+    if (userReaction == action) {
+      if (action == 'like') likes = (likes - 1).clamp(0, 1 << 31);
+      if (action == 'dislike') dislikes = (dislikes - 1).clamp(0, 1 << 31);
+      userReaction = null;
+    } else {
+      if (action == 'like') {
+        likes += 1;
+        if (userReaction == 'dislike')
+          dislikes = (dislikes - 1).clamp(0, 1 << 31);
+      } else {
+        dislikes += 1;
+        if (userReaction == 'like') likes = (likes - 1).clamp(0, 1 << 31);
+      }
+      userReaction = action;
+    }
+
+    try {
+      final res = await PostService().toggleCommentReaction(
+        commentId: widget.comment.id,
+        action: action,
+        userId: '1',
+      );
+      setState(() {
+        likes = (res['likes_count'] ?? likes) as int;
+        dislikes = (res['dislikes_count'] ?? dislikes) as int;
+        userReaction = res['user_reaction'];
+      });
+    } catch (e) {
+      setState(() {
+        likes = prevLikes;
+        dislikes = prevDislikes;
+        userReaction = prevReaction;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to toggle: $e')));
+    } finally {
+      setState(() => _processing = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: InkWell(
         borderRadius: BorderRadius.circular(6),
-        onTap: onTap,
+        onTap: widget.onTap,
         child: Card(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           elevation: 2,
@@ -37,13 +106,13 @@ class CommentCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    profileImage != null
+                    widget.profileImage != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(25),
                             child: SizedBox(
                               width: 50,
                               height: 50,
-                              child: profileImage,
+                              child: widget.profileImage,
                             ),
                           )
                         : Container(
@@ -64,7 +133,7 @@ class CommentCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            comment.author,
+                            widget.comment.author,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -72,7 +141,7 @@ class CommentCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${comment.createdAt.toLocal()}',
+                            '${widget.comment.createdAt.toLocal()}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -82,20 +151,42 @@ class CommentCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  comment.content,
+                  widget.comment.content,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    const Icon(Icons.thumb_up, size: 16, color: Colors.black),
+                    IconButton(
+                      onPressed: () => _handleReaction('like'),
+                      icon: Icon(
+                        userReaction == 'like'
+                            ? Icons.thumb_up
+                            : Icons.thumb_up_outlined,
+                        size: 18,
+                        color: userReaction == 'like'
+                            ? Colors.blue
+                            : Colors.black,
+                      ),
+                    ),
                     const SizedBox(width: 4),
-                    Text('$likeCount'),
+                    Text('$likes'),
                     const SizedBox(width: 16),
-                    const Icon(Icons.thumb_down, size: 16, color: Colors.black),
+                    IconButton(
+                      onPressed: () => _handleReaction('dislike'),
+                      icon: Icon(
+                        userReaction == 'dislike'
+                            ? Icons.thumb_down
+                            : Icons.thumb_down_outlined,
+                        size: 18,
+                        color: userReaction == 'dislike'
+                            ? Colors.red
+                            : Colors.black,
+                      ),
+                    ),
                     const SizedBox(width: 4),
-                    Text('$dislikeCount'),
+                    Text('$dislikes'),
                     const Spacer(),
                     const Icon(Icons.reply, size: 16, color: Colors.black),
                   ],

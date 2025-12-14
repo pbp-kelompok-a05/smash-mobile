@@ -24,6 +24,12 @@ class _MyHomePageState extends State<MyHomePage> {
     _postsFuture = _postService.fetchPosts();
   }
 
+  void _refreshPosts() {
+    setState(() {
+      _postsFuture = _postService.fetchPosts();
+    });
+  }
+
   String _greeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good Morning';
@@ -37,6 +43,13 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.secondary,
         title: Text("Smash Mobile"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshPosts,
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -126,13 +139,20 @@ class _MyHomePageState extends State<MyHomePage> {
                   final post = posts[index - 1];
                   return PostCard(
                     post: post,
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      final updated = await Navigator.push<Post?>(
                         context,
                         MaterialPageRoute(
                           builder: (context) => PostDetailScreen(post: post),
                         ),
                       );
+                      if (updated != null) {
+                        setState(() {
+                          // replace the item in the current list and update Future
+                          posts[index - 1] = updated;
+                          _postsFuture = Future.value(posts);
+                        });
+                      }
                     },
                   );
                 },

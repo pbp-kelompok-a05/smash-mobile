@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
@@ -98,9 +99,25 @@ class PostService {
         throw Exception('Unexpected posts JSON format');
       }
 
-      return postsJson
+      final posts = postsJson
           .map((json) => Post.fromJson(Map<String, dynamic>.from(json)))
           .toList();
+
+      // Merge locally cached user reactions so state persists across refreshes
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final stored = prefs.getString('post_reactions');
+        if (stored != null && stored.isNotEmpty) {
+          final Map<String, dynamic> reactions = json.decode(stored);
+          for (final p in posts) {
+            if (reactions.containsKey(p.id)) {
+              p.userReaction = reactions[p.id] as String?;
+            }
+          }
+        }
+      } catch (_) {}
+
+      return posts;
     } catch (e) {
       throw Exception('Error fetching posts: $e');
     }
@@ -163,6 +180,76 @@ class PostService {
       throw Exception('Create comment failed: ${res.statusCode} ${res.body}');
     } catch (e) {
       throw Exception('Error creating comment: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> togglePostReaction({
+    required String postId,
+    required String action, // 'like' or 'dislike'
+    String? userId,
+  }) async {
+    final url = '${serverRoot}toggle_post_reaction/';
+    final body = {
+      'post_id': postId,
+      'action': action,
+      'user_id': userId ?? '1',
+    };
+    try {
+      final res = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(body),
+      );
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final Map<String, dynamic> result = json.decode(res.body);
+        // persist user's reaction locally so it survives refreshes
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final stored = prefs.getString('post_reactions');
+          final Map<String, dynamic> reactions =
+              stored != null && stored.isNotEmpty
+              ? json.decode(stored) as Map<String, dynamic>
+              : <String, dynamic>{};
+          final ur = result['user_reaction'];
+          if (ur == null) {
+            reactions.remove(postId);
+          } else {
+            reactions[postId] = ur;
+          }
+          await prefs.setString('post_reactions', json.encode(reactions));
+        } catch (_) {}
+
+        return result;
+      }
+      throw Exception('Toggle failed: ${res.statusCode} ${res.body}');
+    } catch (e) {
+      throw Exception('Error toggling reaction: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> toggleCommentReaction({
+    required String commentId,
+    required String action,
+    String? userId,
+  }) async {
+    final url = '${serverRoot}toggle_comment_reaction/';
+    final body = {
+      'comment_id': commentId,
+      'action': action,
+      'user_id': userId ?? '1',
+    };
+    try {
+      final res = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(body),
+      );
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        return json.decode(res.body) as Map<String, dynamic>;
+      }
+      throw Exception('Toggle failed: ${res.statusCode} ${res.body}');
+    } catch (e) {
+      throw Exception('Error toggling comment reaction: $e');
     }
   }
 }
