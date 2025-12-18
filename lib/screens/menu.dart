@@ -10,6 +10,7 @@ import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
+import 'package:smash_mobile/screens/post_list.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import 'package:smash_mobile/screens/login.dart';
@@ -27,7 +28,8 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   // === CONTROLLERS & KEYS ===
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _animationController;
@@ -50,15 +52,19 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   final List<ItemHomepage> _menuItems = [
     ItemHomepage('All Posts', Icons.article_outlined, const Color(0xFF5E72E4)),
     ItemHomepage('My Posts', Icons.person_outline, const Color(0xFF2DCE89)),
-    ItemHomepage('Create Post', Icons.add_circle_outline, const Color(0xFFFB6340)),
+    ItemHomepage(
+      'Create Post',
+      Icons.add_circle_outline,
+      const Color(0xFFFB6340),
+    ),
     ItemHomepage('Logout', Icons.logout, const Color(0xFFF5365C)),
   ];
 
   // Untuk saat ini menggunakan gambar placeholder dari Unsplash
   final List<String> _carouselImages = [
-    'https://cdnpro.eraspace.com/media/mageplaza/blog/post/p/a/padel_-_primary.jpg', 
-    'https://images.unsplash.com/photo-1552674605-db6ceb900c70?w=800&h=600&fit=crop', 
-    'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&h=600&fit=crop', 
+    'https://cdnpro.eraspace.com/media/mageplaza/blog/post/p/a/padel_-_primary.jpg',
+    'https://images.unsplash.com/photo-1552674605-db6ceb900c70?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&h=600&fit=crop',
   ];
 
   // === LIFECYCLE METHODS ===
@@ -71,7 +77,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     );
     _animationController.forward();
     _loadProfileHeader();
-    
+
     // Initialize YouTube controller dengan video ID dari URL
     _youtubeController = YoutubePlayerController(
       initialVideoId: 'T936NUtQZ-0',
@@ -114,8 +120,18 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   void _handleMenuTap(BuildContext context, ItemHomepage item) {
     // Navigasi ke halaman form post
     if (item.name == 'Create Post') {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const PostEntryFormPage()));
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PostEntryFormPage()),
+      );
       return;
+    }
+
+    if (item.name == 'All Posts') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PostListPage()),
+      );
     }
 
     // Handle logout
@@ -131,7 +147,10 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   void _showPlaceholderMessage(String itemName) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$itemName is coming soon', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+        content: Text(
+          '$itemName is coming soon',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+        ),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
@@ -139,9 +158,18 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     );
   }
 
-  void _openLogin() => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmashLoginPage()));
-  void _openRegister() => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmashRegisterPage()));
-  void _openProfile() => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
+  void _openLogin() => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const SmashLoginPage()),
+  );
+  void _openRegister() => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const SmashRegisterPage()),
+  );
+  void _openProfile() => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const ProfilePage()),
+  );
 
   Future<void> _handleLogout() async {
     if (_isLoggingOut) return;
@@ -165,7 +193,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   // === DATA LOADING ===
   Future<void> _loadProfileHeader() async {
     final request = Provider.of<CookieRequest>(context, listen: false);
-    
+
     if (!request.loggedIn) {
       setState(() {
         _isLoggedIn = false;
@@ -179,10 +207,12 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     try {
       final profile = await profileApi.fetchProfile();
       if (!mounted) return;
-      
+
       setState(() {
         _isLoggedIn = true;
-        _photoUrl = profileApi.resolveMediaUrl(profile.profilePhoto) ?? profileApi.defaultAvatarUrl;
+        _photoUrl =
+            profileApi.resolveMediaUrl(profile.profilePhoto) ??
+            profileApi.defaultAvatarUrl;
         _username = profile.username;
       });
     } catch (_) {
@@ -198,7 +228,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final request = context.watch<CookieRequest>();
-    
+
     // Update state jika status login berubah
     if (_isLoggedIn != request.loggedIn) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadProfileHeader());
@@ -206,9 +236,9 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: const LeftDrawer(), 
+      drawer: const LeftDrawer(),
       backgroundColor: const Color(0xFF0F0F0F),
-      appBar: _buildAnimatedAppBar(), 
+      appBar: _buildAnimatedAppBar(),
       body: _buildAnimatedBody(),
     );
   }
@@ -303,13 +333,15 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
-        final intervalValue = Tween<double>(begin: 0, end: 1).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Interval(delay / 1000, 1, curve: Curves.easeOut),
-          ),
-        ).value;
-        
+        final intervalValue = Tween<double>(begin: 0, end: 1)
+            .animate(
+              CurvedAnimation(
+                parent: _animationController,
+                curve: Interval(delay / 1000, 1, curve: Curves.easeOut),
+              ),
+            )
+            .value;
+
         return Transform.translate(
           offset: Offset(0, 30 * (1 - intervalValue)),
           child: Opacity(opacity: intervalValue, child: child),
@@ -357,7 +389,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
             ),
           ),
           const SizedBox(height: 24), // Spasi tambahan
-            
           // NEW: Auto-scrolling image carousel
           _buildImageCarousel(),
         ],
@@ -396,8 +427,11 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
               },
               itemBuilder: (context, index) {
                 final imageUrl = _carouselImages[index];
-                developer.log('Loading image: $imageUrl', name: 'CarouselDebug'); // DEBUG LOG
-                
+                developer.log(
+                  'Loading image: $imageUrl',
+                  name: 'CarouselDebug',
+                ); // DEBUG LOG
+
                 return Image.network(
                   imageUrl,
                   fit: BoxFit.cover,
@@ -405,39 +439,59 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                   height: 200,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) {
-                      developer.log('Image loaded: $imageUrl', name: 'CarouselDebug'); // DEBUG LOG
+                      developer.log(
+                        'Image loaded: $imageUrl',
+                        name: 'CarouselDebug',
+                      ); // DEBUG LOG
                       return child;
                     }
-                    developer.log('Image loading: $imageUrl - ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}', name: 'CarouselDebug'); // DEBUG LOG
+                    developer.log(
+                      'Image loading: $imageUrl - ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}',
+                      name: 'CarouselDebug',
+                    ); // DEBUG LOG
                     return Container(
                       color: Colors.grey.shade300,
                       child: Center(
                         child: CircularProgressIndicator(
                           value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
                               : null,
                         ),
                       ),
                     );
                   },
                   errorBuilder: (context, error, stackTrace) {
-                    developer.log('Image error: $imageUrl - $error', name: 'CarouselDebug'); // DEBUG LOG
+                    developer.log(
+                      'Image error: $imageUrl - $error',
+                      name: 'CarouselDebug',
+                    ); // DEBUG LOG
                     return Container(
                       color: Colors.red.withOpacity(0.1),
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                            Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.red.shade400,
+                            ),
                             const SizedBox(height: 8),
                             Text(
                               'Failed to load image',
-                              style: GoogleFonts.inter(color: Colors.red.shade400, fontSize: 12),
+                              style: GoogleFonts.inter(
+                                color: Colors.red.shade400,
+                                fontSize: 12,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'URL: ${imageUrl.substring(0, 30)}...',
-                              style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: 10),
+                              style: GoogleFonts.inter(
+                                color: Colors.grey.shade600,
+                                fontSize: 10,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -499,18 +553,29 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
               curve: Curves.easeOut,
             );
             return Transform.scale(
-              scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-                CurvedAnimation(parent: _animationController, curve: interval),
-              ).value,
+              scale: Tween<double>(begin: 0.8, end: 1.0)
+                  .animate(
+                    CurvedAnimation(
+                      parent: _animationController,
+                      curve: interval,
+                    ),
+                  )
+                  .value,
               child: FadeTransition(
                 opacity: Tween<double>(begin: 0, end: 1).animate(
-                  CurvedAnimation(parent: _animationController, curve: interval),
+                  CurvedAnimation(
+                    parent: _animationController,
+                    curve: interval,
+                  ),
                 ),
                 child: child,
               ),
             );
           },
-          child: ItemCard(item: _menuItems[index], onTap: () => _handleMenuTap(context, _menuItems[index])),
+          child: ItemCard(
+            item: _menuItems[index],
+            onTap: () => _handleMenuTap(context, _menuItems[index]),
+          ),
         );
       },
     );
@@ -596,11 +661,7 @@ class ItemCard extends StatefulWidget {
   final ItemHomepage item;
   final VoidCallback onTap;
 
-  const ItemCard({
-    super.key,
-    required this.item,
-    required this.onTap,
-  });
+  const ItemCard({super.key, required this.item, required this.onTap});
 
   @override
   State<ItemCard> createState() => _ItemCardState();
@@ -629,7 +690,10 @@ class _ItemCardState extends State<ItemCard> {
             splashColor: widget.item.color.withOpacity(0.2),
             child: Container(
               decoration: BoxDecoration(
-                border: Border.all(color: widget.item.color.withOpacity(0.3), width: 1.5),
+                border: Border.all(
+                  color: widget.item.color.withOpacity(0.3),
+                  width: 1.5,
+                ),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Padding(
@@ -643,7 +707,11 @@ class _ItemCardState extends State<ItemCard> {
                         shape: BoxShape.circle,
                       ),
                       padding: const EdgeInsets.all(14),
-                      child: Icon(widget.item.icon, color: widget.item.color, size: 28),
+                      child: Icon(
+                        widget.item.icon,
+                        color: widget.item.color,
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
