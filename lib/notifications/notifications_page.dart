@@ -1,3 +1,5 @@
+// ignore_for_file: unused_import, unused_field
+
 import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
