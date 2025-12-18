@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, curly_braces_in_flow_control_structures, unused_import
+// ignore_for_file: unused_import, deprecated_member_use, curly_braces_in_flow_control_structures
 
 import 'dart:convert';
 import 'dart:ui';
@@ -6,11 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
-import 'package:smash_mobile/models/post_entry.dart';
-import 'package:smash_mobile/screens/menu.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:smash_mobile/screens/login.dart';
+import 'package:smash_mobile/screens/menu.dart';
+import 'package:smash_mobile/screens/register.dart';
+
 /// Halaman form untuk membuat post baru dengan glassmorphism UI
+/// dan login required check
 class PostEntryFormPage extends StatefulWidget {
   const PostEntryFormPage({super.key});
 
@@ -133,8 +136,17 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
     );
   }
 
+  // === LOGIN CHECK & UI ===
+
   @override
   Widget build(BuildContext context) {
+    final request = context.watch<CookieRequest>();
+
+    // Jika user belum login, tampilkan halaman login required
+    if (!request.loggedIn) {
+      return _buildLoginRequiredScreen();
+    }
+
     return Scaffold(
       body: Container(
         // Background gradient konsisten dengan halaman lain
@@ -191,11 +203,142 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
     );
   }
 
-  /// Widget glassmorphism card untuk form
+  /// Build login required screen dengan glassmorphism style
+  Widget _buildLoginRequiredScreen() {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [const Color(0xFF4A2B55), const Color(0xFF9D50BB)],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: FadeTransition(
+              opacity: _animationController,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Icon lock dengan glass effect
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.lock_outline,
+                        size: 48,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Glass card untuk pesan
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Login Required',
+                            style: GoogleFonts.inter(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'You need to be logged in to create a post',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              color: Colors.white70,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Login button
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SmashLoginPage(),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF4A2B55),
+                              minimumSize: const Size(double.infinity, 56),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 4,
+                            ),
+                            child: Text(
+                              'Login',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // Register link
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SmashRegisterPage(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              "Don't have an account? Register",
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Glassmorphism card untuk form
   Widget _buildGlassCard() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15), // Transparan 15%
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
       ),
@@ -269,7 +412,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _imageCtrl,
-                    hint: 'https://example.com/image.jpg',
+                    hint: 'https://example.com/image.jpg ',
                     icon: Icons.image_outlined,
                     keyboardType: TextInputType.url,
                     validator: (String? p1) {
@@ -290,7 +433,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _videoCtrl,
-                    hint: 'https://youtube.com/watch?v=...',
+                    hint: 'https://youtube.com/watch?v= ...',
                     icon: Icons.video_library_outlined,
                     keyboardType: TextInputType.url,
                     validator: (String? p1) {
