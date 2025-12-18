@@ -1,17 +1,23 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: unnecessary_import, deprecated_member_use, curly_braces_in_flow_control_structures, unused_import, unnecessary_underscores
 
+import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui';
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:smash_mobile/profile/profile_api.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import 'package:smash_mobile/screens/login.dart';
-import 'package:smash_mobile/screens/post_form_entry.dart';
 import 'package:smash_mobile/screens/register.dart';
-import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:smash_mobile/widgets/navbar.dart';
+import 'package:smash_mobile/screens/post_form_entry.dart';
 
 /// Halaman dashboard utama aplikasi dengan UI modern dan animasi
 class MyHomePage extends StatefulWidget {
@@ -32,12 +38,27 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   bool _isLoggedIn = false;
   bool _isLoggingOut = false;
 
+  // === CAROUSEL CONTROLLER & TIMER ===
+  final PageController _carouselController = PageController();
+  Timer? _carouselTimer;
+  int _currentCarouselIndex = 0;
+
+  // === YOUTUBE CONTROLLER ===
+  late YoutubePlayerController _youtubeController;
+
   // === MENU ITEMS ===
   final List<ItemHomepage> _menuItems = [
     ItemHomepage('All Posts', Icons.article_outlined, const Color(0xFF5E72E4)),
     ItemHomepage('My Posts', Icons.person_outline, const Color(0xFF2DCE89)),
     ItemHomepage('Create Post', Icons.add_circle_outline, const Color(0xFFFB6340)),
     ItemHomepage('Logout', Icons.logout, const Color(0xFFF5365C)),
+  ];
+
+  // Untuk saat ini menggunakan gambar placeholder dari Unsplash
+  final List<String> _carouselImages = [
+    'https://cdnpro.eraspace.com/media/mageplaza/blog/post/p/a/padel_-_primary.jpg', 
+    'https://images.unsplash.com/photo-1552674605-db6ceb900c70?w=800&h=600&fit=crop', 
+    'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&h=600&fit=crop', 
   ];
 
   // === LIFECYCLE METHODS ===
@@ -50,22 +71,50 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     );
     _animationController.forward();
     _loadProfileHeader();
+    
+    // Initialize YouTube controller dengan video ID dari URL
+    _youtubeController = YoutubePlayerController(
+      initialVideoId: 'T936NUtQZ-0',
+      flags: const YoutubePlayerFlags(
+        autoPlay: false,
+        mute: false,
+        loop: false,
+        hideControls: false,
+      ),
+    );
+
+    // Start carousel autoplay
+    _startCarouselAutoPlay();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _youtubeController.dispose();
+    _carouselController.dispose();
+    _carouselTimer?.cancel();
     super.dispose();
+  }
+
+  // === CAROUSEL AUTOPLAY ===
+  void _startCarouselAutoPlay() {
+    _carouselTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (_carouselController.hasClients) {
+        final nextPage = (_currentCarouselIndex + 1) % _carouselImages.length;
+        _carouselController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
   }
 
   // === NAVIGATION & EVENT HANDLERS ===
   void _handleMenuTap(BuildContext context, ItemHomepage item) {
     // Navigasi ke halaman form post
     if (item.name == 'Create Post') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const PostEntryFormPage()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const PostEntryFormPage()));
       return;
     }
 
@@ -82,10 +131,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   void _showPlaceholderMessage(String itemName) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          '$itemName is coming soon',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-        ),
+        content: Text('$itemName is coming soon', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
@@ -301,7 +347,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
               letterSpacing: 2,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             '⚽ Your Ultimate Football Store',
             style: GoogleFonts.inter(
@@ -310,7 +356,124 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
               color: Colors.grey[400],
             ),
           ),
+          const SizedBox(height: 24), // Spasi tambahan
+            
+          // NEW: Auto-scrolling image carousel
+          _buildImageCarousel(),
         ],
+      ),
+    );
+  }
+
+  // NEW: Widget carousel foto bergeser otomatis
+  Widget _buildImageCarousel() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // PageView untuk gambar
+            PageView.builder(
+              controller: _carouselController,
+              itemCount: _carouselImages.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentCarouselIndex = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                final imageUrl = _carouselImages[index];
+                developer.log('Loading image: $imageUrl', name: 'CarouselDebug'); // DEBUG LOG
+                
+                return Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: 200,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) {
+                      developer.log('Image loaded: $imageUrl', name: 'CarouselDebug'); // DEBUG LOG
+                      return child;
+                    }
+                    developer.log('Image loading: $imageUrl - ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}', name: 'CarouselDebug'); // DEBUG LOG
+                    return Container(
+                      color: Colors.grey.shade300,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    developer.log('Image error: $imageUrl - $error', name: 'CarouselDebug'); // DEBUG LOG
+                    return Container(
+                      color: Colors.red.withOpacity(0.1),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Failed to load image',
+                              style: GoogleFonts.inter(color: Colors.red.shade400, fontSize: 12),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'URL: ${imageUrl.substring(0, 30)}...',
+                              style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: 10),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+
+            // Indicator dots
+            Positioned(
+              bottom: 16,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  _carouselImages.length,
+                  (index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: index == _currentCarouselIndex
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.5),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -354,7 +517,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   }
 }
 
-/// Widget kartu informasi
+/// Widget kartu informasi dengan glassmorphism effect
 class InfoCard extends StatelessWidget {
   final String title;
   final String content;
@@ -428,7 +591,7 @@ class ItemHomepage {
   ItemHomepage(this.name, this.icon, this.color);
 }
 
-/// Widget kartu menu dengan efek hover
+/// Widget kartu menu interaktif dengan efek hover
 class ItemCard extends StatefulWidget {
   final ItemHomepage item;
   final VoidCallback onTap;
