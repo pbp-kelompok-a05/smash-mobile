@@ -1,19 +1,19 @@
-// ignore_for_file: deprecated_member_use, unused_local_variable
+// ignore_for_file: deprecated_member_use
 
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import 'package:smash_mobile/screens/login.dart';
+import 'package:smash_mobile/screens/post_form_entry.dart';
 import 'package:smash_mobile/screens/register.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:smash_mobile/widgets/navbar.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-/// Halaman utama aplikasi yang menampilkan dashboard interaktif
-/// dengan animasi, gradient, dan layout modern.
+/// Halaman dashboard utama aplikasi dengan UI modern dan animasi
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -22,36 +22,33 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
-  /// Key untuk mengontrol scaffold (drawer)
+  // === CONTROLLERS & KEYS ===
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  
-  /// Data profil pengguna
+  late AnimationController _animationController;
+
+  // === USER STATE ===
   String? _photoUrl;
   String? _username;
-  Uint8List? _photoBytes;
   bool _isLoggedIn = false;
   bool _isLoggingOut = false;
 
-  /// Controller untuk animasi fade-in
-  late AnimationController _animationController;
-
-  /// Daftar menu utama dengan ikon dan warna tema
+  // === MENU ITEMS ===
   final List<ItemHomepage> _menuItems = [
-    ItemHomepage("All Products", Icons.list, const Color(0xFF5E72E4)),
-    ItemHomepage("My Products", Icons.shopping_bag, const Color(0xFF2DCE89)),
-    ItemHomepage("Create Product", Icons.add_circle, const Color(0xFFFB6340)),
-    ItemHomepage("Logout", Icons.logout, const Color(0xFFF5365C)),
+    ItemHomepage('All Posts', Icons.article_outlined, const Color(0xFF5E72E4)),
+    ItemHomepage('My Posts', Icons.person_outline, const Color(0xFF2DCE89)),
+    ItemHomepage('Create Post', Icons.add_circle_outline, const Color(0xFFFB6340)),
+    ItemHomepage('Logout', Icons.logout, const Color(0xFFF5365C)),
   ];
 
+  // === LIFECYCLE METHODS ===
   @override
   void initState() {
     super.initState();
-    // Setup animasi controller dengan durasi 1 detik
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
-    _animationController.forward(); // Mulai animasi
+    _animationController.forward();
     _loadProfileHeader();
   }
 
@@ -61,14 +58,32 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  /// Menangani tap pada item menu
-  /// [item] - Item yang dipilih oleh pengguna
+  // === NAVIGATION & EVENT HANDLERS ===
   void _handleMenuTap(BuildContext context, ItemHomepage item) {
-    // Tampilkan snackbar dengan animasi
+    // Navigasi ke halaman form post
+    if (item.name == 'Create Post') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PostEntryFormPage()),
+      );
+      return;
+    }
+
+    // Handle logout
+    if (item.name == 'Logout') {
+      _handleLogout();
+      return;
+    }
+
+    // Placeholder untuk menu lain
+    _showPlaceholderMessage(item.name);
+  }
+
+  void _showPlaceholderMessage(String itemName) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${item.name} is coming soon',
+          '$itemName is coming soon',
           style: GoogleFonts.inter(fontWeight: FontWeight.w500),
         ),
         behavior: SnackBarBehavior.floating,
@@ -78,52 +93,38 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     );
   }
 
-  /// Navigasi ke halaman login
-  void _openLogin(BuildContext context) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const SmashLoginPage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
+  void _openLogin() => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmashLoginPage()));
+  void _openRegister() => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmashRegisterPage()));
+  void _openProfile() => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
+
+  Future<void> _handleLogout() async {
+    if (_isLoggingOut) return;
+    _isLoggingOut = true;
+
+    final request = context.read<CookieRequest>();
+    try {
+      await request.logout('http://localhost:8000/authentication/logout/');
+    } catch (_) {}
+
+    if (!mounted) return;
+    _isLoggingOut = false;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const SmashLoginPage()),
+      (route) => false,
     );
   }
 
-  /// Navigasi ke halaman register
-  void _openRegister(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SmashRegisterPage()),
-    );
-  }
-
-  /// Navigasi ke halaman profil
-  void _openProfile(BuildContext context) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const ProfilePage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(animation),
-            child: child,
-          );
-        },
-      ),
-    );
-  }
-
-  /// Memuat data profil pengguna dari API
-  /// Mengambil foto profil dan username untuk ditampilkan di navbar
+  // === DATA LOADING ===
   Future<void> _loadProfileHeader() async {
     final request = Provider.of<CookieRequest>(context, listen: false);
-    final logged = request.loggedIn;
     
-    if (!logged) {
+    if (!request.loggedIn) {
       setState(() {
         _isLoggedIn = false;
         _photoUrl = null;
         _username = null;
-        _photoBytes = null;
       });
       return;
     }
@@ -137,146 +138,115 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         _isLoggedIn = true;
         _photoUrl = profileApi.resolveMediaUrl(profile.profilePhoto) ?? profileApi.defaultAvatarUrl;
         _username = profile.username;
-        _photoBytes = null;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _isLoggedIn = true;
         _photoUrl = profileApi.defaultAvatarUrl;
-        _photoBytes = null;
       });
     }
   }
 
-  /// Menangani proses logout dengan konfirmasi
-  Future<void> _handleLogout() async {
-    if (_isLoggingOut) return;
-    _isLoggingOut = true;
-
-    final request = context.read<CookieRequest>();
-    try {
-      await request.logout('http://localhost:8000/authentication/logout/');
-    } catch (_) {}
-
-    if (!mounted) return;
-    _isLoggingOut = false;
-    
-    // Navigasi ke login dan hapus semua route sebelumnya
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const SmashLoginPage()),
-      (route) => false,
-    );
-  }
-
+  // === UI BUILDERS ===
   @override
   Widget build(BuildContext context) {
     final request = context.watch<CookieRequest>();
     
-    // Reload profil jika status login berubah
+    // Update state jika status login berubah
     if (_isLoggedIn != request.loggedIn) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _loadProfileHeader();
-      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadProfileHeader());
     }
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: const LeftDrawer(),
-      backgroundColor: const Color(0xFF0F0F0F), // Warna background gelap modern
-      
-      // AppBar custom dengan gradient
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return Transform.translate(
-              offset: Offset(0, -50 * (1 - _animationController.value)),
-              child: Opacity(
-                opacity: _animationController.value,
-                child: NavBar(
-                  onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-                  isLoggedIn: _isLoggedIn,
-                  showCreate: _isLoggedIn,
-                  photoUrl: _photoUrl,
-                  photoBytes: _photoBytes,
-                  username: _username,
-                  onLogin: () => _openLogin(context),
-                  onRegister: () => _openRegister(context),
-                  onLogout: _handleLogout,
-                  onProfileTap: () => _openProfile(context),
-                ),
+      drawer: const LeftDrawer(), 
+      backgroundColor: const Color(0xFF0F0F0F),
+      appBar: _buildAnimatedAppBar(), 
+      body: _buildAnimatedBody(),
+    );
+  }
+
+  /// Membangun AppBar dengan animasi slide-down
+  PreferredSizeWidget _buildAnimatedAppBar() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(0, -50 * (1 - _animationController.value)),
+            child: Opacity(
+              opacity: _animationController.value,
+              child: NavBar(
+                onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+                isLoggedIn: _isLoggedIn,
+                showCreate: _isLoggedIn,
+                photoUrl: _photoUrl,
+                photoBytes: null,
+                username: _username,
+                onLogin: _openLogin,
+                onRegister: _openRegister,
+                onLogout: _handleLogout,
+                onProfileTap: _openProfile,
               ),
-            );
-          },
-        ),
-      ),
-      
-      // Body dengan animasi fade-in
-      body: FadeTransition(
-        opacity: _animationController,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Info Cards dengan animasi staggered
-              _buildInfoCards(),
-              const SizedBox(height: 32),
-              
-              // Judul dengan gradient
-              _buildGradientTitle(),
-              const SizedBox(height: 24),
-              
-              // Grid Menu
-              _buildGridMenu(),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  /// Membangun widget InfoCards dengan layout responsif
-  Widget _buildInfoCards() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
-        return Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          alignment: WrapAlignment.center,
+  Widget _buildAnimatedBody() {
+    return FadeTransition(
+      opacity: _animationController,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildAnimatedInfoCard(
-              title: 'Latest Posts',
-              content: 'Catch up with the newest discussions.',
-              icon: Icons.forum,
-              color: const Color(0xFF5E72E4),
-              delay: 200,
-            ),
-            _buildAnimatedInfoCard(
-              title: 'Your Hub',
-              content: 'Access your padel profile quickly.',
-              icon: Icons.person_pin,
-              color: const Color(0xFF2DCE89),
-              delay: 400,
-            ),
-            _buildAnimatedInfoCard(
-              title: 'Create',
-              content: 'Share a new post with the community.',
-              icon: Icons.create,
-              color: const Color(0xFFFB6340),
-              delay: 600,
-            ),
+            _buildInfoCards(),
+            const SizedBox(height: 32),
+            _buildGradientTitle(),
+            const SizedBox(height: 24),
+            _buildGridMenu(),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
-  /// Membangun animasi untuk setiap InfoCard
+  Widget _buildInfoCards() {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      alignment: WrapAlignment.center,
+      children: [
+        _buildAnimatedInfoCard(
+          title: 'Latest Posts',
+          content: 'Newest discussions',
+          icon: Icons.forum,
+          color: const Color(0xFF5E72E4),
+          delay: 200,
+        ),
+        _buildAnimatedInfoCard(
+          title: 'Your Hub',
+          content: 'Access your profile',
+          icon: Icons.person_pin,
+          color: const Color(0xFF2DCE89),
+          delay: 400,
+        ),
+        _buildAnimatedInfoCard(
+          title: 'Create',
+          content: 'Share a post',
+          icon: Icons.create,
+          color: const Color(0xFFFB6340),
+          delay: 600,
+        ),
+      ],
+    );
+  }
+
   Widget _buildAnimatedInfoCard({
     required String title,
     required String content,
@@ -287,17 +257,13 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
-        final value = _animationController.value;
-        final intervalValue = Tween<double>(
-          begin: 0,
-          end: 1,
-        ).animate(
+        final intervalValue = Tween<double>(begin: 0, end: 1).animate(
           CurvedAnimation(
             parent: _animationController,
             curve: Interval(delay / 1000, 1, curve: Curves.easeOut),
           ),
         ).value;
-
+        
         return Transform.translate(
           offset: Offset(0, 30 * (1 - intervalValue)),
           child: Opacity(opacity: intervalValue, child: child),
@@ -307,7 +273,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     );
   }
 
-  /// Membangun judul dengan efek gradient
   Widget _buildGradientTitle() {
     return ShaderMask(
       shaderCallback: (bounds) => const LinearGradient(
@@ -350,7 +315,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     );
   }
 
-  /// Membangun grid menu dengan animasi
   Widget _buildGridMenu() {
     return GridView.builder(
       shrinkWrap: true,
@@ -383,17 +347,14 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
               ),
             );
           },
-          child: ItemCard(
-            item: _menuItems[index],
-            onTap: () => _handleMenuTap(context, _menuItems[index]),
-          ),
+          child: ItemCard(item: _menuItems[index], onTap: () => _handleMenuTap(context, _menuItems[index])),
         );
       },
     );
   }
 }
 
-/// Widget untuk menampilkan informasi singkat dengan ikon dan warna tema
+/// Widget kartu informasi
 class InfoCard extends StatelessWidget {
   final String title;
   final String content;
@@ -445,10 +406,7 @@ class InfoCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 content,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: Colors.grey[400],
-                ),
+                style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[400]),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -461,7 +419,7 @@ class InfoCard extends StatelessWidget {
   }
 }
 
-/// Model untuk item menu homepage
+/// Model item menu dashboard
 class ItemHomepage {
   final String name;
   final IconData icon;
@@ -470,7 +428,7 @@ class ItemHomepage {
   ItemHomepage(this.name, this.icon, this.color);
 }
 
-/// Widget untuk menampilkan kartu menu interaktif dengan efek hover
+/// Widget kartu menu dengan efek hover
 class ItemCard extends StatefulWidget {
   final ItemHomepage item;
   final VoidCallback onTap;
@@ -508,10 +466,7 @@ class _ItemCardState extends State<ItemCard> {
             splashColor: widget.item.color.withOpacity(0.2),
             child: Container(
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: widget.item.color.withOpacity(0.3),
-                  width: 1.5,
-                ),
+                border: Border.all(color: widget.item.color.withOpacity(0.3), width: 1.5),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Padding(
