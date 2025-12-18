@@ -12,6 +12,7 @@ import 'package:smash_mobile/screens/login.dart';
 import 'package:smash_mobile/screens/menu.dart';
 import 'package:smash_mobile/notifications/notifications_page.dart';
 import 'package:smash_mobile/screens/post_form_entry.dart';
+import 'package:smash_mobile/screens/post_list.dart';
 
 /// Left drawer dengan glassmorphism effect dan navigasi modern
 class LeftDrawer extends StatelessWidget {
@@ -52,6 +53,13 @@ class LeftDrawer extends StatelessWidget {
                 icon: Icons.add_circle_outline,
                 title: 'Create Post',
                 onTap: () => _navigateTo(context, const PostEntryFormPage()),
+              ),
+
+              _buildMenuItem(
+                context: context,
+                icon: Icons.add_circle_outline,
+                title: 'All Post',
+                onTap: () => _navigateTo(context, const PostListPage()),
               ),
               
               _buildMenuItem(

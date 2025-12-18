@@ -11,7 +11,6 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/screens/post_list.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import 'package:smash_mobile/screens/login.dart';
 import 'package:smash_mobile/screens/register.dart';
@@ -21,6 +20,13 @@ import 'package:smash_mobile/widgets/navbar.dart';
 import 'package:smash_mobile/screens/post_form_entry.dart';
 
 /// Halaman dashboard utama aplikasi dengan UI modern dan animasi
+/// 
+/// Fitur Utama:
+/// 1. Carousel gambar otomatis dengan gambar lokal/placeholder
+/// 2. Menu grid interaktif
+/// 3. Animasi smooth pada semua komponen
+/// 4. Login state management
+/// 5. Optimized image loading dengan cache
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -45,9 +51,6 @@ class _MyHomePageState extends State<MyHomePage>
   Timer? _carouselTimer;
   int _currentCarouselIndex = 0;
 
-  // === YOUTUBE CONTROLLER ===
-  late YoutubePlayerController _youtubeController;
-
   // === MENU ITEMS ===
   final List<ItemHomepage> _menuItems = [
     ItemHomepage('All Posts', Icons.article_outlined, const Color(0xFF5E72E4)),
@@ -60,11 +63,12 @@ class _MyHomePageState extends State<MyHomePage>
     ItemHomepage('Logout', Icons.logout, const Color(0xFFF5365C)),
   ];
 
-  // Untuk saat ini menggunakan gambar placeholder dari Unsplash
+  // Menggunakan gambar dari Unsplash dengan format dan ukuran yang sesuai
   final List<String> _carouselImages = [
-    'https://cdnpro.eraspace.com/media/mageplaza/blog/post/p/a/padel_-_primary.jpg',
-    'https://images.unsplash.com/photo-1552674605-db6ceb900c70?w=800&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&h=600&fit=crop',
+    'https://i.pinimg.com/1200x/7e/b4/c3/7eb4c39e416a94f38b31a48df5e1bf69.jpg',
+    'https://images.unsplash.com/photo-1577223625818-75bc1f2ac0e5?w=800&h=600&fit=crop&auto=format&q=80', // Football 2
+    'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&h=600&fit=crop&auto=format&q=80', // Football 3
+    'https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=800&h=600&fit=crop&auto=format&q=80', // Football 4
   ];
 
   // === LIFECYCLE METHODS ===
@@ -73,30 +77,20 @@ class _MyHomePageState extends State<MyHomePage>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 800),
     );
     _animationController.forward();
     _loadProfileHeader();
 
-    // Initialize YouTube controller dengan video ID dari URL
-    _youtubeController = YoutubePlayerController(
-      initialVideoId: 'T936NUtQZ-0',
-      flags: const YoutubePlayerFlags(
-        autoPlay: false,
-        mute: false,
-        loop: false,
-        hideControls: false,
-      ),
-    );
-
-    // Start carousel autoplay
-    _startCarouselAutoPlay();
+    // Start carousel autoplay dengan delay untuk memastikan widget sudah terbangun
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startCarouselAutoPlay();
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    _youtubeController.dispose();
     _carouselController.dispose();
     _carouselTimer?.cancel();
     super.dispose();
@@ -104,16 +98,28 @@ class _MyHomePageState extends State<MyHomePage>
 
   // === CAROUSEL AUTOPLAY ===
   void _startCarouselAutoPlay() {
-    _carouselTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (_carouselController.hasClients) {
+    _carouselTimer?.cancel(); // Cancel existing timer
+    _carouselTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_carouselController.hasClients && mounted) {
         final nextPage = (_currentCarouselIndex + 1) % _carouselImages.length;
         _carouselController.animateToPage(
           nextPage,
           duration: const Duration(milliseconds: 800),
           curve: Curves.easeInOut,
         );
+      } else {
+        timer.cancel();
       }
     });
+  }
+
+  // ✅ Function untuk pause/resume carousel saat user interaksi
+  void _pauseCarousel() {
+    _carouselTimer?.cancel();
+  }
+
+  void _resumeCarousel() {
+    _startCarouselAutoPlay();
   }
 
   // === NAVIGATION & EVENT HANDLERS ===
@@ -132,6 +138,7 @@ class _MyHomePageState extends State<MyHomePage>
         context,
         MaterialPageRoute(builder: (_) => const PostListPage()),
       );
+      return;
     }
 
     // Handle logout
@@ -159,35 +166,37 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   void _openLogin() => Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => const SmashLoginPage()),
-  );
+        context,
+        MaterialPageRoute(builder: (_) => const SmashLoginPage()),
+      );
   void _openRegister() => Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => const SmashRegisterPage()),
-  );
+        context,
+        MaterialPageRoute(builder: (_) => const SmashRegisterPage()),
+      );
   void _openProfile() => Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => const ProfilePage()),
-  );
+        context,
+        MaterialPageRoute(builder: (_) => const ProfilePage()),
+      );
 
   Future<void> _handleLogout() async {
     if (_isLoggingOut) return;
-    _isLoggingOut = true;
+    setState(() => _isLoggingOut = true);
 
     final request = context.read<CookieRequest>();
     try {
       await request.logout('http://localhost:8000/authentication/logout/');
-    } catch (_) {}
-
-    if (!mounted) return;
-    _isLoggingOut = false;
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const SmashLoginPage()),
-      (route) => false,
-    );
+    } catch (e) {
+      developer.log('Logout error: $e', name: 'AuthDebug');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoggingOut = false);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const SmashLoginPage()),
+          (route) => false,
+        );
+      }
+    }
   }
 
   // === DATA LOADING ===
@@ -210,12 +219,12 @@ class _MyHomePageState extends State<MyHomePage>
 
       setState(() {
         _isLoggedIn = true;
-        _photoUrl =
-            profileApi.resolveMediaUrl(profile.profilePhoto) ??
+        _photoUrl = profileApi.resolveMediaUrl(profile.profilePhoto) ??
             profileApi.defaultAvatarUrl;
         _username = profile.username;
       });
-    } catch (_) {
+    } catch (e) {
+      developer.log('Profile load error: $e', name: 'ProfileDebug');
       if (!mounted) return;
       setState(() {
         _isLoggedIn = true;
@@ -239,7 +248,18 @@ class _MyHomePageState extends State<MyHomePage>
       drawer: const LeftDrawer(),
       backgroundColor: const Color(0xFF0F0F0F),
       appBar: _buildAnimatedAppBar(),
-      body: _buildAnimatedBody(),
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (scrollNotification) {
+          // Pause carousel saat user scroll untuk pengalaman yang lebih baik
+          if (scrollNotification is ScrollStartNotification) {
+            _pauseCarousel();
+          } else if (scrollNotification is ScrollEndNotification) {
+            _resumeCarousel();
+          }
+          return false;
+        },
+        child: _buildAnimatedBody(),
+      ),
     );
   }
 
@@ -284,7 +304,7 @@ class _MyHomePageState extends State<MyHomePage>
             _buildInfoCards(),
             const SizedBox(height: 32),
             _buildGradientTitle(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             _buildGridMenu(),
           ],
         ),
@@ -388,32 +408,32 @@ class _MyHomePageState extends State<MyHomePage>
               color: Colors.grey[400],
             ),
           ),
-          const SizedBox(height: 24), // Spasi tambahan
-          // NEW: Auto-scrolling image carousel
+          const SizedBox(height: 24),
+          // ✅ Image carousel dengan optimasi performa
           _buildImageCarousel(),
         ],
       ),
     );
   }
 
-  // NEW: Widget carousel foto bergeser otomatis
   Widget _buildImageCarousel() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 200,
+      height: 220,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 25,
+            offset: const Offset(0, 12),
+            spreadRadius: 3,
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
             // PageView untuk gambar
@@ -425,103 +445,119 @@ class _MyHomePageState extends State<MyHomePage>
                   _currentCarouselIndex = index;
                 });
               },
+              physics: const BouncingScrollPhysics(),
               itemBuilder: (context, index) {
-                final imageUrl = _carouselImages[index];
-                developer.log(
-                  'Loading image: $imageUrl',
-                  name: 'CarouselDebug',
-                ); // DEBUG LOG
-
-                return Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 200,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) {
-                      developer.log(
-                        'Image loaded: $imageUrl',
-                        name: 'CarouselDebug',
-                      ); // DEBUG LOG
-                      return child;
-                    }
-                    developer.log(
-                      'Image loading: $imageUrl - ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}',
-                      name: 'CarouselDebug',
-                    ); // DEBUG LOG
-                    return Container(
-                      color: Colors.grey.shade300,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                              : null,
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    developer.log(
-                      'Image error: $imageUrl - $error',
-                      name: 'CarouselDebug',
-                    ); // DEBUG LOG
-                    return Container(
-                      color: Colors.red.withOpacity(0.1),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 48,
-                              color: Colors.red.shade400,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Failed to load image',
-                              style: GoogleFonts.inter(
-                                color: Colors.red.shade400,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'URL: ${imageUrl.substring(0, 30)}...',
-                              style: GoogleFonts.inter(
-                                color: Colors.grey.shade600,
-                                fontSize: 10,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
+                return _buildCarouselImage(index);
               },
             ),
 
-            // Indicator dots
+            // Gradient overlay untuk readability dan depth
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.8),
+                      Colors.transparent,
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.3),
+                    ],
+                    stops: const [0.0, 0.3, 0.7, 1.0],
+                  ),
+                ),
+              ),
+            ),
+
+            // Enhanced indicator dots
             Positioned(
-              bottom: 16,
+              bottom: 20,
               left: 0,
               right: 0,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
                   _carouselImages.length,
-                  (index) => Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: 8,
-                    height: 8,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 5),
+                    width: index == _currentCarouselIndex ? 22 : 10,
+                    height: 10,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
+                      shape: BoxShape.rectangle,
+                      borderRadius: BorderRadius.circular(5),
                       color: index == _currentCarouselIndex
                           ? Colors.white
-                          : Colors.white.withOpacity(0.5),
+                          : Colors.white.withOpacity(0.6),
+                      boxShadow: [
+                        if (index == _currentCarouselIndex)
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.5),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                      ],
                     ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Navigation arrows dengan efek glassmorphism
+            Positioned(
+              left: 12,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: _buildGlassButton(
+                  icon: Icons.chevron_left,
+                  onPressed: () {
+                    if (_currentCarouselIndex > 0) {
+                      _carouselController.previousPage(
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  },
+                ),
+              ),
+            ),
+            Positioned(
+              right: 12,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: _buildGlassButton(
+                  icon: Icons.chevron_right,
+                  onPressed: () {
+                    if (_currentCarouselIndex < _carouselImages.length - 1) {
+                      _carouselController.nextPage(
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  },
+                ),
+              ),
+            ),
+
+            // Counter indicator (misal: 1/4)
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_currentCarouselIndex + 1}/${_carouselImages.length}',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -529,6 +565,163 @@ class _MyHomePageState extends State<MyHomePage>
           ],
         ),
       ),
+    );
+  }
+
+  // Widget untuk glass button pada carousel
+  Widget _buildGlassButton({required IconData icon, required VoidCallback onPressed}) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              borderRadius: BorderRadius.circular(20),
+              child: Center(
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ Widget untuk setiap gambar dalam carousel dengan optimasi
+  Widget _buildCarouselImage(int index) {
+    final imageUrl = _carouselImages[index];
+
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      // ✅ OPTIMASI 1: Gunakan headers untuk menghindari CORS issues
+      headers: const {
+        'User-Agent': 'Mozilla/5.0 (compatible; FlutterApp/1.0)',
+        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+      },
+      // ✅ OPTIMASI 2: Cache strategy yang lebih baik
+      cacheWidth: 800,
+      cacheHeight: 600,
+      // ✅ OPTIMASI 3: Loading builder dengan skeleton yang lebih menarik
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        
+        return Container(
+          color: Colors.grey[900],
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+                    color: const Color(0xFF5E72E4),
+                    strokeWidth: 3,
+                    backgroundColor: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Loading football image...',
+                  style: GoogleFonts.inter(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '⚽',
+                  style: const TextStyle(fontSize: 24),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      // ✅ OPTIMASI 4: Enhanced error builder dengan fallback yang menarik
+      errorBuilder: (context, error, stackTrace) {
+        developer.log(
+          'Carousel image error at index $index: $error\nURL: $imageUrl',
+          name: 'CarouselDebug',
+        );
+        
+        // Fallback ke gradient container dengan ikon
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF4A2B55).withOpacity(0.8),
+                const Color(0xFF9D50BB).withOpacity(0.8),
+              ],
+            ),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.sports_tennis,
+                    size: 48,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Padel ${index + 1}',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '🎾 🎾 🎾',
+                  style: const TextStyle(fontSize: 24),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -678,54 +871,57 @@ class _ItemCardState extends State<ItemCard> {
     return MouseRegion(
       onEnter: _onEnter,
       onExit: _onExit,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
-        child: Material(
-          color: widget.item.color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            onTap: widget.onTap,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
+          decoration: BoxDecoration(
+            color: widget.item.color.withOpacity(0.08),
             borderRadius: BorderRadius.circular(16),
-            splashColor: widget.item.color.withOpacity(0.2),
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: widget.item.color.withOpacity(0.3),
-                  width: 1.5,
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: widget.item.color.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      padding: const EdgeInsets.all(14),
-                      child: Icon(
-                        widget.item.icon,
-                        color: widget.item.color,
-                        size: 28,
-                      ),
+            border: Border.all(
+              color: widget.item.color.withOpacity(_isHovered ? 0.5 : 0.3),
+              width: _isHovered ? 2.0 : 1.5,
+            ),
+            boxShadow: _isHovered
+                ? [
+                    BoxShadow(
+                      color: widget.item.color.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      widget.item.name,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+                  ]
+                : null,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    color: widget.item.color.withOpacity(_isHovered ? 0.2 : 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  padding: const EdgeInsets.all(14),
+                  child: Icon(
+                    widget.item.icon,
+                    color: widget.item.color,
+                    size: 28,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 12),
+                Text(
+                  widget.item.name,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
