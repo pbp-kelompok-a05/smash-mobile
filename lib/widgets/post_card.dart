@@ -1,9 +1,9 @@
 // ignore_for_file: deprecated_member_use, unused_element, control_flow_in_finally, unused_import, unnecessary_import, unused_field, unnecessary_underscores, avoid_print, unused_local_variable
 
 import 'package:flutter/material.dart';
-// FIX: Ganti dari Filtering_entry.dart menjadi filtering_entry.dart
 import 'package:smash_mobile/models/Filtering_entry.dart';
 import 'package:smash_mobile/post/post_detail_page.dart';
+import 'package:smash_mobile/screens/edit_post.dart';
 import 'package:smash_mobile/widgets/default_avatar.dart';
 
 class PostCard extends StatelessWidget {
@@ -104,21 +104,28 @@ class PostCard extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Colors.white, Colors.grey.shade50],
+            colors: [
+              const Color(0xFF0F2027), // Biru tua
+              const Color(0xFF203A43), // Biru keunguan
+              const Color(0xFF2C5364), // Ungu tua
+            ],
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.4),
               blurRadius: 30,
-              offset: const Offset(0, 8),
+              offset: const Offset(0, 12),
             ),
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(0.2),
               blurRadius: 15,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 6),
             ),
           ],
-          border: Border.all(color: Colors.white.withOpacity(0.8), width: 1),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+            width: 1,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,8 +158,8 @@ class PostCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.blue.shade50.withOpacity(0.7),
-            Colors.purple.shade50.withOpacity(0.5),
+            Colors.blue.shade900.withOpacity(0.3),
+            Colors.purple.shade900.withOpacity(0.2),
           ],
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -170,7 +177,7 @@ class PostCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Colors.white,
                     letterSpacing: -0.5,
                   ),
                   maxLines: 1,
@@ -184,7 +191,7 @@ class PostCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.blue.shade700,
+                        color: Colors.blue.shade300,
                       ),
                     ),
                     Container(
@@ -192,7 +199,7 @@ class PostCard extends StatelessWidget {
                       width: 4,
                       height: 4,
                       decoration: const BoxDecoration(
-                        color: Colors.grey,
+                        color: Colors.white54,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -200,7 +207,7 @@ class PostCard extends StatelessWidget {
                       _formattedDate(item.createdAt),
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: Colors.white70,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -223,9 +230,9 @@ class PostCard extends StatelessWidget {
         SafeAvatar(
           size: 56,
           imageUrl: isValid ? avatarUrl : null,
-          backgroundColor: Colors.blue.shade100,
+          backgroundColor: Colors.blue.shade700,
           borderWidth: 3,
-          borderColor: Colors.white,
+          borderColor: Colors.white30,
         ),
         Positioned(
           bottom: 0,
@@ -234,7 +241,7 @@ class PostCard extends StatelessWidget {
             width: 18,
             height: 18,
             decoration: BoxDecoration(
-              color: Colors.green,
+              color: Colors.greenAccent,
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 3),
             ),
@@ -263,7 +270,7 @@ class PostCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 15,
                   height: 1.6,
-                  color: Colors.black87,
+                  color: Colors.white,
                   fontWeight: FontWeight.w400,
                 ),
                 maxLines: 5,
@@ -286,7 +293,7 @@ class PostCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -304,7 +311,7 @@ class PostCard extends StatelessWidget {
             return Container(
               height: 220,
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: Colors.blue.shade900.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Center(
@@ -313,6 +320,7 @@ class PostCard extends StatelessWidget {
                       ? progress.cumulativeBytesLoaded /
                           progress.expectedTotalBytes!
                       : null,
+                  color: Colors.white,
                 ),
               ),
             );
@@ -321,13 +329,13 @@ class PostCard extends StatelessWidget {
             return Container(
               height: 220,
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: Colors.blue.shade900.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(
                 Icons.broken_image,
                 size: 48,
-                color: Colors.grey,
+                color: Colors.white70,
               ),
             );
           },
@@ -355,7 +363,10 @@ class PostCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
-          colors: [Colors.grey.shade100.withOpacity(0.5), Colors.transparent],
+          colors: [
+            Colors.purple.shade900.withOpacity(0.3),
+            Colors.transparent,
+          ],
         ),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
@@ -363,7 +374,7 @@ class PostCard extends StatelessWidget {
         children: [
           _buildModernStatsRow(isLiked, isDisliked),
           const SizedBox(height: 16),
-          const Divider(height: 1, thickness: 1),
+          const Divider(height: 1, thickness: 1, color: Colors.white24),
           const SizedBox(height: 16),
           _buildModernActionButtonsRow(isLiked, isDisliked, isSaved),
         ],
@@ -380,28 +391,28 @@ class PostCard extends StatelessWidget {
           icon: Icons.thumb_up_outlined,
           count: item.likesCount,
           label: 'Likes',
-          color: Colors.blue,
+          color: Colors.blue.shade300,
           isActive: isLiked,
         ),
         _buildModernStatItem(
           icon: Icons.thumb_down_outlined,
           count: item.dislikesCount,
           label: 'Dislikes',
-          color: Colors.red,
+          color: Colors.red.shade300,
           isActive: isDisliked,
         ),
         _buildModernStatItem(
           icon: Icons.comment_outlined,
           count: item.commentCount,
           label: 'Comments',
-          color: Colors.green,
+          color: Colors.green.shade300,
           isActive: false,
         ),
         _buildModernStatItem(
           icon: Icons.share_outlined,
           count: item.sharesCount,
           label: 'Shares',
-          color: Colors.purple,
+          color: Colors.purple.shade300,
           isActive: false,
         ),
       ],
@@ -426,7 +437,7 @@ class PostCard extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: isActive ? color : Colors.grey.shade600,
+              color: isActive ? color : Colors.white70,
             ),
             const SizedBox(height: 6),
             Text(
@@ -434,14 +445,14 @@ class PostCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: isActive ? color : Colors.black,
+                color: isActive ? color : Colors.white,
               ),
             ),
             Text(
               label,
               style: TextStyle(
                 fontSize: 11,
-                color: isActive ? color : Colors.grey.shade600,
+                color: isActive ? color : Colors.white70,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -463,35 +474,35 @@ class PostCard extends StatelessWidget {
         _buildModernActionButton(
           icon: Icons.thumb_up_alt_rounded,
           label: isLiked ? 'Liked' : 'Like',
-          color: Colors.blue,
+          color: Colors.blue.shade300,
           onTap: onLike,
           isActive: isLiked,
         ),
         _buildModernActionButton(
           icon: Icons.thumb_down_alt_rounded,
           label: isDisliked ? 'Disliked' : 'Dislike',
-          color: Colors.red,
+          color: Colors.red.shade300,
           onTap: onDislike,
           isActive: isDisliked,
         ),
         _buildModernActionButton(
           icon: Icons.chat_bubble_outline,
           label: 'Comment',
-          color: Colors.green,
+          color: Colors.green.shade300,
           onTap: onComment,
           isActive: false,
         ),
         _buildModernActionButton(
           icon: isSaved ? Icons.bookmark : Icons.bookmark_outline,
           label: isSaved ? 'Saved' : 'Save',
-          color: Colors.amber,
+          color: Colors.amber.shade300,
           onTap: onSave,
           isActive: isSaved,
         ),
         _buildModernActionButton(
           icon: Icons.share_outlined,
           label: 'Share',
-          color: Colors.grey,
+          color: Colors.grey.shade400,
           onTap: onShare,
           isActive: false,
         ),
@@ -513,13 +524,13 @@ class PostCard extends StatelessWidget {
         child: InkWell(
           onTap: enableInteractions ? onTap : null,
           borderRadius: BorderRadius.circular(16),
-          splashColor: color.withOpacity(0.2),
-          highlightColor: color.withOpacity(0.1),
+          splashColor: color.withOpacity(0.4),
+          highlightColor: color.withOpacity(0.2),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              color: isActive ? color.withOpacity(0.1) : Colors.transparent,
+              color: isActive ? color.withOpacity(0.2) : Colors.transparent,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -528,8 +539,8 @@ class PostCard extends StatelessWidget {
                   icon,
                   size: 22,
                   color: enableInteractions
-                      ? (isActive ? color : Colors.grey.shade700)
-                      : Colors.grey.shade400,
+                      ? (isActive ? color : Colors.white70)
+                      : Colors.white38,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -538,8 +549,8 @@ class PostCard extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                     color: enableInteractions
-                        ? (isActive ? color : Colors.grey.shade700)
-                        : Colors.grey.shade400,
+                        ? (isActive ? color : Colors.white70)
+                        : Colors.white38,
                   ),
                 ),
               ],
@@ -552,7 +563,15 @@ class PostCard extends StatelessWidget {
 
   /// Handler menu aksi (edit/delete)
   void _handleMenuAction(String action) {
-    if (action == 'edit' && onEdit != null) onEdit!(item);
+    if (action == 'edit') {
+      // Navigasi ke halaman edit
+      Navigator.push(
+        context!,
+        MaterialPageRoute(
+          builder: (_) => EditPostPage(post: item),
+        ),
+      );
+    }
     if (action == 'delete' && onDelete != null) onDelete!(item);
   }
 
@@ -560,6 +579,8 @@ class PostCard extends StatelessWidget {
   bool get _canShowMenu =>
       showMenu &&
       (item.canEdit || (currentUserId != null && item.userId == currentUserId));
+      
+        BuildContext? get context => null;
 
   /// Pilih URL avatar dari multiple sources
   String? _pickAvatar() {
@@ -569,7 +590,7 @@ class PostCard extends StatelessWidget {
       avatarUrl?.trim(),
       defaultAvatar,
     ];
-    for (final src in sources) {
+    for (var src in sources) {
       if (src == null || src.isEmpty) continue;
       final resolved = resolver(src);
       if (resolved != null && resolved.isNotEmpty) return resolved;
@@ -609,28 +630,30 @@ class _PostActionsMenu extends StatelessWidget {
         PopupMenuItem(
           value: 'edit',
           child: Row(children: [
-            Icon(Icons.edit, size: 18, color: Colors.black87),
+            Icon(Icons.edit, size: 18, color: Colors.white70),
             SizedBox(width: 8),
-            Text('Edit'),
+            Text('Edit', style: TextStyle(color: Colors.white70)),
           ]),
         ),
         PopupMenuItem(
           value: 'delete',
           child: Row(children: [
-            Icon(Icons.delete, size: 18, color: Colors.red),
+            Icon(Icons.delete, size: 18, color: Colors.redAccent),
             SizedBox(width: 8),
-            Text('Delete', style: TextStyle(color: Colors.red)),
+            Text('Delete', style: TextStyle(color: Colors.redAccent)),
           ]),
         ),
       ],
       icon: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: Colors.white.withOpacity(0.1),
           shape: BoxShape.circle,
         ),
-        child: const Icon(Icons.more_vert, size: 18, color: Colors.grey),
+        child: const Icon(Icons.more_vert, size: 18, color: Colors.white70),
       ),
+      color: const Color(0xFF203A43), // Background menu gelap
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 }
@@ -652,7 +675,7 @@ class _YoutubePreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -672,7 +695,7 @@ class _YoutubePreview extends StatelessWidget {
                     height: 200,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
+                      color: Colors.blue.shade900.withOpacity(0.3),
                       image: thumb != null
                           ? DecorationImage(
                               image: NetworkImage(thumb),
@@ -689,7 +712,7 @@ class _YoutubePreview extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.3),
+                          color: Colors.red.withOpacity(0.5),
                           blurRadius: 20,
                           spreadRadius: 5,
                         ),
@@ -706,7 +729,12 @@ class _YoutubePreview extends StatelessWidget {
             ),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(color: Colors.white),
+              decoration: BoxDecoration(
+                color: const Color(0xFF203A43),
+                border: Border(
+                  top: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
+                ),
+              ),
               child: Row(
                 children: [
                   Icon(
@@ -719,7 +747,7 @@ class _YoutubePreview extends StatelessWidget {
                     child: Text(
                       'YouTube Video',
                       style: TextStyle(
-                        color: Colors.red.shade700,
+                        color: Colors.red.shade300,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),

@@ -5,43 +5,50 @@ import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
 
-/// EditPostPage - Halaman untuk mengedit post
-/// 
-/// Hanya bisa diakses oleh:
-/// 1. Pemilik post (user yang membuat)
-/// 2. Superuser/admin
-/// 
-/// Cara pakai:
-/// ```dart
-/// Navigator.push(
-///   context,
-///   MaterialPageRoute(
-///     builder: (_) => EditPostPage(post: postData),
-///   ),
-/// );
-/// ```
-/// 
-/// Endpoint API: `POST /post/api/posts/<id>/edit/`
+/**
+ * EditPostPage - Halaman edit post dengan tema gelap modern
+ * 
+ * Fitur:
+ * - Gradient background biru-ungu gelap
+ * - Form dengan validasi real-time
+ * - Preview gambar/video langsung
+ * - Loading state dengan indikator
+ * - Error handling yang user-friendly
+ * 
+ * Hak akses:
+ * - Hanya pemilik post atau superuser
+ * 
+ * Endpoint: POST /post/api/posts/<id>/edit/
+ * 
+ * Cara pakai:
+ * ```dart
+ * Navigator.push(
+ *   context,
+ *   MaterialPageRoute(
+ *     builder: (_) => EditPostPage(post: postData),
+ *   ),
+ * );
+ * ```
+ */
 class EditPostPage extends StatefulWidget {
   const EditPostPage({super.key, required this.post});
 
-  final ProfileFeedItem post; // Data post yang akan diedit
+  final ProfileFeedItem post;
 
   @override
   State<EditPostPage> createState() => _EditPostPageState();
 }
 
 class _EditPostPageState extends State<EditPostPage> {
-  // Form key untuk validasi
   final _formKey = GlobalKey<FormState>();
-
-  // Controllers untuk form fields
+  
+  // Controllers
   late TextEditingController _titleController;
   late TextEditingController _contentController;
   late TextEditingController _imageUrlController;
   late TextEditingController _videoUrlController;
 
-  // State management
+  // State
   bool _isLoading = false;
   String? _error;
   bool _hasChanges = false;
@@ -49,7 +56,6 @@ class _EditPostPageState extends State<EditPostPage> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill form dengan data existing
     _titleController = TextEditingController(text: widget.post.title);
     _contentController = TextEditingController(text: widget.post.content);
     _imageUrlController = TextEditingController(text: widget.post.image ?? '');
@@ -65,7 +71,7 @@ class _EditPostPageState extends State<EditPostPage> {
     super.dispose();
   }
 
-  /// Validasi form dan kirim ke API
+  /// Simpan perubahan ke API
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -78,7 +84,6 @@ class _EditPostPageState extends State<EditPostPage> {
       final request = Provider.of<CookieRequest>(context, listen: false);
       final postId = widget.post.id;
 
-      // Data yang akan dikirim
       final data = {
         'title': _titleController.text.trim(),
         'content': _contentController.text.trim(),
@@ -86,8 +91,6 @@ class _EditPostPageState extends State<EditPostPage> {
         'video': _videoUrlController.text.trim(),
       };
 
-      // Kirim ke API Django
-      // Pastikan endpoint ini ada di Django: POST /post/api/posts/<id>/edit/
       final response = await request.post(
         'http://localhost:8000/post/api/posts/$postId/edit/',
         data,
@@ -95,10 +98,8 @@ class _EditPostPageState extends State<EditPostPage> {
 
       if (!mounted) return;
 
-      // Cek response dari API
       if (response is Map<String, dynamic> && response['status'] == 'success') {
-        // Kembali ke halaman sebelumnya dengan membawa data terbaru
-        Navigator.of(context).pop(true); // true = berhasil
+        Navigator.of(context).pop(true); // Kembali dengan sukses
       } else {
         final errorMsg = response?['message'] ?? 'Gagal mengedit post.';
         setState(() => _error = errorMsg);
@@ -110,7 +111,7 @@ class _EditPostPageState extends State<EditPostPage> {
     }
   }
 
-  /// Cek apakah ada perubahan data
+  /// Cek perubahan form
   void _checkForChanges() {
     final hasChanges =
         _titleController.text.trim() != widget.post.title ||
@@ -124,106 +125,128 @@ class _EditPostPageState extends State<EditPostPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true, // AppBar transparan
       appBar: AppBar(
-        title: const Text('Edit Post'),
+        title: const Text(
+          'Edit Post',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            fontSize: 20,
+          ),
+        ),
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
         actions: [
-          // Save button
           TextButton(
             onPressed: _isLoading ? null : _handleSave,
             child: _isLoading
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
                   )
                 : const Text(
                     'Save',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        onChanged: _checkForChanges,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            // Title field
-            _buildTextField(
-              controller: _titleController,
-              label: 'Title',
-              hint: 'Masukkan judul post...',
-              maxLength: 100,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Judul tidak boleh kosong';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 20),
-
-            // Content field
-            _buildTextField(
-              controller: _contentController,
-              label: 'Content',
-              hint: 'Tulis konten post...',
-              maxLines: 6,
-              maxLength: 500,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Konten tidak boleh kosong';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 20),
-
-            // Image URL field
-            _buildTextField(
-              controller: _imageUrlController,
-              label: 'Image URL (Optional)',
-              hint: 'https://example.com/image.jpg',
-              keyboardType: TextInputType.url,
-            ),
-            const SizedBox(height: 10),
-
-            // Preview image jika ada URL
-            if (_imageUrlController.text.isNotEmpty)
-              _buildImagePreview(_imageUrlController.text),
-            const SizedBox(height: 20),
-
-            // Video URL field
-            _buildTextField(
-              controller: _videoUrlController,
-              label: 'YouTube URL (Optional)',
-              hint: 'https://youtube.com/watch?v=...',
-              keyboardType: TextInputType.url,
-            ),
-            const SizedBox(height: 10),
-
-            // Preview video jika ada URL
-            if (_videoUrlController.text.isNotEmpty)
-              _buildVideoPreview(_videoUrlController.text, context),
-
-            // Error message
-            if (_error != null) ...[
-              const SizedBox(height: 20),
-              _buildErrorMessage(_error!),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF0F2027), // Biru tua
+              const Color(0xFF203A43), // Biru keunguan
+              const Color(0xFF2C5364), // Ungu tua
             ],
+          ),
+        ),
+        child: SafeArea( // Hindari notch dan status bar
+          child: Form(
+            key: _formKey,
+            onChanged: _checkForChanges,
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                _buildTextField(
+                  controller: _titleController,
+                  label: 'Title',
+                  hint: 'Masukkan judul post...',
+                  maxLength: 100,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Judul tidak boleh kosong';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
 
-            const SizedBox(height: 30),
-          ],
+                _buildTextField(
+                  controller: _contentController,
+                  label: 'Content',
+                  hint: 'Tulis konten post...',
+                  maxLines: 6,
+                  maxLength: 500,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Konten tidak boleh kosong';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                _buildTextField(
+                  controller: _imageUrlController,
+                  label: 'Image URL (Optional)',
+                  hint: 'https://example.com/image.jpg',
+                  keyboardType: TextInputType.url,
+                ),
+                const SizedBox(height: 10),
+
+                if (_imageUrlController.text.isNotEmpty)
+                  _buildImagePreview(_imageUrlController.text),
+                const SizedBox(height: 20),
+
+                _buildTextField(
+                  controller: _videoUrlController,
+                  label: 'YouTube URL (Optional)',
+                  hint: 'https://youtube.com/watch?v=...',
+                  keyboardType: TextInputType.url,
+                ),
+                const SizedBox(height: 10),
+
+                if (_videoUrlController.text.isNotEmpty)
+                  _buildVideoPreview(_videoUrlController.text, context),
+
+                if (_error != null) ...[
+                  const SizedBox(height: 20),
+                  _buildErrorMessage(_error!),
+                ],
+
+                const SizedBox(height: 30),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  /// Widget TextFormField reusable
+  /// TextFormField dengan tema gelap
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -239,39 +262,43 @@ class _EditPostPageState extends State<EditPostPage> {
       maxLength: maxLength,
       keyboardType: keyboardType,
       validator: validator,
+      style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+        labelStyle: TextStyle(
+          fontWeight: FontWeight.w600,
+          color: Colors.blue.shade300,
+        ),
         hintText: hint,
         hintStyle: TextStyle(color: Colors.grey.shade400),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Colors.blue, width: 2),
         ),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: Colors.white.withOpacity(0.05),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       onChanged: (_) => _checkForChanges(),
     );
   }
 
-  /// Preview gambar dari URL
+  /// Preview gambar
   Widget _buildImagePreview(String url) {
     return Container(
       margin: const EdgeInsets.only(top: 10),
       height: 150,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -283,11 +310,14 @@ class _EditPostPageState extends State<EditPostPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error, color: Colors.red),
+                  const Icon(Icons.error, color: Colors.redAccent),
                   const SizedBox(height: 8),
                   Text(
                     'Gagal load gambar',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -298,7 +328,7 @@ class _EditPostPageState extends State<EditPostPage> {
     );
   }
 
-  /// Preview video dari URL
+  /// Preview video
   Widget _buildVideoPreview(String url, BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(top: 10),
@@ -306,24 +336,24 @@ class _EditPostPageState extends State<EditPostPage> {
     );
   }
 
-  /// Widget error message
+  /// Error message
   Widget _buildErrorMessage(String message) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: Colors.red.shade900.withOpacity(0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.shade200),
+        border: Border.all(color: Colors.red.shade300),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: Colors.red.shade700),
+          Icon(Icons.error_outline, color: Colors.red.shade300),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
               style: TextStyle(
-                color: Colors.red.shade700,
+                color: Colors.red.shade300,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -333,7 +363,7 @@ class _EditPostPageState extends State<EditPostPage> {
     );
   }
 
-  /// Preview widget untuk YouTube video
+  /// YouTube preview
   Widget _YoutubePreview({required String url, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -341,8 +371,8 @@ class _EditPostPageState extends State<EditPostPage> {
         height: 200,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
-          color: Colors.grey.shade200,
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          color: Colors.white.withOpacity(0.05),
         ),
         child: Stack(
           alignment: Alignment.center,
@@ -350,7 +380,7 @@ class _EditPostPageState extends State<EditPostPage> {
             Icon(
               Icons.play_circle_outline,
               size: 64,
-              color: Colors.red.shade700,
+              color: Colors.red.shade300,
             ),
             Positioned(
               bottom: 12,
@@ -360,7 +390,10 @@ class _EditPostPageState extends State<EditPostPage> {
                 url,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white70,
+                ),
               ),
             ),
           ],
