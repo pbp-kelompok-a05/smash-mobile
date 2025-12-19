@@ -1,5 +1,6 @@
-// ignore_for_file: deprecated_member_use, unused_element, control_flow_in_finally, unused_import, unnecessary_import, unused_field
+// ignore_for_file: deprecated_member_use, unused_element, control_flow_in_finally, unused_import, unnecessary_import, unused_field, unnecessary_underscores
 
+import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -7,20 +8,22 @@ import 'package:flutter/scheduler.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
+import 'package:smash_mobile/post/post_detail_page.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/screens/login.dart';
 import 'package:smash_mobile/screens/register.dart';
+import 'package:smash_mobile/screens/post_form_entry.dart';
 import 'package:smash_mobile/widgets/navbar.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:smash_mobile/widgets/post_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Halaman pencarian dengan glassmorphism UI dan animasi modern
-class SearchPage extends StatefulWidget {
-  const SearchPage({super.key, required this.initialQuery});
 
+class SearchPage extends StatefulWidget {
   final String initialQuery;
+
+  const SearchPage({super.key, required this.initialQuery});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -43,6 +46,9 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
   
   /// Controller untuk animasi fade-in
   late AnimationController _animationController;
+
+  /// Timer untuk debounce search
+  Timer? _searchTimer;
 
   String? _resolvePhoto(String? url) {
     final resolved = _profileApi.resolveMediaUrl(url) ?? _profileApi.defaultAvatarUrl;
@@ -76,9 +82,11 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
   void dispose() {
     _controller.dispose();
     _animationController.dispose();
+    _searchTimer?.cancel();
     super.dispose();
   }
 
+  /// Perform search dengan debounce 500ms
   Future<void> _performSearch() async {
     final query = _controller.text.trim();
     if (query.isEmpty) {
@@ -88,38 +96,46 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
       });
       return;
     }
+    
+    // Cancel timer yang ada
+    _searchTimer?.cancel();
+    
+    // Set loading state
     setState(() {
       _isLoading = true;
       _error = null;
       _queryTitle = query;
     });
-    try {
-      final items = await _searchPosts(query);
-      if (!mounted) return;
-      setState(() {
-        _results = items;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString();
-      });
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    
+    // Jalankan search setelah 500ms debounce
+    _searchTimer = Timer(const Duration(milliseconds: 500), () async {
+      try {
+        final items = await _searchPosts(query);
+        if (!mounted) return;
+        setState(() {
+          _results = items;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _error = e.toString();
+        });
+      } finally {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    });
   }
 
+  /// Search post dari multiple API endpoints
   Future<List<ProfileFeedItem>> _searchPosts(String query) async {
     final request = Provider.of<CookieRequest>(context, listen: false);
     final baseUrl = _profileApi.baseUrl;
     final endpoints = [
       '$baseUrl/search/api/',
-      '$baseUrl/search/api',
       '$baseUrl/post/api/search/',
-      '$baseUrl/post/api/search',
     ];
 
     dynamic lastError;
@@ -132,8 +148,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
           return posts.map((raw) {
             final map = Map<String, dynamic>.from(raw as Map);
             final resolve = _profileApi.resolveMediaUrl;
-            final avatar =
-                resolve(map['profile_photo'] as String?) ?? _profileApi.defaultAvatarUrl;
+            final avatar = resolve(map['profile_photo'] as String?) ?? _profileApi.defaultAvatarUrl;
             return ProfileFeedItem(
               id: map['id'] ?? 0,
               title: map['title'] ?? '',
@@ -148,7 +163,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
               dislikesCount: map['dislikes_count'] ?? 0,
               sharesCount: map['shares_count'] ?? 0,
               profilePhoto: avatar,
-              userInteraction: null,
+              userInteraction: map['user_interaction'] as String?,
               isSaved: map['is_saved'] ?? false,
               canEdit: map['can_edit'] ?? false,
             );
@@ -174,9 +189,8 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
       });
       return;
     }
-    final profileApi = ProfileApi(request: request);
     try {
-      final profile = await profileApi.fetchProfile();
+      final profile = await _profileApi.fetchProfile();
       if (!mounted) return;
       setState(() {
         _photoUrl = _resolvePhoto(profile.profilePhoto);
@@ -187,7 +201,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _photoUrl = profileApi.defaultAvatarUrl;
+        _photoUrl = _profileApi.defaultAvatarUrl;
         _currentUserId = null;
         _photoBytes = null;
       });
@@ -209,6 +223,12 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
   void _openProfile() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const ProfilePage()),
+    );
+  }
+
+  void _openCreatePost() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PostEntryFormPage()),
     );
   }
 
@@ -241,14 +261,14 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
         _username = null;
       }
     }
-    
+
     return Scaffold(
       key: _scaffoldKey,
       drawer: const LeftDrawer(),
-      extendBodyBehindAppBar: true, // Body di belakang appbar
+      extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       
-      // AppBar dengan glassmorphism effect
+      // AppBar dengan gradient background
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -256,7 +276,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
           icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        title: _buildGlassSearchBar(), // Search bar custom
+        title: _buildGlassSearchBar(),
         actions: [
           // Tombol profil jika login, atau login/register jika belum
           _isLoggedIn
@@ -290,8 +310,8 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
                 ),
         ],
       ),
-      
-      // Body dengan background gradient
+
+      // Body dengan gradient background
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -356,6 +376,17 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
           ),
         ),
       ),
+
+      // Floating Action Button untuk create post
+      floatingActionButton: _isLoggedIn
+          ? FloatingActionButton(
+              onPressed: _openCreatePost,
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF4A2B55),
+              elevation: 8,
+              child: const Icon(Icons.add, size: 28),
+            )
+          : null,
     );
   }
 
@@ -370,6 +401,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
       ),
       child: TextField(
         controller: _controller,
+        onChanged: (_) => _performSearch(),
         onSubmitted: (_) => _performSearch(),
         style: GoogleFonts.inter(color: Colors.white), // Teks putih
         decoration: InputDecoration(
@@ -383,6 +415,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
                     _controller.clear();
                     setState(() {
                       _results = [];
+                      _queryTitle = '';
                     });
                   },
                 )
@@ -479,13 +512,51 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
               defaultAvatar: _profileApi.defaultAvatarUrl,
               resolveAvatar: _profileApi.resolveMediaUrl,
               imageUrl: imageUrl,
-              showMenu: true,
+              showMenu: item.canEdit,
               currentUserId: _currentUserId,
               profilePageBuilder: (id) => ProfilePage(userId: id),
+              onLike: () => _handleLike(item.id),
+              onComment: () => _openPostDetail(item),
+              onSave: () => _handleSave(item.id),
             ),
           );
         },
       );
     }
+  }
+
+  /// Handler untuk like post
+  Future<void> _handleLike(int postId) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Like feature coming soon', style: GoogleFonts.inter()),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  /// Handler untuk save post
+  Future<void> _handleSave(int postId) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Save feature coming soon', style: GoogleFonts.inter()),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  /// Buka detail post
+  void _openPostDetail(ProfileFeedItem post) {
+    // Navigasi ke halaman detail post
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PostDetailPage(postId: post.id),
+      ),
+    );
   }
 }

@@ -1,14 +1,11 @@
-// ignore_for_file: unused_import
+// ignore_for_file: unused_import, deprecated_member_use, unused_element
 
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
-import 'package:smash_mobile/screens/search.dart';
-import 'package:smash_mobile/widgets/default_avatar.dart'; // Import default_avatar.dart
+import 'package:smash_mobile/profile/profile_page.dart';
+import 'package:smash_mobile/screens/post_form_entry.dart';
+import 'package:smash_mobile/widgets/default_avatar.dart';
 
-// =============================================================================
-// NAVBAR WIDGET - FIXED FOR OVERFLOW & AVATAR ERRORS
-// =============================================================================
 class NavBar extends StatelessWidget implements PreferredSizeWidget {
   const NavBar({
     super.key,
@@ -18,6 +15,7 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
     this.onCreatePost,
     this.username,
     this.photoUrl,
+    this.photoBytes,
     this.searchController,
     this.onSearchSubmit,
     this.searchPageBuilder,
@@ -25,7 +23,6 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
     this.onRegister,
     this.onLogout,
     this.onProfileTap,
-    this.photoBytes,
   });
 
   final VoidCallback? onMenuTap;
@@ -46,170 +43,108 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(72);
 
+  /// Resolve username (Guest/User/Custom)
+  String _resolveUsername() {
+    if (!isLoggedIn) return 'Guest';
+    final name = username?.trim();
+    return (name != null && name.isNotEmpty) ? name : 'User';
+  }
+
+  /// Handle search submit
+  void _handleSearch(String value, BuildContext context) {
+    final query = value.trim();
+    if (query.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    
+    if (onSearchSubmit != null) {
+      onSearchSubmit!(query);
+      return;
+    }
+    if (searchPageBuilder != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => searchPageBuilder!(query)),
+      );
+      return;
+    }
+  }
+
+  /// Navigasi default ke halaman create post
+  void _navigateToCreatePost(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PostEntryFormPage()),
+    );
+  }
+
+  /// Navigasi default ke halaman profil
+  void _navigateToProfile(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProfilePage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final controller = searchController ?? TextEditingController();
-    final loggedIn = isLoggedIn;
-    final resolvedUsername = loggedIn
-        ? (username?.trim().isNotEmpty == true ? username!.trim() : 'User')
-        : 'Guest';
-    final canCreate = loggedIn && showCreate;
-
-    void handleSearch(String value) {
-      final query = value.trim();
-      if (query.isEmpty) return;
-      if (onSearchSubmit != null) {
-        onSearchSubmit!(query);
-        return;
-      }
-      if (searchPageBuilder != null) {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => searchPageBuilder!(query)),
-        );
-        return;
-      }
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => SearchPage(initialQuery: query),
-        ),
-      );
-    }
+    final resolvedUsername = _resolveUsername();
+    final canCreate = isLoggedIn && showCreate;
 
     return SafeArea(
       child: Container(
         height: preferredSize.height,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.blue.shade700, Colors.purple.shade700],
+          ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              // ignore: deprecated_member_use
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: 2,
             ),
           ],
         ),
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
-            IconButton(
-              icon: const Icon(Icons.menu, size: 26),
-              onPressed: onMenuTap,
-            ),
+            // Animated menu icon
+            if (onMenuTap != null)
+              _AnimatedMenuIcon(onTap: onMenuTap!)
+            else
+              const SizedBox(width: 12),
             
-            // FIX: Expanded agar search field tidak overflow
+            const SizedBox(width: 12),
+            
+            // Glassmorphism search field
             Expanded(
-              child: Container(
-                height: 46,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.search, color: Colors.grey),
-                    const SizedBox(width: 10),
-                    
-                    // FIX: Expanded di TextField untuk mencegah overflow
-                    Expanded(
-                      child: TextField(
-                        controller: controller,
-                        decoration: const InputDecoration(
-                          hintText: 'Search...',
-                          border: InputBorder.none,
-                          isCollapsed: true,
-                        ),
-                        onSubmitted: handleSearch,
-                      ),
-                    ),
-                  ],
-                ),
+              child: _SearchField(
+                controller: searchController,
+                onSubmitted: (value) => _handleSearch(value, context),
               ),
             ),
             
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             
-            // FIX: Wrap action buttons dengan Flexible untuk mencegah overflow
-            if (!loggedIn) ...[
-              // FIX: Wrap dengan Row dan mainAxisSize.min
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: onLogin,
-                    child: const Text(
-                      'Login',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: onRegister,
-                    child: const Text(
-                      'Register',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ],
-              ),
-            ] else ...[
-              // FIX: Gunakan Flexible untuk Create Post button
+            // Action buttons section
+            if (!isLoggedIn)
+              _AuthButtons(onLogin: onLogin, onRegister: onRegister)
+            else ...[
+              // Create Post button dengan gradient
               if (canCreate)
-                Flexible(
-                  child: TextButton.icon(
-                    style: TextButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B3DFB),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: onCreatePost ?? () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Create post coming soon')),
-                      );
-                    },
-                    icon: const Icon(Icons.add_circle_outline),
-                    label: const Text(
-                      'Create Post',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                )
-              else
-                IconButton(
-                  icon: const Icon(Icons.mic_none),
-                  onPressed: () {},
-                ),
-                
-              const SizedBox(width: 6),
+                _CreatePostButton(onPressed: onCreatePost ?? () => _navigateToCreatePost(context)),
               
-              // FIX: Gunakan SafeAvatar dari default_avatar.dart
+              const SizedBox(width: 8),
+              
+              // Profile menu dengan avatar
               _ProfileMenu(
-                isLoggedIn: loggedIn,
                 username: resolvedUsername,
                 photoUrl: photoUrl,
                 photoBytes: photoBytes,
-                onLogin: onLogin,
-                onRegister: onRegister,
+                onProfileTap: onProfileTap ?? () => _navigateToProfile(context),
                 onLogout: onLogout,
-                onProfileTap: onProfileTap,
               ),
             ],
           ],
@@ -219,29 +154,179 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-// =============================================================================
-// PROFILE MENU - FIXED WITH SafeAvatar
-// =============================================================================
+/// Widget search field dengan glassmorphism effect
+class _SearchField extends StatelessWidget {
+  const _SearchField({
+    this.controller,
+    required this.onSubmitted,
+  });
+
+  final TextEditingController? controller;
+  final ValueChanged<String> onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 46,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 12),
+          const Icon(Icons.search, color: Colors.white70, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Search...',
+                hintStyle: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 14,
+                ),
+                border: InputBorder.none,
+                isCollapsed: true,
+              ),
+              onSubmitted: onSubmitted,
+            ),
+          ),
+          if (controller != null)
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: controller!,
+              builder: (context, value, child) {
+                if (value.text.isNotEmpty) {
+                  return IconButton(
+                    icon: Icon(Icons.clear, color: Colors.white.withOpacity(0.7), size: 20),
+                    onPressed: () => controller!.clear(),
+                    splashRadius: 20,
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Widget untuk tombol auth (login/register)
+class _AuthButtons extends StatelessWidget {
+  const _AuthButtons({
+    this.onLogin,
+    this.onRegister,
+  });
+
+  final VoidCallback? onLogin;
+  final VoidCallback? onRegister;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            side: BorderSide(color: Colors.white.withOpacity(0.8)),
+          ),
+          onPressed: onLogin,
+          child: const Text(
+            'Login',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            backgroundColor: Colors.white.withOpacity(0.9),
+            foregroundColor: Colors.purple.shade700,
+          ),
+          onPressed: onRegister,
+          child: const Text(
+            'Register',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Widget untuk tombol Create Post dengan gradient
+class _CreatePostButton extends StatelessWidget {
+  const _CreatePostButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.orange.shade400, Colors.pink.shade400],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextButton.icon(
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        onPressed: onPressed,
+        icon: const Icon(Icons.add_circle_outline, color: Colors.white, size: 18),
+        label: const Text(
+          'Create Post',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 11,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget untuk menu profil dengan avatar
 class _ProfileMenu extends StatelessWidget {
   const _ProfileMenu({
-    required this.isLoggedIn,
     required this.username,
     required this.photoUrl,
     required this.photoBytes,
-    this.onLogin,
-    this.onRegister,
-    this.onLogout,
     this.onProfileTap,
+    this.onLogout,
   });
 
-  final bool isLoggedIn;
-  final String? username;
+  final String username;
   final String? photoUrl;
   final Uint8List? photoBytes;
-  final VoidCallback? onLogin;
-  final VoidCallback? onRegister;
-  final VoidCallback? onLogout;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onLogout;
 
   @override
   Widget build(BuildContext context) {
@@ -249,64 +334,187 @@ class _ProfileMenu extends StatelessWidget {
       tooltip: 'Profile menu',
       onSelected: (value) {
         switch (value) {
-          case 'login':
-            onLogin?.call();
-            break;
-          case 'register':
-            onRegister?.call();
+          case 'profile':
+            onProfileTap?.call();
             break;
           case 'logout':
             onLogout?.call();
             break;
-          case 'profile':
-            onProfileTap?.call();
-            break;
         }
       },
-      itemBuilder: (context) {
-        if (!isLoggedIn) {
-          return [
-            const PopupMenuItem(value: 'login', child: Text('Login')),
-            const PopupMenuItem(value: 'register', child: Text('Register')),
-          ];
-        }
-        return [
-          const PopupMenuItem(value: 'profile', child: Text('Profile')),
-          const PopupMenuItem(value: 'logout', child: Text('Logout')),
-        ];
-      },
-      
-      // FIX: Gunakan SafeAvatar untuk child (menghindari CircleAvatar error)
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'profile',
+          child: ListTile(
+            leading: const Icon(Icons.person, size: 20),
+            title: Text(username, style: const TextStyle(fontSize: 14)),
+            dense: true,
+          ),
+        ),
+        PopupMenuItem(
+          value: 'logout',
+          child: ListTile(
+            leading: const Icon(Icons.logout, size: 20, color: Colors.red),
+            title: const Text(
+              'Logout',
+              style: TextStyle(fontSize: 14, color: Colors.red),
+            ),
+            dense: true,
+          ),
+        ),
+      ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
+          color: Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // FIX: SafeAvatar dengan validasi URL dan bytes
-            SafeAvatar(
-              size: 36,
-              imageUrl: photoUrl,
-              backgroundColor: Colors.grey.shade200,
-              borderWidth: 2,
-              borderColor: Colors.white,
-              child: (photoBytes != null && photoBytes!.isNotEmpty)
-                  ? Image.memory(
-                      photoBytes!,
-                      width: 36,
-                      height: 36,
-                      fit: BoxFit.cover,
-                    )
-                  : null,
+            _UserAvatar(
+              photoUrl: photoUrl,
+              photoBytes: photoBytes,
+              username: username,
             ),
             const SizedBox(width: 6),
-            const Icon(Icons.keyboard_arrow_down, size: 18),
+            const Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 18),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Widget avatar user dengan validasi multi-level
+class _UserAvatar extends StatelessWidget {
+  const _UserAvatar({
+    required this.photoUrl,
+    required this.photoBytes,
+    required this.username,
+  });
+
+  final String? photoUrl;
+  final Uint8List? photoBytes;
+  final String username;
+
+  @override
+  Widget build(BuildContext context) {
+    // Prioritas 1: photoBytes dari memory
+    if (photoBytes != null && photoBytes!.isNotEmpty) {
+      return Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: ClipOval(
+          child: Image.memory(
+            photoBytes!,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildFallbackAvatar();
+            },
+          ),
+        ),
+      );
+    }
+    
+    // Prioritas 2: photoUrl dari network
+    if (photoUrl != null && photoUrl!.isNotEmpty) {
+      return SafeAvatar(
+        size: 36,
+        imageUrl: photoUrl,
+        backgroundColor: Colors.grey.shade200,
+        borderWidth: 2,
+        borderColor: Colors.white,
+      );
+    }
+    
+    // Prioritas 3: fallback dengan inisial
+    return _buildFallbackAvatar();
+  }
+
+  Widget _buildFallbackAvatar() {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.grey.shade200,
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: Center(
+        child: Text(
+          username.isNotEmpty ? username[0].toUpperCase() : '?',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.shade700,
+            fontSize: 16,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget menu icon animasi
+class _AnimatedMenuIcon extends StatefulWidget {
+  const _AnimatedMenuIcon({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_AnimatedMenuIcon> createState() => _AnimatedMenuIconState();
+}
+
+class _AnimatedMenuIconState extends State<_AnimatedMenuIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: 0, end: 0.5).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _controller.forward().then((_) => _controller.reverse());
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          return Transform.rotate(
+            angle: _animation.value * 3.14,
+            child: const Icon(
+              Icons.menu,
+              size: 26,
+              color: Colors.white,
+            ),
+          );
+        },
+      ),
+      onPressed: _handleTap,
     );
   }
 }

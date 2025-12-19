@@ -4,20 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
 import 'package:smash_mobile/widgets/default_avatar.dart';
 
-/// PostCard - Widget kartu post modern dan interaktif
-///
-/// Menampilkan post dengan design clean, gradient header, avatar indicator,
-/// smooth animations, dan action buttons yang responsif.
-///
-/// Cara pakai:
-/// ```dart
-/// PostCard(
-///   item: post,
-///   currentUserId: 123,
-///   onLike: () => handleLike(),
-///   onComment: () => openDetail(),
-/// )
-/// ```
 class PostCard extends StatelessWidget {
   const PostCard({
     super.key,
@@ -85,18 +71,7 @@ class PostCard extends StatelessWidget {
     if (diff.inDays < 7) return '${diff.inDays}d ago';
 
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'
     ];
     final day = local.day;
     final month = months[local.month - 1];
@@ -115,6 +90,7 @@ class PostCard extends StatelessWidget {
     final isDisliked = item.userInteraction == 'dislike';
     final isSaved = item.isSaved;
 
+    // Widget utama dengan shadow dan gradient
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -143,8 +119,7 @@ class PostCard extends StatelessWidget {
         children: [
           _buildModernHeader(avatarWithCacheBust),
           _buildModernContent(imageLink, videoLink, context),
-          if (showFooterActions)
-            _buildModernFooter(isLiked, isDisliked, isSaved),
+          if (showFooterActions) _buildModernFooter(isLiked, isDisliked, isSaved),
         ],
       ),
     );
@@ -319,7 +294,7 @@ class PostCard extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: progress.expectedTotalBytes != null
                       ? progress.cumulativeBytesLoaded /
-                            progress.expectedTotalBytes!
+                          progress.expectedTotalBytes!
                       : null,
                 ),
               ),
@@ -616,23 +591,19 @@ class _PostActionsMenu extends StatelessWidget {
       itemBuilder: (context) => const [
         PopupMenuItem(
           value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 18, color: Colors.black87),
-              SizedBox(width: 8),
-              Text('Edit'),
-            ],
-          ),
+          child: Row(children: [
+            Icon(Icons.edit, size: 18, color: Colors.black87),
+            SizedBox(width: 8),
+            Text('Edit'),
+          ]),
         ),
         PopupMenuItem(
           value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 18, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Delete', style: TextStyle(color: Colors.red)),
-            ],
-          ),
+          child: Row(children: [
+            Icon(Icons.delete, size: 18, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Delete', style: TextStyle(color: Colors.red)),
+          ]),
         ),
       ],
       icon: Container(
@@ -770,13 +741,12 @@ class _YoutubePreview extends StatelessWidget {
         id = uri.pathSegments.firstOrNull;
       } else if (uri.queryParameters.containsKey('v')) {
         id = uri.queryParameters['v'];
-      } else if (uri.pathSegments.length >= 2 &&
-          uri.pathSegments[0] == 'embed') {
+      } else if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'embed') {
         id = uri.pathSegments[1];
       }
 
+      // FIX CRITICAL: Hapus spasi setelah /vi/
       if (id == null || id.isEmpty) return null;
-      // FIX: Hapus spasi setelah /vi/
       return 'https://img.youtube.com/vi/$id/mqdefault.jpg';
     } catch (e) {
       return null;
@@ -794,8 +764,7 @@ class _YoutubePreview extends StatelessWidget {
         id = uri.pathSegments.firstOrNull;
       } else if (uri.queryParameters.containsKey('v')) {
         id = uri.queryParameters['v'];
-      } else if (uri.pathSegments.length >= 2 &&
-          uri.pathSegments[0] == 'embed') {
+      } else if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'embed') {
         id = uri.pathSegments[1];
       }
 
