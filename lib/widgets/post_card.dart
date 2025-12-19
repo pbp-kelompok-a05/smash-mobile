@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smash_mobile/models/post.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:smash_mobile/services/post_service.dart';
+import 'package:provider/provider.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 
 String? _youtubeThumbnail(String url) {
   try {
@@ -48,6 +50,8 @@ class PostCard extends StatefulWidget {
 }
 
 class _PostCardState extends State<PostCard> {
+  int? loggedInUserId;
+  bool isLoadingUser = true;
   late int likesCount;
   late int dislikesCount;
   late int commentsCount;
@@ -62,8 +66,24 @@ class _PostCardState extends State<PostCard> {
     commentsCount = widget.post.commentsCount;
     userReaction = widget.post.userReaction;
     _loadLocalReactionIfMissing();
+    _fetchCurrentUser();
   }
+  Future<void> _fetchCurrentUser() async {
+    final request = context.read<CookieRequest>();
 
+    try {
+      final user =
+          await request.get("http://localhost:8000/post/me/"); // Ganti URL ke link deployment
+      setState(() {
+        loggedInUserId = user['id'];
+        isLoadingUser = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoadingUser = false;
+      });
+    }
+  }
   Future<void> _loadLocalReactionIfMissing() async {
     if (userReaction != null) return;
     try {
@@ -220,41 +240,6 @@ class _PostCardState extends State<PostCard> {
                     ),
                   ],
                 ),
-<<<<<<< HEAD
-                const SizedBox(height: 6),
-                GestureDetector(
-                  onTap: onTap,
-                  child: Text(
-                    displayUrl,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 13,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 36,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.deepPurple.shade300),
-                      foregroundColor: Colors.deepPurple.shade600,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    onPressed: onTap,
-                    icon: const Icon(Icons.open_in_new, size: 16),
-                    label: const Text(
-                      'Open Video',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-=======
                 if (post.imageUrl != null) ...[
                   const SizedBox(height: 12),
                   ClipRRect(
@@ -363,54 +348,12 @@ class _PostCardState extends State<PostCard> {
                     const Spacer(),
                     const Icon(Icons.share, size: 16, color: Colors.black),
                   ],
->>>>>>> 88f626c37a64e9f20ad41da63ce639d913183881
                 ),
               ],
             ),
           ),
-<<<<<<< HEAD
-        ],
-      ),
-    );
-  }
-
-  String? _youtubeThumb(String link) {
-    final uri = Uri.tryParse(link);
-    if (uri == null) return null;
-    String? id;
-    if (uri.host.contains('youtu.be')) {
-      id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
-    } else if (uri.queryParameters.containsKey('v')) {
-      id = uri.queryParameters['v'];
-    } else if (uri.pathSegments.length >= 2 &&
-        uri.pathSegments.first == 'embed') {
-      id = uri.pathSegments[1];
-    }
-    if (id == null || id.isEmpty) return null;
-    return 'https://img.youtube.com/vi/$id/0.jpg';
-  }
-
-  String _compactUrl(String link) {
-    final uri = Uri.tryParse(link);
-    if (uri == null) return link;
-    String? id;
-    if (uri.host.contains('youtu.be')) {
-      id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
-    } else if (uri.queryParameters.containsKey('v')) {
-      id = uri.queryParameters['v'];
-    } else if (uri.pathSegments.length >= 2 &&
-        uri.pathSegments.first == 'embed') {
-      id = uri.pathSegments[1];
-    }
-    if (id != null && id.isNotEmpty) {
-      return 'https://youtu.be/$id';
-    }
-    return link;
-  }
-=======
         ),
       ),
     );
   }
->>>>>>> 88f626c37a64e9f20ad41da63ce639d913183881
 }

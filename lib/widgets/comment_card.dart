@@ -3,6 +3,8 @@ import 'package:smash_mobile/models/comment.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smash_mobile/services/post_service.dart';
+import 'package:provider/provider.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 
 class CommentCard extends StatefulWidget {
   final Comment comment;
@@ -23,6 +25,8 @@ class CommentCard extends StatefulWidget {
 }
 
 class _CommentCardState extends State<CommentCard> {
+  int? loggedInUserId;
+  bool isLoadingUser = true;
   late int likes;
   late int dislikes;
   String? userReaction;
@@ -35,6 +39,23 @@ class _CommentCardState extends State<CommentCard> {
     dislikes = widget.comment.dislikesCount;
     userReaction = widget.comment.userReaction;
     _loadLocalReactionIfMissing();
+    _fetchCurrentUser();
+  }
+  Future<void> _fetchCurrentUser() async {
+    final request = context.read<CookieRequest>();
+
+    try {
+      final user =
+          await request.get("http://localhost:8000/post/me/"); // Ganti URL ke link deployment
+      setState(() {
+        loggedInUserId = user['id'];
+        isLoadingUser = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoadingUser = false;
+      });
+    }
   }
 
   Future<void> _loadLocalReactionIfMissing() async {
