@@ -21,12 +21,12 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _postsFuture = _postService.fetchPosts();
+    _postsFuture = _postService.fetchPosts(userId: '1');
   }
 
   void _refreshPosts() {
     setState(() {
-      _postsFuture = _postService.fetchPosts();
+      _postsFuture = _postService.fetchPosts(userId: '1');
     });
   }
 
@@ -118,7 +118,9 @@ class _MyHomePageState extends State<MyHomePage> {
                               );
                               if (result == true) {
                                 setState(() {
-                                  _postsFuture = _postService.fetchPosts();
+                                  _postsFuture = _postService.fetchPosts(
+                                    userId: '1',
+                                  );
                                 });
                               }
                             },

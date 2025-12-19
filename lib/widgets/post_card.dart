@@ -68,12 +68,14 @@ class _PostCardState extends State<PostCard> {
     _loadLocalReactionIfMissing();
     _fetchCurrentUser();
   }
+
   Future<void> _fetchCurrentUser() async {
     final request = context.read<CookieRequest>();
-  
+
     try {
-      final user =
-          await request.get("http://localhost:8000/post/me/"); // Ganti URL ke link deployment
+      final user = await request.get(
+        "http://localhost:8000/post/me/",
+      ); // Ganti URL ke link deployment
       setState(() {
         loggedInUserId = user['id'];
         isLoadingUser = false;
@@ -84,8 +86,10 @@ class _PostCardState extends State<PostCard> {
       });
     }
   }
+
   Future<void> _loadLocalReactionIfMissing() async {
-    if (userReaction != null) return;
+    // if we already have a non-empty reaction from the server, nothing to load
+    if (userReaction != null && userReaction!.trim().isNotEmpty) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       final stored = prefs.getString('post_reactions');

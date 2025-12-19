@@ -41,12 +41,14 @@ class _CommentCardState extends State<CommentCard> {
     _loadLocalReactionIfMissing();
     _fetchCurrentUser();
   }
+
   Future<void> _fetchCurrentUser() async {
     final request = context.read<CookieRequest>();
 
     try {
-      final user =
-          await request.get("http://localhost:8000/post/me/"); // Ganti URL ke link deployment
+      final user = await request.get(
+        "http://localhost:8000/post/me/",
+      ); // Ganti URL ke link deployment
       setState(() {
         loggedInUserId = user['id'];
         isLoadingUser = false;
@@ -57,6 +59,7 @@ class _CommentCardState extends State<CommentCard> {
       });
     }
   }
+
   Future<void> _loadLocalReactionIfMissing() async {
     if (userReaction != null) return;
     try {
@@ -113,7 +116,7 @@ class _CommentCardState extends State<CommentCard> {
       final res = await PostService().toggleCommentReaction(
         commentId: widget.comment.id,
         action: action,
-        userId: '1',
+        userId: loggedInUserId != null ? loggedInUserId.toString() : null,
       );
       setState(() {
         likes = (res['likes_count'] ?? likes) as int;
