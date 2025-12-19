@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
           ).copyWith(secondary: Colors.white),
           useMaterial3: true,
         ),
-        home: const MyHomePage(title: 'Smash Mobile Home Page'),
+        home: const MyHomePage(title: 'Smash Mobile'),
       ),
     );
   }
