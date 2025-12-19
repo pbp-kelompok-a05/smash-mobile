@@ -3,6 +3,8 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:smash_mobile/services/post_service.dart';
+import 'package:provider/provider.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 
 class AddPostScreen extends StatefulWidget {
   const AddPostScreen({super.key});
@@ -76,7 +78,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _submitting = true);
 
@@ -97,28 +99,35 @@ class _AddPostScreenState extends State<AddPostScreen> {
         inferredMime = 'image/gif';
     }
 
-    PostService()
-        .createPost(
-          title: title,
-          content: content,
-          videoLink: video.isEmpty ? null : video,
-          imageBytes: _pickedImageBytes,
-          imageMime: inferredMime,
-          userId: '1', // TODO: replace with actual authenticated user id
-        )
-        .then((resp) {
-          setState(() => _submitting = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Post created successfully')),
-          );
-          Navigator.of(context).pop(true);
-        })
-        .catchError((err) {
-          setState(() => _submitting = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to create post: $err')),
-          );
-        });
+    String? userId;
+    try {
+      final request = context.read<CookieRequest>();
+      final me = await request.get('${PostService.serverRoot}post/me/');
+      if (me != null && me['id'] != null) userId = me['id'].toString();
+    } catch (_) {
+      userId = null;
+    }
+
+    try {
+      await PostService().createPost(
+        title: title,
+        content: content,
+        videoLink: video.isEmpty ? null : video,
+        imageBytes: _pickedImageBytes,
+        imageMime: inferredMime,
+        userId: userId,
+      );
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post created successfully')),
+      );
+      Navigator.of(context).pop(true);
+    } catch (err) {
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to create post: $err')));
+    }
   }
 
   @override

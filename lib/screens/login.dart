@@ -1,172 +1,167 @@
-// ignore_for_file: deprecated_member_use, unused_import
-
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:pbp_django_auth/pbp_django_auth.dart';
-import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:smash_mobile/services/post_service.dart';
+import 'register.dart';
 
-import 'package:smash_mobile/screens/register.dart';
-import 'package:smash_mobile/screens/menu.dart';
-import 'package:smash_mobile/screens/post_form_entry.dart';
-
-// =============================================================================
-// MAIN APPLICATION
-// =============================================================================
-void main() {
-  runApp(const SmashApp());
-}
-
-class SmashApp extends StatelessWidget {
-  const SmashApp({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Smash Login',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.purple,
-        useMaterial3: true,
-      ),
-      home: const SmashLoginPage(),
-    );
-  }
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-// =============================================================================
-// LOGIN PAGE
-// =============================================================================
-class SmashLoginPage extends StatelessWidget {
-  const SmashLoginPage({super.key});
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _submitting = true);
+
+    final url = '${PostService.serverRoot}auth/login/';
+    try {
+      final res = await http.post(
+        Uri.parse(url),
+        body: {
+          'username': _usernameController.text.trim(),
+          'password': _passwordController.text,
+        },
+      );
+
+      if (res.statusCode == 200) {
+        final decoded = json.decode(res.body);
+        if (decoded['status'] == true || decoded['success'] == true) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Login successful')));
+          Navigator.of(context).pop(true);
+          return;
+        }
+        final msg = decoded['message'] ?? decoded['error'] ?? 'Login failed';
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: ${res.statusCode}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      setState(() => _submitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Menggunakan Stack untuk layer separation
-      body: Stack(
-        children: [
-          // Layer 1: Gradient background fullscreen
-          Container(
-            constraints: BoxConstraints.expand(),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF4A2B55),
-                  Color(0xFF6A2B53),
-                  Color(0xFF9D50BB),
-                ],
-                stops: [0.0, 0.5, 1.0],
-              ),
-            ),
-          ),
-          // Layer 2: Konten dengan SafeArea
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const _LogoSection(),
-                  const SizedBox(height: 32),
-                  const _GlassLoginCard(),
-                ],
-              ),
-            ),
-          ),
-        ],
+      appBar: AppBar(
+        title: const Text('Sign In'),
+        backgroundColor: Theme.of(context).colorScheme.secondary,
       ),
-    );
-  }
-}
-
-// =============================================================================
-// LOGO SECTION
-// =============================================================================
-class _LogoSection extends StatelessWidget {
-  const _LogoSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Smash!',
-              style: GoogleFonts.inter(
-                fontSize: 48,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2C6D9),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFD6F5E4), Color(0xFFFFECEF)],
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
-                Icons.sports_tennis,
-                size: 26,
-                color: Color(0xFF6A2B53),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'SMASH',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Sign in to your account',
+                        style: TextStyle(color: Colors.black54),
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _usernameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Username',
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Enter username'
+                            : null,
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: const InputDecoration(
+                          labelText: 'Password',
+                        ),
+                        obscureText: true,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Enter password' : null,
+                        onFieldSubmitted: (_) => _submit(),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _submitting ? null : _submit,
+                          child: _submitting
+                              ? const CircularProgressIndicator()
+                              : const Text('Sign In'),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const RegisterScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text('Create account'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Forum Diskusi Olahraga Padel\nPERTAMA di Indonesia',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: Colors.white70,
-            fontStyle: FontStyle.italic,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// =============================================================================
-// GLASSMORPHISM CARD
-// =============================================================================
-class _GlassLoginCard extends StatelessWidget {
-  const _GlassLoginCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    
-    return Container(
-      width: width * 0.92,
-      constraints: const BoxConstraints(maxWidth: 420),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: const Padding(
-            padding: EdgeInsets.all(24.0),
-            child: _SignInForm(),
           ),
         ),
       ),
     );
   }
 }
+<<<<<<< HEAD
 
 // =============================================================================
 // SIGN IN FORM
@@ -418,3 +413,5 @@ class _SignInFormState extends State<_SignInForm> {
     );
   }
 }
+=======
+>>>>>>> 40189bd112532d10fd8955b943a8a9615d391c49

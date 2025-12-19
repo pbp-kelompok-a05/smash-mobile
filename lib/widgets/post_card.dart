@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:smash_mobile/models/Filtering_entry.dart';
-import 'package:smash_mobile/widgets/default_avatar.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smash_mobile/models/post.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:smash_mobile/services/post_service.dart';
+import 'package:provider/provider.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 
 class PostCard extends StatelessWidget {
   const PostCard({
@@ -445,6 +450,24 @@ class _PostCardState extends State<PostCard> {
     _loadLocalReactionIfMissing();
     _fetchCurrentUser();
   }
+
+  Future<void> _fetchCurrentUser() async {
+    final request = context.read<CookieRequest>();
+
+    try {
+      final user = await request.get(
+        "http://localhost:8000/post/me/",
+      ); // Ganti URL ke link deployment
+      setState(() {
+        loggedInUserId = user['id'];
+        isLoadingUser = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoadingUser = false;
+      });
+    }
+  }
   Future<void> _fetchCurrentUser() async {
     final request = context.read<CookieRequest>();
 
@@ -462,7 +485,8 @@ class _PostCardState extends State<PostCard> {
     }
   }
   Future<void> _loadLocalReactionIfMissing() async {
-    if (userReaction != null) return;
+    // if we already have a non-empty reaction from the server, nothing to load
+    if (userReaction != null && userReaction!.trim().isNotEmpty) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       final stored = prefs.getString('post_reactions');

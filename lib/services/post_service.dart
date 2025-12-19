@@ -76,9 +76,14 @@ class PostService {
     }
   }
 
-  Future<List<Post>> fetchPosts() async {
+  Future<List<Post>> fetchPosts({String? userId}) async {
     try {
-      final response = await http.get(Uri.parse(baseUrl));
+      var url = baseUrl;
+      if (userId != null && userId.isNotEmpty) {
+        // append user_id as query param so server may include per-user reaction info
+        url = '$url?user_id=$userId';
+      }
+      final response = await http.get(Uri.parse(url));
       if (response.statusCode != 200) {
         throw Exception(
           'Failed to load posts. Status code: ${response.statusCode}',

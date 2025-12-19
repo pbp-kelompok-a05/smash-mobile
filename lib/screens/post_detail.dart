@@ -78,7 +78,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   Future<void> _loadLocalReactionIfMissing() async {
-    if (userReaction != null) return;
+    // allow loading local cache if server returned an empty string
+    if (userReaction != null && userReaction!.trim().isNotEmpty) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       final stored = prefs.getString('post_reactions');
