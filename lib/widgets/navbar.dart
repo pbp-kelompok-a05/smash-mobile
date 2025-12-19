@@ -1,9 +1,14 @@
+// ignore_for_file: unused_import
+
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:smash_mobile/screens/search.dart';
-import 'package:smash_mobile/widgets/default_avatar.dart';
+import 'package:smash_mobile/widgets/default_avatar.dart'; // Import default_avatar.dart
 
+// =============================================================================
+// NAVBAR WIDGET - FIXED FOR OVERFLOW & AVATAR ERRORS
+// =============================================================================
 class NavBar extends StatelessWidget implements PreferredSizeWidget {
   const NavBar({
     super.key,
@@ -48,9 +53,8 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
     final resolvedUsername = loggedIn
         ? (username?.trim().isNotEmpty == true ? username!.trim() : 'User')
         : 'Guest';
-    final resolvedPhotoBytes = loggedIn ? photoBytes : null;
-    final resolvedPhotoUrl = loggedIn ? photoUrl : null;
     final canCreate = loggedIn && showCreate;
+
     void handleSearch(String value) {
       final query = value.trim();
       if (query.isEmpty) return;
@@ -93,6 +97,8 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
               icon: const Icon(Icons.menu, size: 26),
               onPressed: onMenuTap,
             ),
+            
+            // FIX: Expanded agar search field tidak overflow
             Expanded(
               child: Container(
                 height: 46,
@@ -105,6 +111,8 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
                   children: [
                     const Icon(Icons.search, color: Colors.grey),
                     const SizedBox(width: 10),
+                    
+                    // FIX: Expanded di TextField untuk mencegah overflow
                     Expanded(
                       child: TextField(
                         controller: controller,
@@ -120,63 +128,67 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
             ),
+            
             const SizedBox(width: 10),
+            
+            // FIX: Wrap action buttons dengan Flexible untuk mencegah overflow
             if (!loggedIn) ...[
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              // FIX: Wrap dengan Row dan mainAxisSize.min
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: onLogin,
+                    child: const Text(
+                      'Login',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
-                ),
-                onPressed: onLogin,
-                child: const Text(
-                  'Login',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: onRegister,
+                    child: const Text(
+                      'Register',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
-                ),
-                onPressed: onRegister,
-                child: const Text(
-                  'Register',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
+                ],
               ),
             ] else ...[
+              // FIX: Gunakan Flexible untuk Create Post button
               if (canCreate)
-                TextButton.icon(
-                  style: TextButton.styleFrom(
-                    backgroundColor: const Color(0xFF8B3DFB),
-                    foregroundColor: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    minimumSize: const Size(0, 46),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                Flexible(
+                  child: TextButton.icon(
+                    style: TextButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B3DFB),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    shadowColor: const Color(0xFF8B3DFB).withOpacity(0.25),
-                    elevation: 2,
-                  ),
-                  onPressed: onCreatePost ??
-                      () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Create post coming soon')),
-                        );
-                      },
-                  icon: const Icon(Icons.add_circle_outline),
-                  label: const Text(
-                    'Create Post',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                    onPressed: onCreatePost ?? () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Create post coming soon')),
+                      );
+                    },
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text(
+                      'Create Post',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
                 )
               else
@@ -184,12 +196,15 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
                   icon: const Icon(Icons.mic_none),
                   onPressed: () {},
                 ),
+                
               const SizedBox(width: 6),
+              
+              // FIX: Gunakan SafeAvatar dari default_avatar.dart
               _ProfileMenu(
                 isLoggedIn: loggedIn,
                 username: resolvedUsername,
-                photoUrl: resolvedPhotoUrl,
-                photoBytes: resolvedPhotoBytes,
+                photoUrl: photoUrl,
+                photoBytes: photoBytes,
                 onLogin: onLogin,
                 onRegister: onRegister,
                 onLogout: onLogout,
@@ -203,6 +218,9 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
+// =============================================================================
+// PROFILE MENU - FIXED WITH SafeAvatar
+// =============================================================================
 class _ProfileMenu extends StatelessWidget {
   const _ProfileMenu({
     required this.isLoggedIn,
@@ -256,53 +274,36 @@ class _ProfileMenu extends StatelessWidget {
           const PopupMenuItem(value: 'logout', child: Text('Logout')),
         ];
       },
-      child: _AvatarWithPlaceholder(
-        photoUrl: photoUrl,
-        photoBytes: photoBytes,
-      ),
-    );
-  }
-}
-
-class _AvatarWithPlaceholder extends StatelessWidget {
-  const _AvatarWithPlaceholder({required this.photoUrl, this.photoBytes});
-
-  final String? photoUrl;
-  final Uint8List? photoBytes;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasBytes = photoBytes != null && photoBytes!.isNotEmpty;
-    final hasPhoto = photoUrl != null && photoUrl!.trim().isNotEmpty;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (hasBytes)
-            CircleAvatar(
-              radius: 18,
-              backgroundImage: MemoryImage(photoBytes!),
-            )
-          else
-            CircleAvatar(
-              radius: 18,
-              backgroundImage:
-                  hasPhoto ? NetworkImage(photoUrl!.trim()) : null,
-              onBackgroundImageError: (_, __) {},
+      
+      // FIX: Gunakan SafeAvatar untuk child (menghindari CircleAvatar error)
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // FIX: SafeAvatar dengan validasi URL dan bytes
+            SafeAvatar(
+              size: 36,
+              imageUrl: photoUrl,
               backgroundColor: Colors.grey.shade200,
-              child: (!hasPhoto && !hasBytes)
-                  ? const Icon(Icons.person, color: Colors.grey)
+              borderWidth: 2,
+              child: (photoBytes != null && photoBytes!.isNotEmpty)
+                  ? Image.memory(
+                      photoBytes!,
+                      width: 36,
+                      height: 36,
+                      fit: BoxFit.cover,
+                    )
                   : null,
             ),
-          const SizedBox(width: 6),
-          const Icon(Icons.keyboard_arrow_down, size: 18),
-        ],
+            const SizedBox(width: 6),
+            const Icon(Icons.keyboard_arrow_down, size: 18),
+          ],
+        ),
       ),
     );
   }

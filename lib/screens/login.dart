@@ -185,7 +185,7 @@ class _SignInFormState extends State<_SignInForm> {
   bool _obscure = true;
   bool _isSubmitting = false;
 
-  static const String _baseUrl = 'http://10.0.2.2:8000';
+  static const String _baseUrl = 'http://localhost:8000';
   static const String _loginPath = '/authentication/login/';
 
   @override

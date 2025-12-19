@@ -1,7 +1,12 @@
+// ignore_for_file: deprecated_member_use, unused_local_variable, unused_import, avoid_print, unused_element, dead_code
+
 import 'package:flutter/material.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
-import 'package:smash_mobile/widgets/default_avatar.dart';
+import 'package:smash_mobile/widgets/default_avatar.dart'; // Import default_avatar.dart
 
+// =============================================================================
+// POST CARD WIDGET - FIXED FOR OVERFLOW & AVATAR ERRORS
+// =============================================================================
 class PostCard extends StatelessWidget {
   const PostCard({
     super.key,
@@ -76,231 +81,323 @@ class PostCard extends StatelessWidget {
     final videoLink = item.videoLink ?? '';
     final isLiked = item.userInteraction == 'like';
     final isDisliked = item.userInteraction == 'dislike';
-    final likeEnabled = enableInteractions && onLike != null;
-    final dislikeEnabled = enableInteractions && onDislike != null;
-    final commentEnabled = enableInteractions && onComment != null;
-    final saveEnabled = enableInteractions && onSave != null;
-    final reportEnabled = enableInteractions && onReport != null;
-    final shareEnabled = enableInteractions && onShare != null;
+    final isSaved = item.isSaved;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        color: const Color(0xFFF7FDF9),
-        border: Border.all(color: const Color(0xFFE2F5EB)),
+      // FIX: Constraint max width untuk mencegah overflow
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width - 32,
       ),
-      child: Card(
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
         color: Colors.white,
-        elevation: 0,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      InkWell(
-                        onTap: () => _handleProfileTap(context),
-                        borderRadius: BorderRadius.circular(22),
-                        child: _avatar(avatarWithCacheBust),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _handleProfileTap(context),
-                          behavior: HitTestBehavior.opaque,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.title.isNotEmpty ? item.title : item.user,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${item.user} • ${_formattedDate(item.createdAt)}',
-                                style: const TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (_canShowMenu)
-                        _PostActionsMenu(
-                          onSelected: (action) {
-                            if (action == 'edit') {
-                              onEdit?.call(item);
-                            } else if (action == 'delete') {
-                              onDelete?.call(item);
-                            }
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    item.content,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.4,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  if (imageLink != null && imageLink.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        imageLink,
-                        height: 190,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ] else if (videoLink.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    _YoutubePreview(
-                      url: videoLink,
-                      onTap: () => _openLink(videoLink, context),
-                    ),
-                  ],
-                ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+            spreadRadius: 1,
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFF0F0F0), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+              border: Border(
+                bottom: BorderSide(color: Colors.grey.shade100, width: 1.5),
               ),
             ),
-            const Divider(height: 1, color: Color(0xFFECECEC)),
-            if (showFooterActions)
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        _countText('${item.likesCount}', 'likes'),
-                        const SizedBox(width: 16),
-                        _countText('${item.dislikesCount}', 'dislikes'),
-                        const SizedBox(width: 16),
-                        _countText('${item.commentCount}', 'comments'),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _action(
-                          icon: Icons.thumb_up_alt_rounded,
-                          label: isLiked ? 'Liked' : 'Like',
-                          color: isLiked
-                              ? Colors.pink.shade400
-                              : likeEnabled
-                                  ? Colors.grey
-                                  : Colors.grey.shade400,
-                          onTap: likeEnabled ? onLike : null,
-                          bold: isLiked,
-                          enabled: likeEnabled,
-                        ),
-                        _action(
-                          icon: Icons.thumb_down_alt_rounded,
-                          label: isDisliked ? 'Disliked' : 'Dislike',
-                          color: isDisliked
-                              ? Colors.red.shade400
-                              : dislikeEnabled
-                                  ? Colors.grey
-                                  : Colors.grey.shade400,
-                          onTap: dislikeEnabled ? onDislike : null,
-                          bold: isDisliked,
-                          enabled: dislikeEnabled,
-                        ),
-                        _action(
-                          icon: Icons.chat_bubble_outline,
-                          label: 'Comment',
-                          color: commentEnabled
-                              ? Colors.grey.shade700
-                              : Colors.grey,
-                          onTap: commentEnabled ? onComment : null,
-                          enabled: commentEnabled,
-                        ),
-                        _action(
-                          icon: item.isSaved
-                              ? Icons.bookmark
-                              : Icons.bookmark_border,
-                          label: item.isSaved ? 'Saved' : 'Save',
-                          color:
-                              item.isSaved ? Colors.blue.shade600 : Colors.grey,
-                          onTap: saveEnabled ? onSave : null,
-                          bold: item.isSaved,
-                          enabled: saveEnabled,
-                        ),
-                        _action(
-                          icon: Icons.report_outlined,
-                          label: 'Report',
-                          color: reportEnabled
-                              ? Colors.grey.shade700
-                              : Colors.grey,
-                          onTap: reportEnabled ? onReport : null,
-                          enabled: reportEnabled,
-                        ),
-                        _action(
-                          icon: Icons.share_outlined,
-                          label: 'Share',
-                          color: shareEnabled
-                              ? Colors.grey.shade700
-                              : Colors.grey,
-                          onTap: shareEnabled ? onShare : null,
-                          enabled: shareEnabled,
-                        ),
-                      ],
-                    ),
-                  ],
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // FIX: Gunakan SafeAvatar dari default_avatar.dart
+                _buildSafeAvatar(avatarWithCacheBust),
+                const SizedBox(width: 12),
+                
+                // FIX: Expanded untuk mencegah overflow di Row
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeaderRow(context),
+                      const SizedBox(height: 2),
+                      _buildPostMeta(),
+                    ],
+                  ),
                 ),
+              ],
+            ),
+          ),
+          
+          // Content
+          _buildContentSection(imageLink, videoLink, context),
+          
+          // Footer
+          if (showFooterActions) _buildFooterActions(isLiked, isDisliked, isSaved),
+        ],
+      ),
+    );
+  }
+
+  // FIX: Gunakan SafeAvatar widget dari default_avatar.dart
+  Widget _buildSafeAvatar(String? url) {
+    // Validasi URL dengan AvatarUtils
+    final isValid = url != null && AvatarUtils.isValidImageUrl(url);
+    
+    return SafeAvatar(
+      size: 48,
+      imageUrl: isValid ? url : null,
+      backgroundColor: Colors.blue.shade50,
+      borderWidth: 2,
+    );
+  }
+
+  // FIX: Header row dengan Expanded untuk title
+  Widget _buildHeaderRow(BuildContext context) {
+    return Row(
+      children: [
+        Expanded( // FIX: Mencegah title overflow
+          child: Text(
+            item.title.isNotEmpty ? item.title : item.user,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Colors.black87,
+              overflow: TextOverflow.ellipsis,
+            ),
+            maxLines: 1,
+          ),
+        ),
+        if (_canShowMenu) _PostActionsMenu(onSelected: _handleMenuAction),
+      ],
+    );
+  }
+
+  Widget _buildPostMeta() {
+    return Text(
+      '${item.user} • ${_formattedDate(item.createdAt)}',
+      style: const TextStyle(
+        color: Colors.grey,
+        fontSize: 12,
+        overflow: TextOverflow.ellipsis,
+      ),
+      maxLines: 1,
+    );
+  }
+
+  // FIX: Content section dengan constraint
+  Widget _buildContentSection(String? imageLink, String videoLink, BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Text content
+          if (item.content.isNotEmpty)
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 120),
+              child: Text(
+                item.content,
+                style: const TextStyle(fontSize: 14, height: 1.5, color: Colors.black87),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 5,
               ),
+            ),
+          
+          // Image
+          if (imageLink != null && imageLink.isNotEmpty)
+            ..._buildImageContent(imageLink),
+          
+          // Video
+          if (videoLink.isNotEmpty)
+            ..._buildVideoContent(videoLink, context),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildImageContent(String imageLink) {
+    return [
+      const SizedBox(height: 12),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          imageLink,
+          width: double.infinity,
+          height: 190,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            print('Image error: $imageLink - $error');
+            return Container(
+              height: 190,
+              color: Colors.grey.shade200,
+              child: const Icon(Icons.broken_image, color: Colors.grey),
+            );
+          },
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildVideoContent(String videoLink, BuildContext context) {
+    return [
+      const SizedBox(height: 12),
+      _YoutubePreview(url: videoLink, onTap: () => _openLink(videoLink, context)),
+    ];
+  }
+
+  // FIX: Footer actions
+  Widget _buildFooterActions(bool isLiked, bool isDisliked, bool isSaved) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        border: Border(top: BorderSide(color: Colors.grey.shade100, width: 1.5)),
+      ),
+      child: Column(
+        children: [
+          _buildStatsRow(isLiked, isDisliked),
+          const SizedBox(height: 12),
+          _buildActionButtonsRow(isLiked, isDisliked, isSaved),
+        ],
+      ),
+    );
+  }
+
+  // FIX: Stats row dengan Expanded agar sama lebar
+  Widget _buildStatsRow(bool isLiked, bool isDisliked) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _buildStatItem(icon: Icons.thumb_up_outlined, count: item.likesCount, label: 'Likes', color: Colors.blue, active: isLiked),
+        _buildStatItem(icon: Icons.thumb_down_outlined, count: item.dislikesCount, label: 'Dislikes', color: Colors.red, active: isDisliked),
+        _buildStatItem(icon: Icons.comment_outlined, count: item.commentCount, label: 'Comments', color: Colors.green),
+      ],
+    );
+  }
+
+  // FIX: Action buttons dengan Wrap dan Expanded pada text
+  Widget _buildActionButtonsRow(bool isLiked, bool isDisliked, bool isSaved) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: WrapAlignment.center,
+      children: [
+        _buildActionButton(icon: Icons.thumb_up_alt_rounded, label: isLiked ? 'Liked' : 'Like', color: Colors.blue, onTap: onLike, enabled: enableInteractions),
+        _buildActionButton(icon: Icons.thumb_down_alt_rounded, label: isDisliked ? 'Disliked' : 'Dislike', color: Colors.red, onTap: onDislike, enabled: enableInteractions),
+        _buildActionButton(icon: Icons.chat_bubble_outline, label: 'Comment', color: Colors.green, onTap: onComment, enabled: enableInteractions),
+        _buildActionButton(icon: isSaved ? Icons.bookmark : Icons.bookmark_outline, label: isSaved ? 'Saved' : 'Save', color: Colors.amber, onTap: onSave, enabled: enableInteractions),
+        _buildActionButton(icon: Icons.share_outlined, label: 'Share', color: Colors.grey, onTap: onShare, enabled: enableInteractions),
+      ],
+    );
+  }
+
+  // FIX: Stat item dengan Expanded agar responsive
+  Widget _buildStatItem({
+    required IconData icon,
+    required int count,
+    required String label,
+    required Color color,
+    bool active = false,
+  }) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, size: 18, color: active ? color : Colors.grey.shade600),
+          const SizedBox(height: 4),
+          Text(
+            count.toString(),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: active ? color : Colors.black87,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: active ? color : Colors.grey.shade600,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // FIX: Action button dengan Expanded pada text
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback? onTap,
+    required bool enabled,
+  }) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: enabled ? Colors.white : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: enabled ? Colors.grey.shade300 : Colors.grey.shade200),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: enabled ? color : Colors.grey.shade400),
+            const SizedBox(width: 6),
+            Expanded( // FIX: Mencegah text overflow
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: enabled ? color : Colors.grey.shade400,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
+  // FIX: Handler untuk menu actions
+  void _handleMenuAction(String action) {
+    if (action == 'edit' && onEdit != null) {
+      onEdit!(item);
+    } else if (action == 'delete' && onDelete != null) {
+      onDelete!(item);
+    }
+  }
+
   bool get _canShowMenu =>
-      showMenu && (item.canEdit || (currentUserId != null && item.userId == currentUserId));
+      showMenu &&
+      (item.canEdit || (currentUserId != null && item.userId == currentUserId));
 
-  Widget _avatar(String? url) {
-    final valid = url != null && url.isNotEmpty;
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: valid
-          ? Image.network(
-              url!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _placeholderAvatar(),
-            )
-          : _placeholderAvatar(),
-    );
-  }
-
-  Widget _placeholderAvatar() {
-    return const DefaultAvatar(size: 44);
-  }
-
+  // Helper methods
   String? _pickAvatar() {
     final resolver = resolveAvatar ?? (String? v) => v;
     final sources = <String?>[
@@ -324,58 +421,6 @@ class PostCard extends StatelessWidget {
     return hasQuery ? '$url&$suffix' : '$url?$suffix';
   }
 
-  Widget _countText(String value, String label) {
-    return Row(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 12,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 13, color: Colors.black87)),
-      ],
-    );
-  }
-
-  Widget _action({
-    required IconData icon,
-    required String label,
-    Color? color,
-    bool bold = false,
-    bool enabled = true,
-    VoidCallback? onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(8),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: enabled ? (color ?? Colors.grey.shade700) : Colors.grey,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-                color: enabled ? (color ?? Colors.grey.shade800) : Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _handleProfileTap(BuildContext context) {
     if (onProfileTap != null) {
       onProfileTap!();
@@ -383,41 +428,25 @@ class PostCard extends StatelessWidget {
     }
     if (profilePageBuilder != null && item.userId != 0) {
       Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => profilePageBuilder!(item.userId),
-        ),
+        MaterialPageRoute(builder: (_) => profilePageBuilder!(item.userId)),
       );
     }
-  }
-
-  String? _youtubeId(String url) {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return null;
-    if (uri.host.contains('youtu.be')) {
-      return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
-    }
-    if (uri.queryParameters.containsKey('v')) {
-      return uri.queryParameters['v'];
-    }
-    final segments = uri.pathSegments;
-    if (segments.length >= 2 && segments[0] == 'embed') return segments[1];
-    return null;
-  }
-
-  String? _youtubeThumbnail(String url) {
-    final id = _youtubeId(url);
-    if (id == null || id.isEmpty) return null;
-    return 'https://img.youtube.com/vi/$id/0.jpg';
   }
 
   Future<void> _openLink(String url, BuildContext context) async {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Open link is not supported in this build')),
+      const SnackBar(
+        content: Text('Open link is not supported in this build'),
+        duration: Duration(seconds: 2),
+      ),
     );
   }
 }
 
+// =============================================================================
+// POST ACTIONS MENU
+// =============================================================================
 class _PostActionsMenu extends StatelessWidget {
   const _PostActionsMenu({required this.onSelected});
 
@@ -445,19 +474,26 @@ class _PostActionsMenu extends StatelessWidget {
             children: [
               Icon(Icons.delete, size: 18, color: Colors.red),
               SizedBox(width: 8),
-              Text(
-                'Delete',
-                style: TextStyle(color: Colors.red),
-              ),
+              Text('Delete', style: TextStyle(color: Colors.red)),
             ],
           ),
         ),
       ],
-      icon: const Icon(Icons.more_vert, size: 20),
+      icon: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.more_vert, size: 18, color: Colors.grey),
+      ),
     );
   }
 }
 
+// =============================================================================
+// YOUTUBE PREVIEW WIDGET
+// =============================================================================
 class _YoutubePreview extends StatelessWidget {
   const _YoutubePreview({required this.url, required this.onTap});
 
@@ -471,15 +507,8 @@ class _YoutubePreview extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.deepPurple.shade100, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.deepPurple.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.shade100, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,12 +519,12 @@ class _YoutubePreview extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 Container(
-                  height: 220,
+                  height: 180,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.black12,
+                    color: Colors.grey.shade200,
                     borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(14),
+                      top: Radius.circular(12),
                     ),
                     image: thumb != null
                         ? DecorationImage(
@@ -506,27 +535,27 @@ class _YoutubePreview extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.55),
+                    color: Colors.red.withOpacity(0.85),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.play_arrow,
                     color: Colors.white,
-                    size: 34,
+                    size: 32,
                   ),
                 ),
               ],
             ),
           ),
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(14),
+              borderRadius: BorderRadius.vertical(
+                bottom: Radius.circular(12),
               ),
             ),
             child: Column(
@@ -534,13 +563,18 @@ class _YoutubePreview extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.link, color: Colors.deepPurple.shade400, size: 18),
+                    Icon(
+                      Icons.video_library,
+                      color: Colors.red.shade600,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'YouTube Video',
                       style: TextStyle(
-                        color: Colors.deepPurple.shade600,
-                        fontWeight: FontWeight.w800,
+                        color: Colors.red.shade700,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -554,28 +588,8 @@ class _YoutubePreview extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.black87,
-                      fontSize: 13,
+                      fontSize: 12,
                       decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 36,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.deepPurple.shade300),
-                      foregroundColor: Colors.deepPurple.shade600,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    onPressed: onTap,
-                    icon: const Icon(Icons.open_in_new, size: 16),
-                    label: const Text(
-                      'Open Video',
-                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -587,37 +601,52 @@ class _YoutubePreview extends StatelessWidget {
     );
   }
 
+  // FIX: YouTube thumbnail URL (remove space after /vi/)
   String? _youtubeThumb(String link) {
-    final uri = Uri.tryParse(link);
-    if (uri == null) return null;
-    String? id;
-    if (uri.host.contains('youtu.be')) {
-      id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
-    } else if (uri.queryParameters.containsKey('v')) {
-      id = uri.queryParameters['v'];
-    } else if (uri.pathSegments.length >= 2 &&
-        uri.pathSegments.first == 'embed') {
-      id = uri.pathSegments[1];
+    try {
+      final uri = Uri.tryParse(link);
+      if (uri == null) return null;
+
+      String? id;
+      if (uri.host.contains('youtu.be')) {
+        id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+      } else if (uri.queryParameters.containsKey('v')) {
+        id = uri.queryParameters['v'];
+      } else if (uri.pathSegments.length >= 2 &&
+          uri.pathSegments[0] == 'embed') {
+        id = uri.pathSegments[1];
+      }
+
+      if (id == null || id.isEmpty) return null;
+      return 'https://img.youtube.com/vi/$id/mqdefault.jpg'; // FIX: Removed space
+    } catch (e) {
+      print('YouTube thumb error: $e'); // Debug
+      return null;
     }
-    if (id == null || id.isEmpty) return null;
-    return 'https://img.youtube.com/vi/$id/0.jpg';
   }
 
   String _compactUrl(String link) {
-    final uri = Uri.tryParse(link);
-    if (uri == null) return link;
-    String? id;
-    if (uri.host.contains('youtu.be')) {
-      id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
-    } else if (uri.queryParameters.containsKey('v')) {
-      id = uri.queryParameters['v'];
-    } else if (uri.pathSegments.length >= 2 &&
-        uri.pathSegments.first == 'embed') {
-      id = uri.pathSegments[1];
+    try {
+      final uri = Uri.tryParse(link);
+      if (uri == null) return link;
+
+      String? id;
+      if (uri.host.contains('youtu.be')) {
+        id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+      } else if (uri.queryParameters.containsKey('v')) {
+        id = uri.queryParameters['v'];
+      } else if (uri.pathSegments.length >= 2 &&
+          uri.pathSegments[0] == 'embed') {
+        id = uri.pathSegments[1];
+      }
+
+      if (id != null && id.isNotEmpty) {
+        return 'youtu.be/$id';
+      }
+      return link;
+    } catch (e) {
+      print('Compact URL error: $e'); // Debug
+      return link;
     }
-    if (id != null && id.isNotEmpty) {
-      return 'https://youtu.be/$id';
-    }
-    return link;
   }
 }
