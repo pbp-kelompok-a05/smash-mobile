@@ -11,7 +11,6 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/screens/post_list.dart';
-
 import 'package:smash_mobile/screens/login.dart';
 import 'package:smash_mobile/screens/register.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
@@ -19,14 +18,13 @@ import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:smash_mobile/widgets/navbar.dart';
 import 'package:smash_mobile/screens/post_form_entry.dart';
 
-/// Halaman dashboard utama aplikasi dengan UI modern dan animasi
-/// 
-/// Fitur Utama:
-/// 1. Carousel gambar otomatis dengan gambar lokal/placeholder
-/// 2. Menu grid interaktif
-/// 3. Animasi smooth pada semua komponen
-/// 4. Login state management
-/// 5. Optimized image loading dengan cache
+/// MyHomePage - Dashboard forum diskusi Padel dengan UI modern
+///
+/// Fitur:
+/// - Carousel gambar padel courts otomatis
+/// - Info cards navigasi (Latest Posts → PostListPage, Your Hub → ProfilePage)
+/// - Menu grid interaktif (Create → PostEntryFormPage)
+/// - Animasi smooth dan glassmorphism effect
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -51,24 +49,20 @@ class _MyHomePageState extends State<MyHomePage>
   Timer? _carouselTimer;
   int _currentCarouselIndex = 0;
 
-  // === MENU ITEMS ===
+  // === MENU ITEMS (Padel Themed) ===
   final List<ItemHomepage> _menuItems = [
-    ItemHomepage('All Posts', Icons.article_outlined, const Color(0xFF5E72E4)),
-    ItemHomepage('My Posts', Icons.person_outline, const Color(0xFF2DCE89)),
-    ItemHomepage(
-      'Create Post',
-      Icons.add_circle_outline,
-      const Color(0xFFFB6340),
-    ),
+    ItemHomepage('Latest Posts', Icons.article_outlined, const Color(0xFF5E72E4)),
+    ItemHomepage('Your Hub', Icons.person_pin, const Color(0xFF2DCE89)),
+    ItemHomepage('Create', Icons.add_circle_outline, const Color(0xFFFB6340)),
     ItemHomepage('Logout', Icons.logout, const Color(0xFFF5365C)),
   ];
 
-  // Menggunakan gambar dari Unsplash dengan format dan ukuran yang sesuai
+  // === CAROUSEL IMAGES (Padel Courts) ===
   final List<String> _carouselImages = [
-    'https://i.pinimg.com/1200x/7e/b4/c3/7eb4c39e416a94f38b31a48df5e1bf69.jpg',
-    'https://images.unsplash.com/photo-1577223625818-75bc1f2ac0e5?w=800&h=600&fit=crop&auto=format&q=80', // Football 2
-    'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&h=600&fit=crop&auto=format&q=80', // Football 3
-    'https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=800&h=600&fit=crop&auto=format&q=80', // Football 4
+    'https://images.unsplash.com/photo-1577223625818-75bc1f2ac0e5?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&h=600&fit=crop',
   ];
 
   // === LIFECYCLE METHODS ===
@@ -81,8 +75,8 @@ class _MyHomePageState extends State<MyHomePage>
     );
     _animationController.forward();
     _loadProfileHeader();
-
-    // Start carousel autoplay dengan delay untuk memastikan widget sudah terbangun
+    
+    // Start carousel autoplay
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startCarouselAutoPlay();
     });
@@ -98,7 +92,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   // === CAROUSEL AUTOPLAY ===
   void _startCarouselAutoPlay() {
-    _carouselTimer?.cancel(); // Cancel existing timer
+    _carouselTimer?.cancel();
     _carouselTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (_carouselController.hasClients && mounted) {
         final nextPage = (_currentCarouselIndex + 1) % _carouselImages.length;
@@ -113,7 +107,6 @@ class _MyHomePageState extends State<MyHomePage>
     });
   }
 
-  // ✅ Function untuk pause/resume carousel saat user interaksi
   void _pauseCarousel() {
     _carouselTimer?.cancel();
   }
@@ -124,31 +117,31 @@ class _MyHomePageState extends State<MyHomePage>
 
   // === NAVIGATION & EVENT HANDLERS ===
   void _handleMenuTap(BuildContext context, ItemHomepage item) {
-    // Navigasi ke halaman form post
-    if (item.name == 'Create Post') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const PostEntryFormPage()),
-      );
-      return;
+    switch (item.name) {
+      case 'Latest Posts':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PostListPage()),
+        );
+        break;
+      case 'Your Hub':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfilePage()),
+        );
+        break;
+      case 'Create':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PostEntryFormPage()),
+        );
+        break;
+      case 'Logout':
+        _handleLogout();
+        break;
+      default:
+        _showPlaceholderMessage(item.name);
     }
-
-    if (item.name == 'All Posts') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const PostListPage()),
-      );
-      return;
-    }
-
-    // Handle logout
-    if (item.name == 'Logout') {
-      _handleLogout();
-      return;
-    }
-
-    // Placeholder untuk menu lain
-    _showPlaceholderMessage(item.name);
   }
 
   void _showPlaceholderMessage(String itemName) {
@@ -165,18 +158,9 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  void _openLogin() => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const SmashLoginPage()),
-      );
-  void _openRegister() => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const SmashRegisterPage()),
-      );
-  void _openProfile() => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const ProfilePage()),
-      );
+  void _openLogin() => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmashLoginPage()));
+  void _openRegister() => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmashRegisterPage()));
+  void _openProfile() => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
 
   Future<void> _handleLogout() async {
     if (_isLoggingOut) return;
@@ -219,8 +203,7 @@ class _MyHomePageState extends State<MyHomePage>
 
       setState(() {
         _isLoggedIn = true;
-        _photoUrl = profileApi.resolveMediaUrl(profile.profilePhoto) ??
-            profileApi.defaultAvatarUrl;
+        _photoUrl = profileApi.resolveMediaUrl(profile.profilePhoto) ?? profileApi.defaultAvatarUrl;
         _username = profile.username;
       });
     } catch (e) {
@@ -237,9 +220,8 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   Widget build(BuildContext context) {
     final request = context.watch<CookieRequest>();
-
-    // Update state jika status login berubah
-    if (_isLoggedIn != request.loggedIn) {
+    final loggedInNow = request.loggedIn;
+    if (_isLoggedIn != loggedInNow) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadProfileHeader());
     }
 
@@ -250,7 +232,6 @@ class _MyHomePageState extends State<MyHomePage>
       appBar: _buildAnimatedAppBar(),
       body: NotificationListener<ScrollNotification>(
         onNotification: (scrollNotification) {
-          // Pause carousel saat user scroll untuk pengalaman yang lebih baik
           if (scrollNotification is ScrollStartNotification) {
             _pauseCarousel();
           } else if (scrollNotification is ScrollEndNotification) {
@@ -320,24 +301,27 @@ class _MyHomePageState extends State<MyHomePage>
       children: [
         _buildAnimatedInfoCard(
           title: 'Latest Posts',
-          content: 'Newest discussions',
-          icon: Icons.forum,
+          content: 'Forum diskusi terbaru',
+          icon: Icons.forum_outlined,
           color: const Color(0xFF5E72E4),
           delay: 200,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PostListPage())),
         ),
         _buildAnimatedInfoCard(
           title: 'Your Hub',
-          content: 'Access your profile',
-          icon: Icons.person_pin,
+          content: 'Profil & aktivitas',
+          icon: Icons.person_pin_outlined,
           color: const Color(0xFF2DCE89),
           delay: 400,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage())),
         ),
         _buildAnimatedInfoCard(
           title: 'Create',
-          content: 'Share a post',
-          icon: Icons.create,
+          content: 'Buat diskusi baru',
+          icon: Icons.add_circle_outline,
           color: const Color(0xFFFB6340),
           delay: 600,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PostEntryFormPage())),
         ),
       ],
     );
@@ -349,25 +333,30 @@ class _MyHomePageState extends State<MyHomePage>
     required IconData icon,
     required Color color,
     required int delay,
+    required VoidCallback onTap,
   }) {
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
-        final intervalValue = Tween<double>(begin: 0, end: 1)
-            .animate(
-              CurvedAnimation(
-                parent: _animationController,
-                curve: Interval(delay / 1000, 1, curve: Curves.easeOut),
-              ),
-            )
-            .value;
+        final intervalValue = Tween<double>(begin: 0, end: 1).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Interval(delay / 1000, 1, curve: Curves.easeOut),
+          ),
+        ).value;
 
         return Transform.translate(
           offset: Offset(0, 30 * (1 - intervalValue)),
           child: Opacity(opacity: intervalValue, child: child),
         );
       },
-      child: InfoCard(title: title, content: content, icon: icon, color: color),
+      child: InfoCard(
+        title: title,
+        content: content,
+        icon: icon,
+        color: color,
+        onTap: onTap,
+      ),
     );
   }
 
@@ -391,7 +380,7 @@ class _MyHomePageState extends State<MyHomePage>
           ),
           const SizedBox(height: 8),
           Text(
-            '🏆 Smash',
+            '🎾 Padel Forum',
             style: GoogleFonts.orbitron(
               fontWeight: FontWeight.w900,
               fontSize: 32,
@@ -401,7 +390,7 @@ class _MyHomePageState extends State<MyHomePage>
           ),
           const SizedBox(height: 8),
           Text(
-            '⚽ Your Ultimate Football Store',
+            '🏟️ Your Ultimate Padel Discussion Hub',
             style: GoogleFonts.inter(
               fontStyle: FontStyle.italic,
               fontSize: 16,
@@ -409,7 +398,6 @@ class _MyHomePageState extends State<MyHomePage>
             ),
           ),
           const SizedBox(height: 24),
-          // ✅ Image carousel dengan optimasi performa
           _buildImageCarousel(),
         ],
       ),
@@ -436,7 +424,6 @@ class _MyHomePageState extends State<MyHomePage>
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            // PageView untuk gambar
             PageView.builder(
               controller: _carouselController,
               itemCount: _carouselImages.length,
@@ -450,8 +437,6 @@ class _MyHomePageState extends State<MyHomePage>
                 return _buildCarouselImage(index);
               },
             ),
-
-            // Gradient overlay untuk readability dan depth
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -469,8 +454,6 @@ class _MyHomePageState extends State<MyHomePage>
                 ),
               ),
             ),
-
-            // Enhanced indicator dots
             Positioned(
               bottom: 20,
               left: 0,
@@ -490,74 +473,7 @@ class _MyHomePageState extends State<MyHomePage>
                       color: index == _currentCarouselIndex
                           ? Colors.white
                           : Colors.white.withOpacity(0.6),
-                      boxShadow: [
-                        if (index == _currentCarouselIndex)
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.5),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          ),
-                      ],
                     ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Navigation arrows dengan efek glassmorphism
-            Positioned(
-              left: 12,
-              top: 0,
-              bottom: 0,
-              child: Center(
-                child: _buildGlassButton(
-                  icon: Icons.chevron_left,
-                  onPressed: () {
-                    if (_currentCarouselIndex > 0) {
-                      _carouselController.previousPage(
-                        duration: const Duration(milliseconds: 400),
-                        curve: Curves.easeInOut,
-                      );
-                    }
-                  },
-                ),
-              ),
-            ),
-            Positioned(
-              right: 12,
-              top: 0,
-              bottom: 0,
-              child: Center(
-                child: _buildGlassButton(
-                  icon: Icons.chevron_right,
-                  onPressed: () {
-                    if (_currentCarouselIndex < _carouselImages.length - 1) {
-                      _carouselController.nextPage(
-                        duration: const Duration(milliseconds: 400),
-                        curve: Curves.easeInOut,
-                      );
-                    }
-                  },
-                ),
-              ),
-            ),
-
-            // Counter indicator (misal: 1/4)
-            Positioned(
-              top: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${_currentCarouselIndex + 1}/${_carouselImages.length}',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -568,112 +484,13 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  // Widget untuk glass button pada carousel
-  Widget _buildGlassButton({required IconData icon, required VoidCallback onPressed}) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onPressed,
-              borderRadius: BorderRadius.circular(20),
-              child: Center(
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ✅ Widget untuk setiap gambar dalam carousel dengan optimasi
   Widget _buildCarouselImage(int index) {
-    final imageUrl = _carouselImages[index];
-
     return Image.network(
-      imageUrl,
+      _carouselImages[index],
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
-      // ✅ OPTIMASI 1: Gunakan headers untuk menghindari CORS issues
-      headers: const {
-        'User-Agent': 'Mozilla/5.0 (compatible; FlutterApp/1.0)',
-        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-      },
-      // ✅ OPTIMASI 2: Cache strategy yang lebih baik
-      cacheWidth: 800,
-      cacheHeight: 600,
-      // ✅ OPTIMASI 3: Loading builder dengan skeleton yang lebih menarik
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        
-        return Container(
-          color: Colors.grey[900],
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: CircularProgressIndicator(
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                        : null,
-                    color: const Color(0xFF5E72E4),
-                    strokeWidth: 3,
-                    backgroundColor: Colors.grey[800],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Loading football image...',
-                  style: GoogleFonts.inter(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '⚽',
-                  style: const TextStyle(fontSize: 24),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-      // ✅ OPTIMASI 4: Enhanced error builder dengan fallback yang menarik
       errorBuilder: (context, error, stackTrace) {
-        developer.log(
-          'Carousel image error at index $index: $error\nURL: $imageUrl',
-          name: 'CarouselDebug',
-        );
-        
-        // Fallback ke gradient container dengan ikon
         return Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -689,33 +506,15 @@ class _MyHomePageState extends State<MyHomePage>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.sports_tennis,
-                    size: 48,
-                    color: Colors.white,
-                  ),
-                ),
+                const Icon(Icons.image, size: 48, color: Colors.white),
                 const SizedBox(height: 16),
                 Text(
-                  'Padel ${index + 1}',
+                  'Padel Court ${index + 1}',
                   style: GoogleFonts.inter(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                     fontSize: 18,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '🎾 🎾 🎾',
-                  style: const TextStyle(fontSize: 24),
                 ),
               ],
             ),
@@ -746,20 +545,12 @@ class _MyHomePageState extends State<MyHomePage>
               curve: Curves.easeOut,
             );
             return Transform.scale(
-              scale: Tween<double>(begin: 0.8, end: 1.0)
-                  .animate(
-                    CurvedAnimation(
-                      parent: _animationController,
-                      curve: interval,
-                    ),
-                  )
-                  .value,
+              scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                CurvedAnimation(parent: _animationController, curve: interval),
+              ).value,
               child: FadeTransition(
                 opacity: Tween<double>(begin: 0, end: 1).animate(
-                  CurvedAnimation(
-                    parent: _animationController,
-                    curve: interval,
-                  ),
+                  CurvedAnimation(parent: _animationController, curve: interval),
                 ),
                 child: child,
               ),
@@ -775,12 +566,16 @@ class _MyHomePageState extends State<MyHomePage>
   }
 }
 
-/// Widget kartu informasi dengan glassmorphism effect
+/// Mengarahkan ke:
+/// - Latest Posts: PostListPage
+/// - Your Hub: ProfilePage
+/// - Create: PostEntryFormPage
 class InfoCard extends StatelessWidget {
   final String title;
   final String content;
   final IconData icon;
   final Color color;
+  final VoidCallback onTap;
 
   const InfoCard({
     super.key,
@@ -788,19 +583,35 @@ class InfoCard extends StatelessWidget {
     required this.content,
     required this.icon,
     required this.color,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: color.withOpacity(0.2)),
-      ),
-      color: color.withOpacity(0.1),
-      child: SizedBox(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
         width: MediaQuery.of(context).size.width / 3.5,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              color.withOpacity(0.2),
+              color.withOpacity(0.05),
+            ],
+          ),
+          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -809,7 +620,7 @@ class InfoCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: color, size: 24),
@@ -849,7 +660,11 @@ class ItemHomepage {
   ItemHomepage(this.name, this.icon, this.color);
 }
 
-/// Widget kartu menu interaktif dengan efek hover
+/// Setiap item memiliki fungsi spesifik:
+/// - Latest Posts: Buka forum diskusi
+/// - Your Hub: Buka profil user
+/// - Create: Buat post baru
+/// - Logout: Keluar dari akun
 class ItemCard extends StatefulWidget {
   final ItemHomepage item;
   final VoidCallback onTap;
@@ -877,7 +692,14 @@ class _ItemCardState extends State<ItemCard> {
           duration: const Duration(milliseconds: 200),
           transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
           decoration: BoxDecoration(
-            color: widget.item.color.withOpacity(0.08),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                widget.item.color.withOpacity(0.15),
+                widget.item.color.withOpacity(0.05),
+              ],
+            ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: widget.item.color.withOpacity(_isHovered ? 0.5 : 0.3),
@@ -901,7 +723,7 @@ class _ItemCardState extends State<ItemCard> {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
-                    color: widget.item.color.withOpacity(_isHovered ? 0.2 : 0.15),
+                    color: widget.item.color.withOpacity(_isHovered ? 0.25 : 0.15),
                     shape: BoxShape.circle,
                   ),
                   padding: const EdgeInsets.all(14),

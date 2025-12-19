@@ -1,15 +1,17 @@
-// To parse this JSON data, do
-//
-//     final filteringEntry = filteringEntryFromJson(jsonString);
+// Model untuk parsing response API filter postingan
+// Menggunakan lowercase filename: filtering_entry.dart
 
 import 'dart:convert';
 
+// Parsing utama dari JSON string ke object FilteringEntry
 FilteringEntry filteringEntryFromJson(String str) =>
     FilteringEntry.fromJson(json.decode(str));
 
+// Konversi object FilteringEntry ke JSON string
 String filteringEntryToJson(FilteringEntry data) =>
     json.encode(data.toJson());
 
+/// Model wrapper response API dengan status, data, dan pagination
 class FilteringEntry {
   final String status;
   final List<ProfileFeedItem> data;
@@ -21,6 +23,7 @@ class FilteringEntry {
     required this.pagination,
   });
 
+  // Parsing dari Map JSON dengan null-safety
   factory FilteringEntry.fromJson(Map<String, dynamic> json) => FilteringEntry(
         status: json["status"] ?? '',
         data: (json["data"] as List<dynamic>? ?? [])
@@ -31,6 +34,7 @@ class FilteringEntry {
         ),
       );
 
+  // Konversi ke Map JSON
   Map<String, dynamic> toJson() => {
         "status": status,
         "data": data.map((x) => x.toJson()).toList(),
@@ -38,6 +42,7 @@ class FilteringEntry {
       };
 }
 
+/// Model item postingan di feed profil
 class ProfileFeedItem {
   final int id;
   final String title;
@@ -75,6 +80,7 @@ class ProfileFeedItem {
     required this.canEdit,
   });
 
+  // Parsing dari Map JSON dengan null-safety dan default value
   factory ProfileFeedItem.fromJson(Map<String, dynamic> json) =>
       ProfileFeedItem(
         id: json["id"] ?? 0,
@@ -96,6 +102,7 @@ class ProfileFeedItem {
         canEdit: json["can_edit"] ?? false,
       );
 
+  // Konversi ke Map JSON
   Map<String, dynamic> toJson() => {
         "id": id,
         "title": title,
@@ -114,8 +121,33 @@ class ProfileFeedItem {
         "is_saved": isSaved,
         "can_edit": canEdit,
       };
+
+  // Membuat copy object dengan field yang bisa diupdate
+  ProfileFeedItem copyWith({
+    String? profilePhoto,
+  }) {
+    return ProfileFeedItem(
+      id: id,
+      title: title,
+      content: content,
+      image: image,
+      videoLink: videoLink,
+      user: user,
+      userId: userId,
+      createdAt: createdAt,
+      commentCount: commentCount,
+      likesCount: likesCount,
+      dislikesCount: dislikesCount,
+      sharesCount: sharesCount,
+      profilePhoto: profilePhoto ?? this.profilePhoto,
+      userInteraction: userInteraction,
+      isSaved: isSaved,
+      canEdit: canEdit,
+    );
+  }
 }
 
+/// Model pagination untuk metadata halaman
 class Pagination {
   final int page;
   final int perPage;
@@ -129,6 +161,7 @@ class Pagination {
     required this.hasNext,
   });
 
+  // Parsing dari Map JSON dengan default value
   factory Pagination.fromJson(Map<String, dynamic> json) => Pagination(
         page: json["page"] ?? 1,
         perPage: json["per_page"] ?? 10,
@@ -136,6 +169,7 @@ class Pagination {
         hasNext: json["has_next"] ?? false,
       );
 
+  // Konversi ke Map JSON
   Map<String, dynamic> toJson() => {
         "page": page,
         "per_page": perPage,
