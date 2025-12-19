@@ -57,7 +57,7 @@ class LeftDrawer extends StatelessWidget {
 
               _buildMenuItem(
                 context: context,
-                icon: Icons.add_circle_outline,
+                icon: Icons.newspaper_outlined,
                 title: 'All Post',
                 onTap: () => _navigateTo(context, const PostListPage()),
               ),
