@@ -1,9 +1,18 @@
+// ignore_for_file: deprecated_member_use, unused_import
+
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
-import 'package:smash_mobile/screens/menu.dart';
-import 'package:smash_mobile/screens/register.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import 'package:smash_mobile/screens/register.dart';
+import 'package:smash_mobile/screens/menu.dart';
+import 'package:smash_mobile/screens/post_form_entry.dart';
+
+// =============================================================================
+// MAIN APPLICATION
+// =============================================================================
 void main() {
   runApp(const SmashApp());
 }
@@ -15,72 +24,67 @@ class SmashApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Smash Login',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.purple,
+        useMaterial3: true,
       ),
-      debugShowCheckedModeBanner: false,
       home: const SmashLoginPage(),
     );
   }
 }
 
+// =============================================================================
+// LOGIN PAGE
+// =============================================================================
 class SmashLoginPage extends StatelessWidget {
   const SmashLoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
     return Scaffold(
-      // background gradient dari hijau pucat ke pink pucat
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFDFF7EE), // mint very light
-              Color(0xFFF7E7E9), // pink very light
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(vertical: 24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Logo + tagline
-                const _LogoSection(),
-                const SizedBox(height: 24),
-                // Card form
-                Center(
-                  child: Container(
-                    width: width * 0.92,
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    padding: const EdgeInsets.all(18.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: const _SignInForm(),
-                  ),
-                ),
-              ],
+      // Menggunakan Stack untuk layer separation
+      body: Stack(
+        children: [
+          // Layer 1: Gradient background fullscreen
+          Container(
+            constraints: BoxConstraints.expand(),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF4A2B55),
+                  Color(0xFF6A2B53),
+                  Color(0xFF9D50BB),
+                ],
+                stops: [0.0, 0.5, 1.0],
+              ),
             ),
           ),
-        ),
+          // Layer 2: Konten dengan SafeArea
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const _LogoSection(),
+                  const SizedBox(height: 32),
+                  const _GlassLoginCard(),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
+// =============================================================================
+// LOGO SECTION
+// =============================================================================
 class _LogoSection extends StatelessWidget {
   const _LogoSection();
 
@@ -88,22 +92,19 @@ class _LogoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Logo (bisa diganti dengan Image.asset jika Anda punya asset logo)
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // tulisan Smash!
             Text(
               'Smash!',
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 fontSize: 48,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF4A2B55), // deep purple
+                color: Colors.white,
                 letterSpacing: 0.5,
               ),
             ),
             const SizedBox(width: 8),
-            // Balloon / icon sebagai dekorasi logo
             Container(
               width: 44,
               height: 44,
@@ -112,7 +113,7 @@ class _LogoSection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
-                Icons.sports_tennis, // mendekati bola padel
+                Icons.sports_tennis,
                 size: 26,
                 color: Color(0xFF6A2B53),
               ),
@@ -120,16 +121,14 @@ class _LogoSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.0),
-          child: Text(
-            '“Forum Diskusi Olahraga Padel\nPERTAMA di Indonesia”',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-              fontStyle: FontStyle.italic,
-            ),
+        Text(
+          'Forum Diskusi Olahraga Padel\nPERTAMA di Indonesia',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: Colors.white70,
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -137,6 +136,41 @@ class _LogoSection extends StatelessWidget {
   }
 }
 
+// =============================================================================
+// GLASSMORPHISM CARD
+// =============================================================================
+class _GlassLoginCard extends StatelessWidget {
+  const _GlassLoginCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    
+    return Container(
+      width: width * 0.92,
+      constraints: const BoxConstraints(maxWidth: 420),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: const Padding(
+            padding: EdgeInsets.all(24.0),
+            child: _SignInForm(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// SIGN IN FORM
+// =============================================================================
 class _SignInForm extends StatefulWidget {
   const _SignInForm();
 
@@ -146,36 +180,19 @@ class _SignInForm extends StatefulWidget {
 
 class _SignInFormState extends State<_SignInForm> {
   final _formKey = GlobalKey<FormState>();
-  final _emailCtrl = TextEditingController();
+  final _usernameCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _obscure = true;
   bool _isSubmitting = false;
 
-  static const String _baseUrl = 'http://localhost:8000';
+  static const String _baseUrl = 'http://10.0.2.2:8000';
   static const String _loginPath = '/authentication/login/';
 
   @override
   void dispose() {
-    _emailCtrl.dispose();
+    _usernameCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
-  }
-
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(28),
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(28),
-        borderSide: BorderSide(color: Colors.grey.shade500),
-      ),
-    );
   }
 
   @override
@@ -183,155 +200,128 @@ class _SignInFormState extends State<_SignInForm> {
     return Form(
       key: _formKey,
       child: Column(
-        // isi card
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Title
           Center(
             child: Text(
               'Sign In to your account',
-              style: TextStyle(
-                fontSize: 18,
+              style: GoogleFonts.inter(
+                fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Colors.black87,
+                color: Colors.white,
               ),
             ),
           ),
+          const SizedBox(height: 24),
+          
+          // Username field
+          _buildFormFieldLabel('Username'),
           const SizedBox(height: 8),
-          Center(
-            child: Text(
-              'Welcome back to SMASH!',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          // Username label + field
-          const Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Username',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-                TextSpan(
-                  text: '*',
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _emailCtrl,
-            keyboardType: TextInputType.emailAddress,
-            decoration: _inputDecoration('Enter your username'),
+          _buildTextField(
+            controller: _usernameCtrl,
+            hint: 'Enter your username',
+            icon: Icons.person_outline,
             validator: (v) {
               if (v == null || v.isEmpty) return 'Please enter username';
+              if (v.length < 3) return 'Username must be at least 3 characters';
               return null;
             },
           ),
-          const SizedBox(height: 14),
-          // Password label + field
-          const Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Password',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-                TextSpan(
-                  text: '*',
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 16),
+          
+          // Password field
+          _buildFormFieldLabel('Password'),
           const SizedBox(height: 8),
-          TextFormField(
+          _buildTextField(
             controller: _passCtrl,
+            hint: 'Enter your password',
+            icon: Icons.lock_outline,
             obscureText: _obscure,
-            decoration: _inputDecoration('Enter your password').copyWith(
-              suffixIcon: IconButton(
-                icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _obscure = !_obscure),
-              ),
-            ),
+            suffixIcon: _buildPasswordToggle(),
             validator: (v) {
               if (v == null || v.isEmpty) return 'Please enter password';
+              if (v.length < 6) return 'Password must be at least 6 characters';
               return null;
             },
           ),
-          const SizedBox(height: 18),
-          // Sign in button (pill black)
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isSubmitting ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                elevation: 4,
-              ),
-              child: _isSubmitting
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text(
-                      'Sign In',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
+          const SizedBox(height: 24),
+          
+          // Submit button
+          _buildSubmitButton(),
+          const SizedBox(height: 20),
+          
+          // Register link
+          _buildRegisterLink(),
+        ],
+      ),
+    );
+  }
+
+  // Helper: Label untuk form field
+  Widget _buildFormFieldLabel(String text) {
+    return Text(
+      text,
+      style: GoogleFonts.inter(
+        fontWeight: FontWeight.w600,
+        fontSize: 14,
+        color: Colors.white,
+      ),
+    );
+  }
+
+  // Helper: Password visibility toggle
+  Widget _buildPasswordToggle() {
+    return IconButton(
+      icon: Icon(
+        _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+        color: Colors.white70,
+      ),
+      onPressed: () => setState(() => _obscure = !_obscure),
+    );
+  }
+
+  // Helper: Submit button
+  Widget _buildSubmitButton() {
+    return ElevatedButton(
+      onPressed: _isSubmitting ? null : _submit,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF4A2B55),
+        minimumSize: const Size(double.infinity, 56),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 4,
+      ),
+      child: _isSubmitting
+          ? const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF4A2B55)),
+            )
+          : Text('Sign In', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600)),
+    );
+  }
+
+  // Helper: Register link
+  Widget _buildRegisterLink() {
+    return Center(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text("Don't have an account? ", style: GoogleFonts.inter(color: Colors.white70)),
+          TextButton(
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const SmashRegisterPage()),
             ),
-          ),
-          const SizedBox(height: 14),
-          // bottom text "Don't have an account? Create account"
-          Center(
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(
-                  "Don't have an account? ",
-                  style: TextStyle(color: Colors.grey.shade700),
-                ),
-                TextButton(
-                  onPressed: () {                    
-                    Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const SmashRegisterPage()),
-                          );
-                  },
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(0, 0),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text(
-                    'Create account',
-                    style: TextStyle(
-                      color: Color(0xFF3E98D6), // biru muda link
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+            child: Text(
+              'Create account',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                decoration: TextDecoration.underline,
+              ),
             ),
           ),
         ],
@@ -339,44 +329,92 @@ class _SignInFormState extends State<_SignInForm> {
     );
   }
 
+  // Helper: Text field widget
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    required String? Function(String?) validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      style: GoogleFonts.inter(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.inter(color: Colors.white54),
+        prefixIcon: Icon(icon, color: Colors.white70, size: 20),
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.1),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.white, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.red, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
+      ),
+      validator: validator,
+    );
+  }
+
+  // Form submission logic
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isSubmitting = true);
+
     final request = context.read<CookieRequest>();
-    final username = _emailCtrl.text.trim();
-    final password = _passCtrl.text.trim();
     try {
-      final response = await request.login('$_baseUrl$_loginPath', {
-        'username': username,
-        'password': password,
-      });
+      final response = await request.login(
+        _baseUrl + _loginPath,
+        {
+          'username': _usernameCtrl.text.trim(),
+          'password': _passCtrl.text.trim(),
+        },
+      );
+
       if (!mounted) return;
-      final success =
-          (response is Map && response['status'] == true) || response == true;
+
+      final success = (response is Map && response['status'] == true) || response == true;
       if (success) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => MyHomePage()),
+          MaterialPageRoute(builder: (_) => const MyHomePage()),
         );
       } else {
-        final message = (response is Map && response['message'] != null)
-            ? response['message'].toString()
-            : 'Login gagal, periksa username dan password.';
-        _showError(message);
+        _showError(response is Map ? response['message']?.toString() ?? 'Login failed' : 'Login failed');
       }
     } catch (e) {
-      if (mounted) {
-        _showError(
-            'Login gagal: pastikan backend berjalan di $_baseUrl$_loginPath\n$e');
-      }
+      if (mounted) _showError('Error: $e');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
+  // Error message display
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        content: Text(message, style: GoogleFonts.inter()),
+        backgroundColor: Colors.red.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+      ),
     );
   }
 }

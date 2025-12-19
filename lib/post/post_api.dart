@@ -104,6 +104,8 @@ class PostApi {
     if (trimmed.startsWith('/')) return '$baseUrl$trimmed';
     return '$baseUrl/$trimmed';
   }
+
+  String? resolveMediaUrl(String? profilePhoto) {}
 }
 
 class NotificationItem {

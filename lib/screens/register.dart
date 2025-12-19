@@ -1,138 +1,42 @@
-// ignore_for_file: unused_element_parameter
+// ignore_for_file: deprecated_member_use
 
 import 'dart:convert';
-
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:smash_mobile/screens/login.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-void main() {
-  runApp(const SmashApp());
-}
-
-class SmashApp extends StatelessWidget {
-  const SmashApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Smash Auth',
-      theme: ThemeData(
-        primarySwatch: Colors.purple,
-      ),
-      debugShowCheckedModeBanner: false,
-      home: const SmashLoginPage(),
-    );
-  }
-}
-
-/* ---------------------------
-   Shared Logo / Header
-   --------------------------- */
-class SmashHeader extends StatelessWidget {
-  final EdgeInsetsGeometry? padding;
-  final double logoSize;
-  const SmashHeader({super.key, this.padding, this.logoSize = 48});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: padding ?? const EdgeInsets.symmetric(vertical: 18.0),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Smash!',
-                style: TextStyle(
-                  fontSize: logoSize,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF4A2B55),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                width: logoSize * 0.92,
-                height: logoSize * 0.92,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF2C6D9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.sports_tennis,
-                  size: 26,
-                  color: Color(0xFF6A2B53),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/* ---------------------------
-   Register Page
-   --------------------------- */
+/// Halaman registrasi dengan desain konsisten dengan halaman login
 class SmashRegisterPage extends StatelessWidget {
   const SmashRegisterPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
     return Scaffold(
-      // same background as login
       body: Container(
-        decoration: const BoxDecoration(
+        // Background gradient sama dengan login untuk konsistensi
+        decoration: BoxDecoration(
           gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
-              Color(0xFFDFF7EE),
-              Color(0xFFF7E7E9),
+              const Color(0xFF4A2B55),
+              const Color(0xFF6A2B53),
+              const Color(0xFF9D50BB),
             ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            stops: const [0.0, 0.5, 1.0],
           ),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: 24.0),
             child: Column(
               children: [
-                const SmashHeader(padding: EdgeInsets.only(top: 12, bottom: 6), logoSize: 56),
-                const SizedBox(height: 6),
-                Center(
-                  child: Container(
-                    width: width * 0.92,
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    padding: const EdgeInsets.all(18),
-                    margin: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        )
-                      ],
-                    ),
-                    child: const _RegisterForm(),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // tagline below card (mirrors the screenshot)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
-                  child: Text(
-                    'Forum Diskusi Olahraga Padel\nPERTAMA di Indonesia',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                  ),
-                )
+                const _LogoSection(),
+                const SizedBox(height: 32),
+                const _GlassRegisterCard(),
               ],
             ),
           ),
@@ -142,8 +46,91 @@ class SmashRegisterPage extends StatelessWidget {
   }
 }
 
+/// Logo section (sama dengan login, di-reuse)
+class _LogoSection extends StatelessWidget {
+  const _LogoSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Smash!',
+              style: GoogleFonts.inter(
+                fontSize: 48,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2C6D9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.sports_tennis,
+                size: 26,
+                color: Color(0xFF6A2B53),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Forum Diskusi Olahraga Padel\nPERTAMA di Indonesia',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: Colors.white70,
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Glassmorphism register card
+class _GlassRegisterCard extends StatelessWidget {
+  const _GlassRegisterCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
+    return Container(
+      width: width * 0.92,
+      constraints: const BoxConstraints(maxWidth: 420),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: const Padding(
+            padding: EdgeInsets.all(24.0),
+            child: _RegisterForm(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Form registrasi dengan validasi
 class _RegisterForm extends StatefulWidget {
-  const _RegisterForm({super.key});
+  const _RegisterForm();
 
   @override
   State<_RegisterForm> createState() => _RegisterFormState();
@@ -171,232 +158,291 @@ class _RegisterFormState extends State<_RegisterForm> {
     super.dispose();
   }
 
-  InputDecoration _dec(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(28),
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(28),
-        borderSide: BorderSide(color: Colors.grey.shade500),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final showSideImage = width > 900;
-
-    Widget formCard = Form(
+    return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Create your account',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+          Center(
+            child: Text(
+              'Create your account',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
           ),
           const SizedBox(height: 4),
-          Text(
-            'Join SMASH! today.',
-            style: TextStyle(color: Colors.grey.shade700),
+          Center(
+            child: Text(
+              'Join SMASH! today',
+              style: GoogleFonts.inter(fontSize: 14, color: Colors.white70),
+            ),
           ),
-          const SizedBox(height: 16),
-          _fieldLabel('Username', required: true),
-          const SizedBox(height: 6),
-          TextFormField(
+          const SizedBox(height: 24),
+
+          // Username field
+          Text(
+            'Username *',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildTextField(
             controller: _userCtrl,
-            decoration: _dec('Choose a username'),
+            hint: 'Choose a username',
+            icon: Icons.person_outline,
             validator: (v) {
               if (v == null || v.isEmpty) return 'Please enter username';
+              if (v.length < 3) return 'Username must be at least 3 characters';
               return null;
             },
           ),
-          const SizedBox(height: 12),
-          _fieldLabel('Email (Optional)'),
-          const SizedBox(height: 6),
-          TextFormField(
-            controller: _emailCtrl,
-            decoration: _dec('Enter your email'),
-            keyboardType: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 12),
-          _fieldLabel('Password', required: true),
-          const SizedBox(height: 6),
-          TextFormField(
-            controller: _passCtrl,
-            decoration: _dec('Enter a password').copyWith(
-              suffixIcon: IconButton(
-                icon: Icon(_obscureA ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _obscureA = !_obscureA),
-              ),
+          const SizedBox(height: 16),
+
+          // Email field
+          Text(
+            'Email (Optional)',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.white,
             ),
+          ),
+          const SizedBox(height: 8),
+          _buildTextField(
+            controller: _emailCtrl,
+            hint: 'Enter your email',
+            icon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+            validator: (String? p1) {
+              return;
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Password field
+          Text(
+            'Password *',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildTextField(
+            controller: _passCtrl,
+            hint: 'Enter a password',
+            icon: Icons.lock_outline,
             obscureText: _obscureA,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureA
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                color: Colors.white70,
+              ),
+              onPressed: () => setState(() => _obscureA = !_obscureA),
+            ),
             validator: (v) {
               if (v == null || v.isEmpty) return 'Please enter password';
-              if (v.length < 6) return 'Password must be at least 6 chars';
+              if (v.length < 6) return 'Password must be at least 6 characters';
               return null;
             },
           ),
-          const SizedBox(height: 12),
-          _fieldLabel('Confirm Password', required: true),
-          const SizedBox(height: 6),
-          TextFormField(
-            controller: _pass2Ctrl,
-            decoration: _dec('Confirm your password').copyWith(
-              suffixIcon: IconButton(
-                icon: Icon(_obscureB ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _obscureB = !_obscureB),
-              ),
+          const SizedBox(height: 16),
+
+          // Confirm password field
+          Text(
+            'Confirm Password *',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.white,
             ),
+          ),
+          const SizedBox(height: 8),
+          _buildTextField(
+            controller: _pass2Ctrl,
+            hint: 'Confirm your password',
+            icon: Icons.lock_outline,
             obscureText: _obscureB,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureB
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                color: Colors.white70,
+              ),
+              onPressed: () => setState(() => _obscureB = !_obscureB),
+            ),
             validator: (v) {
               if (v == null || v.isEmpty) return 'Please confirm password';
               if (v != _passCtrl.text) return 'Passwords do not match';
               return null;
             },
           ),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isSubmitting ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black87,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                elevation: 3,
+          const SizedBox(height: 24),
+
+          // Create account button
+          ElevatedButton(
+            onPressed: _isSubmitting ? null : _submit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF4A2B55),
+              minimumSize: const Size(double.infinity, 56),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: _isSubmitting
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text('Create account', style: TextStyle(fontSize: 16)),
+              elevation: 4,
             ),
+            child: _isSubmitting
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF4A2B55),
+                    ),
+                  )
+                : Text(
+                    'Create account',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            alignment: WrapAlignment.start,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text('Already have an account? ',
-                  style: TextStyle(color: Colors.grey.shade700)),
-              TextButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SmashLoginPage()),
-                  );
-                },
-                child:
-                    const Text('Sign In', style: TextStyle(fontWeight: FontWeight.w700)),
-              ),
-            ],
+          const SizedBox(height: 20),
+
+          // Login link
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  'Already have an account? ',
+                  style: GoogleFonts.inter(color: Colors.white70),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Navigasi ke halaman login
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SmashLoginPage(),
+                      ),
+                    );
+                  },
+                  child: Text(
+                    'Sign In',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
+  }
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 10,
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                )
-              ],
-            ),
-            child: formCard,
-          ),
+  // Widget reusable untuk text field
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    TextInputType? keyboardType,
+    required String? Function(String?) validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      style: GoogleFonts.inter(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.inter(color: Colors.white54),
+        prefixIcon: Icon(icon, color: Colors.white70, size: 20),
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.1),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 20,
         ),
-        if (showSideImage) const SizedBox(width: 20),
-        if (showSideImage)
-          Expanded(
-            flex: 12,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    'https://images.unsplash.com/photo-1544379370-59dab029d803?auto=format&fit=crop&w=1200&q=80',
-                    fit: BoxFit.cover,
-                  ),
-                  Container(color: Colors.black.withOpacity(0.45)),
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Align(
-                      alignment: Alignment.bottomLeft,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Join the SMASH Community',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Connect with padel enthusiasts,\nshare experiences, and find partners.',
-                            style: TextStyle(color: Colors.white, fontSize: 14),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-      ],
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.white, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.red, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
+      ),
+      validator: validator,
     );
   }
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
     setState(() => _isSubmitting = true);
+
     final request = context.read<CookieRequest>();
+
     try {
       final response = await request.postJson(
-        '$_baseUrl$_registerPath',
+        _baseUrl + _registerPath,
         jsonEncode({
           'username': _userCtrl.text.trim(),
           'password1': _passCtrl.text,
           'password2': _pass2Ctrl.text,
         }),
       );
+
       if (!mounted) return;
+
       final isSuccess =
-          (response is Map && (response['status'] == true || response['status'] == 'success'));
+          (response is Map &&
+          (response['status'] == true || response['status'] == 'success'));
+
       if (isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registrasi berhasil, silakan login.')),
+          SnackBar(
+            content: Text(
+              'Registrasi berhasil, silakan login',
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
         );
         Navigator.pushReplacement(
           context,
@@ -405,7 +451,7 @@ class _RegisterFormState extends State<_RegisterForm> {
       } else {
         final message = (response is Map && response['message'] != null)
             ? response['message'].toString()
-            : 'Registrasi gagal, coba lagi.';
+            : 'Registrasi gagal, coba lagi';
         _showError(message);
       }
     } catch (e) {
@@ -417,24 +463,13 @@ class _RegisterFormState extends State<_RegisterForm> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
-  Widget _fieldLabel(String text, {bool required = false}) {
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(
-            text: text,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          if (required)
-            TextSpan(
-              text: '*',
-              style: TextStyle(color: Colors.red.shade700),
-            ),
-        ],
+      SnackBar(
+        content: Text(message, style: GoogleFonts.inter()),
+        backgroundColor: Colors.red.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
