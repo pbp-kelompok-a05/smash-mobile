@@ -1,6 +1,8 @@
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
 
+/// API service untuk operasi post dengan integrasi Django backend
+/// Menangani: fetch posts, notifications, post detail, dan utilities URL
 class PostApi {
   PostApi({required this.request, String? baseUrl})
       : baseUrl = baseUrl ?? 'http://localhost:8000';
@@ -9,6 +11,43 @@ class PostApi {
   final String baseUrl;
   static const String _defaultAvatarPath = '/static/images/user-profile.png';
 
+  /// Ambil semua post dari endpoint /post/api/posts/
+  /// Mengembalikan List<ProfileFeedItem> dengan semua data termasuk interaksi user
+  Future<List<ProfileFeedItem>> fetchAllPosts() async {
+    final uri = Uri.parse('$baseUrl/post/api/posts/').replace(queryParameters: {
+      'sort': 'newest',
+    });
+    final response = await _safeGet(uri);
+
+    if (response is Map<String, dynamic> && response['status'] == 'success') {
+      final posts = (response['posts'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      
+      return posts.map((post) {
+        return ProfileFeedItem(
+          id: post['id'] ?? 0,
+          title: post['title'] ?? '',
+          content: post['content'] ?? '',
+          image: post['image'] as String?,
+          videoLink: post['video_link'] as String?,
+          user: post['user'] ?? '', // Username dari API
+          userId: post['user_id'] ?? 0,
+          createdAt: DateTime.tryParse(post['created_at'] ?? '') ?? DateTime.now(),
+          commentCount: post['comment_count'] ?? 0,
+          likesCount: post['likes_count'] ?? 0,
+          dislikesCount: post['dislikes_count'] ?? 0,
+          sharesCount: post['shares_count'] ?? 0,
+          profilePhoto: post['profile_photo'] as String?,
+          userInteraction: post['user_interaction'] as String?,
+          isSaved: post['is_saved'] ?? false,
+          canEdit: post['can_edit'] ?? false,
+        );
+      }).toList();
+    }
+    throw Exception('Gagal mengambil posts.');
+  }
+
+  /// Cari post berdasarkan query string
+  /// Endpoint: GET /post/api/search/?q=<query>
   Future<List<ProfileFeedItem>> searchPosts(String query) async {
     final uri = Uri.parse('$baseUrl/post/api/search/')
         .replace(queryParameters: {'q': query});
@@ -42,6 +81,8 @@ class PostApi {
     throw Exception('Gagal mencari post.');
   }
 
+  /// Ambil notifikasi untuk user yang sedang login
+  /// Endpoint: GET /post/api/notifications/
   Future<List<NotificationItem>> fetchNotifications() async {
     final uri = Uri.parse('$baseUrl/post/api/notifications/');
     final response = await _safeGet(uri);
@@ -59,6 +100,8 @@ class PostApi {
     throw Exception('INVALID_RESPONSE');
   }
 
+  /// Ambil detail single post berdasarkan ID
+  /// Endpoint: GET /post/api/posts/<postId>/
   Future<ProfileFeedItem> fetchPostDetail(int postId) async {
     final uri = Uri.parse('$baseUrl/post/api/posts/$postId/');
     final response = await _safeGet(uri);
@@ -89,6 +132,7 @@ class PostApi {
     throw Exception('Gagal mengambil detail post.');
   }
 
+  /// Helper untuk GET request dengan error handling
   Future<dynamic> _safeGet(Uri uri) async {
     try {
       return await request.get(uri.toString());
@@ -97,6 +141,8 @@ class PostApi {
     }
   }
 
+  /// Resolve relative URL ke absolute URL
+  /// Contoh: /media/avatar.jpg -> http://localhost:8000/media/avatar.jpg
   String? _resolveMediaUrl(String? url) {
     if (url == null || url.trim().isEmpty) return null;
     final trimmed = url.trim();
@@ -105,9 +151,12 @@ class PostApi {
     return '$baseUrl/$trimmed';
   }
 
-  String? resolveMediaUrl(String? profilePhoto) {}
+  /// Public wrapper untuk _resolveMediaUrl
+  String? resolveMediaUrl(String? url) => _resolveMediaUrl(url);
 }
 
+/// Model untuk notifikasi (like, comment, save, dll)
+/// Digunakan di halaman notifikasi dan feed
 class NotificationItem {
   NotificationItem({
     required this.type,
@@ -135,6 +184,7 @@ class NotificationItem {
   final String message;
   final DateTime? timestamp;
 
+  /// Parse dari JSON API dengan flexible field mapping
   factory NotificationItem.fromJson(
     Map<String, dynamic> json, {
     String? Function(String?)? resolveMediaUrl,
@@ -144,9 +194,7 @@ class NotificationItem {
     int? toInt(dynamic v) {
       if (v == null) return null;
       if (v is int) return v;
-      if (v is String) {
-        return int.tryParse(v);
-      }
+      if (v is String) return int.tryParse(v);
       return null;
     }
 
@@ -182,14 +230,12 @@ class NotificationItem {
       if (json['actor'] is Map<String, dynamic>) {
         return toInt((json['actor'] as Map)['id']);
       }
-      // Attempt to parse from actor_profile_url like /profil/5/ or /profil/api/profile/5/
+      // Parse dari URL format /profil/<id>/
       final profileUrl = extractProfileUrl();
       if (profileUrl != null) {
         final match = RegExp(r'/profil/(?:api/profile/)?(\d+)/')
             .firstMatch(profileUrl);
-        if (match != null) {
-          return int.tryParse(match.group(1) ?? '');
-        }
+        if (match != null) return int.tryParse(match.group(1) ?? '');
       }
       return null;
     }

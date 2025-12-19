@@ -2,11 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
-import 'package:smash_mobile/widgets/default_avatar.dart'; // Import default_avatar.dart
+import 'package:smash_mobile/widgets/default_avatar.dart';
 
-// =============================================================================
-// POST CARD WIDGET - FIXED FOR OVERFLOW & AVATAR ERRORS
-// =============================================================================
+/// Widget kartu post yang reusable untuk menampilkan:
+/// - Header: avatar, username, judul, menu aksi
+/// - Content: teks, gambar, atau video YouTube
+/// - Footer: statistik (likes, comments, shares) dan tombol interaksi
 class PostCard extends StatelessWidget {
   const PostCard({
     super.key,
@@ -53,6 +54,7 @@ class PostCard extends StatelessWidget {
   final VoidCallback? onReport;
   final VoidCallback? onComment;
 
+  /// Format tanggal relatif (2m ago, 3h ago, Jan 15)
   String _formattedDate(DateTime dt) {
     final local = dt.toLocal();
     final now = DateTime.now();
@@ -84,7 +86,6 @@ class PostCard extends StatelessWidget {
     final isSaved = item.isSaved;
 
     return Container(
-      // FIX: Constraint max width untuk mencegah overflow
       constraints: BoxConstraints(
         maxWidth: MediaQuery.of(context).size.width - 32,
       ),
@@ -110,7 +111,7 @@ class PostCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Header: avatar + user info + menu
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -126,11 +127,8 @@ class PostCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // FIX: Gunakan SafeAvatar dari default_avatar.dart
                 _buildSafeAvatar(avatarWithCacheBust),
                 const SizedBox(width: 12),
-                
-                // FIX: Expanded untuk mencegah overflow di Row
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,19 +143,18 @@ class PostCard extends StatelessWidget {
             ),
           ),
           
-          // Content
+          // Content: text/image/video
           _buildContentSection(imageLink, videoLink, context),
           
-          // Footer
+          // Footer: stats + action buttons
           if (showFooterActions) _buildFooterActions(isLiked, isDisliked, isSaved),
         ],
       ),
     );
   }
 
-  // FIX: Gunakan SafeAvatar widget dari default_avatar.dart
+  /// Build avatar widget dengan validasi URL
   Widget _buildSafeAvatar(String? url) {
-    // Validasi URL dengan AvatarUtils
     final isValid = url != null && AvatarUtils.isValidImageUrl(url);
     
     return SafeAvatar(
@@ -168,11 +165,11 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  // FIX: Header row dengan Expanded untuk title
+  /// Build header row dengan judul dan menu aksi
   Widget _buildHeaderRow(BuildContext context) {
     return Row(
       children: [
-        Expanded( // FIX: Mencegah title overflow
+        Expanded(
           child: Text(
             item.title.isNotEmpty ? item.title : item.user,
             style: const TextStyle(
@@ -189,6 +186,7 @@ class PostCard extends StatelessWidget {
     );
   }
 
+  /// Build metadata: username dan timestamp
   Widget _buildPostMeta() {
     return Text(
       '${item.user} • ${_formattedDate(item.createdAt)}',
@@ -201,14 +199,13 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  // FIX: Content section dengan constraint
+  /// Build section konten (teks/gambar/video)
   Widget _buildContentSection(String? imageLink, String videoLink, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Text content
           if (item.content.isNotEmpty)
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 120),
@@ -219,12 +216,8 @@ class PostCard extends StatelessWidget {
                 maxLines: 5,
               ),
             ),
-          
-          // Image
           if (imageLink != null && imageLink.isNotEmpty)
             ..._buildImageContent(imageLink),
-          
-          // Video
           if (videoLink.isNotEmpty)
             ..._buildVideoContent(videoLink, context),
         ],
@@ -232,6 +225,7 @@ class PostCard extends StatelessWidget {
     );
   }
 
+  /// Build widget gambar dengan error builder
   List<Widget> _buildImageContent(String imageLink) {
     return [
       const SizedBox(height: 12),
@@ -243,11 +237,10 @@ class PostCard extends StatelessWidget {
           height: 190,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
-            print('Image error: $imageLink - $error');
             return Container(
               height: 190,
               color: Colors.grey.shade200,
-              child: const Icon(Icons.broken_image, color: Colors.grey),
+              child: const Icon(Icons.broken_image, color: Colors.grey, size: 48),
             );
           },
         ),
@@ -255,6 +248,7 @@ class PostCard extends StatelessWidget {
     ];
   }
 
+  /// Build widget preview video YouTube
   List<Widget> _buildVideoContent(String videoLink, BuildContext context) {
     return [
       const SizedBox(height: 12),
@@ -262,7 +256,7 @@ class PostCard extends StatelessWidget {
     ];
   }
 
-  // FIX: Footer actions
+  /// Build footer dengan stats dan action buttons
   Widget _buildFooterActions(bool isLiked, bool isDisliked, bool isSaved) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -280,7 +274,7 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  // FIX: Stats row dengan Expanded agar sama lebar
+  /// Build row statistik (likes, dislikes, comments, shares)
   Widget _buildStatsRow(bool isLiked, bool isDisliked) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -288,11 +282,12 @@ class PostCard extends StatelessWidget {
         _buildStatItem(icon: Icons.thumb_up_outlined, count: item.likesCount, label: 'Likes', color: Colors.blue, active: isLiked),
         _buildStatItem(icon: Icons.thumb_down_outlined, count: item.dislikesCount, label: 'Dislikes', color: Colors.red, active: isDisliked),
         _buildStatItem(icon: Icons.comment_outlined, count: item.commentCount, label: 'Comments', color: Colors.green),
+        _buildStatItem(icon: Icons.share_outlined, count: item.sharesCount, label: 'Shares', color: Colors.purple),
       ],
     );
   }
 
-  // FIX: Action buttons dengan Wrap dan Expanded pada text
+  /// Build row tombol aksi interaktif
   Widget _buildActionButtonsRow(bool isLiked, bool isDisliked, bool isSaved) {
     return Wrap(
       spacing: 8,
@@ -308,7 +303,7 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  // FIX: Stat item dengan Expanded agar responsive
+  /// Build single stat item
   Widget _buildStatItem({
     required IconData icon,
     required int count,
@@ -343,7 +338,7 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  // FIX: Action button dengan Expanded pada text
+  /// Build single action button
   Widget _buildActionButton({
     required IconData icon,
     required String label,
@@ -366,7 +361,7 @@ class PostCard extends StatelessWidget {
           children: [
             Icon(icon, size: 16, color: enabled ? color : Colors.grey.shade400),
             const SizedBox(width: 6),
-            Expanded( // FIX: Mencegah text overflow
+            Expanded(
               child: Text(
                 label,
                 style: TextStyle(
@@ -384,27 +379,21 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  // FIX: Handler untuk menu actions
+  /// Handler menu aksi (edit/delete)
   void _handleMenuAction(String action) {
-    if (action == 'edit' && onEdit != null) {
-      onEdit!(item);
-    } else if (action == 'delete' && onDelete != null) {
-      onDelete!(item);
-    }
+    if (action == 'edit' && onEdit != null) onEdit!(item);
+    if (action == 'delete' && onDelete != null) onDelete!(item);
   }
 
+  /// Cek apakah menu bisa ditampilkan
   bool get _canShowMenu =>
       showMenu &&
       (item.canEdit || (currentUserId != null && item.userId == currentUserId));
 
-  // Helper methods
+  /// Pilih URL avatar dari multiple sources
   String? _pickAvatar() {
     final resolver = resolveAvatar ?? (String? v) => v;
-    final sources = <String?>[
-      item.profilePhoto?.trim(),
-      avatarUrl?.trim(),
-      defaultAvatar,
-    ];
+    final sources = [item.profilePhoto?.trim(), avatarUrl?.trim(), defaultAvatar];
     for (final src in sources) {
       if (src == null || src.isEmpty) continue;
       final resolved = resolver(src);
@@ -413,6 +402,7 @@ class PostCard extends StatelessWidget {
     return null;
   }
 
+  /// Tambahkan cache buster ke URL avatar
   String? _bustCache(String? url) {
     if (!bustAvatarCache || url == null || url.isEmpty) return url;
     if (defaultAvatar != null && url == defaultAvatar) return url;
@@ -421,35 +411,18 @@ class PostCard extends StatelessWidget {
     return hasQuery ? '$url&$suffix' : '$url?$suffix';
   }
 
-  void _handleProfileTap(BuildContext context) {
-    if (onProfileTap != null) {
-      onProfileTap!();
-      return;
-    }
-    if (profilePageBuilder != null && item.userId != 0) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => profilePageBuilder!(item.userId)),
-      );
-    }
-  }
-
+  /// Buka link (placeholder)
   Future<void> _openLink(String url, BuildContext context) async {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Open link is not supported in this build'),
-        duration: Duration(seconds: 2),
-      ),
+      const SnackBar(content: Text('Open link not supported in this build')),
     );
   }
 }
 
-// =============================================================================
-// POST ACTIONS MENU
-// =============================================================================
+/// Widget menu aksi untuk post (edit/delete)
 class _PostActionsMenu extends StatelessWidget {
   const _PostActionsMenu({required this.onSelected});
-
   final ValueChanged<String> onSelected;
 
   @override
@@ -458,45 +431,21 @@ class _PostActionsMenu extends StatelessWidget {
       tooltip: 'Actions',
       onSelected: onSelected,
       itemBuilder: (context) => const [
-        PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 18, color: Colors.black87),
-              SizedBox(width: 8),
-              Text('Edit'),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 18, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Delete', style: TextStyle(color: Colors.red)),
-            ],
-          ),
-        ),
+        PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.black87), SizedBox(width: 8), Text('Edit')])),
+        PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))])),
       ],
       icon: Container(
         padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
         child: const Icon(Icons.more_vert, size: 18, color: Colors.grey),
       ),
     );
   }
 }
 
-// =============================================================================
-// YOUTUBE PREVIEW WIDGET
-// =============================================================================
+/// Widget preview video YouTube dengan thumbnail
 class _YoutubePreview extends StatelessWidget {
   const _YoutubePreview({required this.url, required this.onTap});
-
   final String url;
   final VoidCallback onTap;
 
@@ -523,29 +472,15 @@ class _YoutubePreview extends StatelessWidget {
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: Colors.grey.shade200,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(12),
-                    ),
-                    image: thumb != null
-                        ? DecorationImage(
-                            image: NetworkImage(thumb),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    image: thumb != null ? DecorationImage(image: NetworkImage(thumb), fit: BoxFit.cover) : null,
                   ),
                 ),
                 Container(
                   width: 56,
                   height: 56,
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.85),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow,
-                    color: Colors.white,
-                    size: 32,
-                  ),
+                  decoration: BoxDecoration(color: Colors.red.withOpacity(0.85), shape: BoxShape.circle),
+                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 32),
                 ),
               ],
             ),
@@ -554,45 +489,14 @@ class _YoutubePreview extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(12),
-              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.video_library,
-                      color: Colors.red.shade600,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'YouTube Video',
-                      style: TextStyle(
-                        color: Colors.red.shade700,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
+                Row(children: [Icon(Icons.video_library, color: Colors.red.shade600, size: 16), const SizedBox(width: 8), Text('YouTube Video', style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w700, fontSize: 12))]),
                 const SizedBox(height: 6),
-                GestureDetector(
-                  onTap: onTap,
-                  child: Text(
-                    displayUrl,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 12,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
+                GestureDetector(onTap: onTap, child: Text(displayUrl, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.black87, fontSize: 12, decoration: TextDecoration.underline))),
               ],
             ),
           ),
@@ -601,7 +505,7 @@ class _YoutubePreview extends StatelessWidget {
     );
   }
 
-  // FIX: YouTube thumbnail URL (remove space after /vi/)
+  /// Generate YouTube thumbnail URL (FIX: tanpa spasi)
   String? _youtubeThumb(String link) {
     try {
       final uri = Uri.tryParse(link);
@@ -609,22 +513,22 @@ class _YoutubePreview extends StatelessWidget {
 
       String? id;
       if (uri.host.contains('youtu.be')) {
-        id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+        id = uri.pathSegments.firstOrNull;
       } else if (uri.queryParameters.containsKey('v')) {
         id = uri.queryParameters['v'];
-      } else if (uri.pathSegments.length >= 2 &&
-          uri.pathSegments[0] == 'embed') {
+      } else if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'embed') {
         id = uri.pathSegments[1];
       }
 
       if (id == null || id.isEmpty) return null;
-      return 'https://img.youtube.com/vi/$id/mqdefault.jpg'; // FIX: Removed space
+      // FIX: Hapus spasi setelah /vi/
+      return 'https://img.youtube.com/vi/$id/mqdefault.jpg';
     } catch (e) {
-      print('YouTube thumb error: $e'); // Debug
       return null;
     }
   }
 
+  /// Compact URL untuk display (youtu.be/abc123)
   String _compactUrl(String link) {
     try {
       final uri = Uri.tryParse(link);
@@ -632,20 +536,15 @@ class _YoutubePreview extends StatelessWidget {
 
       String? id;
       if (uri.host.contains('youtu.be')) {
-        id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+        id = uri.pathSegments.firstOrNull;
       } else if (uri.queryParameters.containsKey('v')) {
         id = uri.queryParameters['v'];
-      } else if (uri.pathSegments.length >= 2 &&
-          uri.pathSegments[0] == 'embed') {
+      } else if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'embed') {
         id = uri.pathSegments[1];
       }
 
-      if (id != null && id.isNotEmpty) {
-        return 'youtu.be/$id';
-      }
-      return link;
+      return (id != null && id.isNotEmpty) ? 'youtu.be/$id' : link;
     } catch (e) {
-      print('Compact URL error: $e'); // Debug
       return link;
     }
   }
