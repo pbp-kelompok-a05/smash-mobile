@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, unused_field, unused_element, unnecessary_underscores, avoid_print, unused_import
+// ignore_for_file: deprecated_member_use, unused_field, unused_element, unnecessary_underscores, avoid_print, unused_import, unused_local_variable
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -619,16 +619,16 @@ class _ProfilePageState extends State<ProfilePage> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _posts.length,
       itemBuilder: (context, index) {
-        final item = _posts[index];
+        // FIX: Gunakan nama variabel yang jelas untuk menghindari konflik
+        final postItem = _posts[index];
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
           margin: const EdgeInsets.only(bottom: 12),
           child: PostCard(
-            // FIX: Pastikan parameter 'item' ada di PostCard
-            key: ValueKey(item.id), 
-            item: item,
-            avatarUrl: _api.resolveMediaUrl(item.profilePhoto),
+            key: ValueKey(postItem.id),
+            item: postItem,
+            avatarUrl: _api.resolveMediaUrl(postItem.profilePhoto),
             defaultAvatar: _api.defaultAvatarUrl,
             resolveAvatar: _api.resolveMediaUrl,
             showMenu: true,

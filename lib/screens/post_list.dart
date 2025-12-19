@@ -145,7 +145,7 @@ class _PostListPageState extends State<PostListPage>
       if (!mounted) return;
 
       setState(() {
-        _posts = response;
+        _posts = response.cast<ProfileFeedItem>();
         _applyBookmarkFilter();
         _hasMore = false;
         _isLoading = false;

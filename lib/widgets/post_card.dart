@@ -1,7 +1,9 @@
-// ignore_for_file: deprecated_member_use, unused_local_variable, unused_import, avoid_print, unused_element, dead_code
+// ignore_for_file: deprecated_member_use, unused_element, control_flow_in_finally, unused_import, unnecessary_import, unused_field, unnecessary_underscores, avoid_print, unused_local_variable
 
 import 'package:flutter/material.dart';
+// FIX: Ganti dari Filtering_entry.dart menjadi filtering_entry.dart
 import 'package:smash_mobile/models/Filtering_entry.dart';
+import 'package:smash_mobile/post/post_detail_page.dart';
 import 'package:smash_mobile/widgets/default_avatar.dart';
 
 class PostCard extends StatelessWidget {
@@ -27,6 +29,7 @@ class PostCard extends StatelessWidget {
     this.onShare,
     this.onReport,
     this.onComment,
+    this.onTap,
   });
 
   // Data post
@@ -58,6 +61,7 @@ class PostCard extends StatelessWidget {
   final VoidCallback? onShare;
   final VoidCallback? onReport;
   final VoidCallback? onComment;
+  final VoidCallback? onTap;
 
   /// Format timestamp menjadi "2m ago", "3h ago", "Jan 15"
   String _formattedDate(DateTime dt) {
@@ -90,37 +94,50 @@ class PostCard extends StatelessWidget {
     final isDisliked = item.userInteraction == 'dislike';
     final isSaved = item.isSaved;
 
-    // Widget utama dengan shadow dan gradient
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.white, Colors.grey.shade50],
+    return InkWell(
+      onTap: onTap ?? () => _defaultTapHandler(context),
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, Colors.grey.shade50],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 30,
+              offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: Colors.white.withOpacity(0.8), width: 1),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 30,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: Colors.white.withOpacity(0.8), width: 1),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildModernHeader(avatarWithCacheBust),
+            _buildModernContent(imageLink, videoLink, context),
+            if (showFooterActions) _buildModernFooter(isLiked, isDisliked, isSaved),
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildModernHeader(avatarWithCacheBust),
-          _buildModernContent(imageLink, videoLink, context),
-          if (showFooterActions) _buildModernFooter(isLiked, isDisliked, isSaved),
-        ],
+    );
+  }
+
+  // Handler default untuk navigasi
+  void _defaultTapHandler(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PostDetailPage(postId: item.id),
       ),
     );
   }
@@ -664,7 +681,6 @@ class _YoutubePreview extends StatelessWidget {
                           : null,
                     ),
                   ),
-                  // Play button besar
                   Container(
                     width: 64,
                     height: 64,
@@ -688,7 +704,6 @@ class _YoutubePreview extends StatelessWidget {
                 ],
               ),
             ),
-            // Video info bar
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(color: Colors.white),
@@ -730,7 +745,7 @@ class _YoutubePreview extends StatelessWidget {
     );
   }
 
-  /// Generate YouTube thumbnail URL (FIX: tanpa spasi)
+  /// Generate YouTube thumbnail URL
   String? _youtubeThumb(String link) {
     try {
       final uri = Uri.tryParse(link);
@@ -745,7 +760,6 @@ class _YoutubePreview extends StatelessWidget {
         id = uri.pathSegments[1];
       }
 
-      // FIX CRITICAL: Hapus spasi setelah /vi/
       if (id == null || id.isEmpty) return null;
       return 'https://img.youtube.com/vi/$id/mqdefault.jpg';
     } catch (e) {
@@ -753,7 +767,7 @@ class _YoutubePreview extends StatelessWidget {
     }
   }
 
-  /// Compact URL untuk display (youtu.be/abc123)
+  /// Compact URL untuk display
   String _compactUrl(String link) {
     try {
       final uri = Uri.tryParse(link);

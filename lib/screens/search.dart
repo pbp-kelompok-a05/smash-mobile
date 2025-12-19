@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, unused_element, control_flow_in_finally, unused_import, unnecessary_import, unused_field, unnecessary_underscores
+// ignore_for_file: deprecated_member_use, unused_element, control_flow_in_finally, unused_import, unnecessary_import, unused_field, unnecessary_underscores, avoid_print, unused_local_variable
 
 import 'dart:async';
 import 'dart:typed_data';
@@ -18,7 +18,6 @@ import 'package:smash_mobile/widgets/navbar.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:smash_mobile/widgets/post_card.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 
 class SearchPage extends StatefulWidget {
   final String initialQuery;
@@ -149,24 +148,26 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
             final map = Map<String, dynamic>.from(raw as Map);
             final resolve = _profileApi.resolveMediaUrl;
             final avatar = resolve(map['profile_photo'] as String?) ?? _profileApi.defaultAvatarUrl;
-            return ProfileFeedItem(
-              id: map['id'] ?? 0,
-              title: map['title'] ?? '',
-              content: map['content'] ?? '',
-              image: resolve(map['image'] as String?),
-              videoLink: map['video_link'] as String?,
-              user: map['user'] ?? '',
-              userId: map['user_id'] ?? 0,
-              createdAt: DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
-              commentCount: map['comment_count'] ?? 0,
-              likesCount: map['likes_count'] ?? 0,
-              dislikesCount: map['dislikes_count'] ?? 0,
-              sharesCount: map['shares_count'] ?? 0,
-              profilePhoto: avatar,
-              userInteraction: map['user_interaction'] as String?,
-              isSaved: map['is_saved'] ?? false,
-              canEdit: map['can_edit'] ?? false,
-            );
+            
+            // FIX: Gunakan ProfileFeedItem.fromJson untuk konsistensi
+            return ProfileFeedItem.fromJson({
+              'id': map['id'] ?? 0,
+              'title': map['title'] ?? '',
+              'content': map['content'] ?? '',
+              'image': resolve(map['image'] as String?),
+              'video_link': map['video_link'] as String?,
+              'user': map['user'] ?? '',
+              'user_id': map['user_id'] ?? 0,
+              'created_at': map['created_at'] ?? '',
+              'comment_count': map['comment_count'] ?? 0,
+              'likes_count': map['likes_count'] ?? 0,
+              'dislikes_count': map['dislikes_count'] ?? 0,
+              'shares_count': map['shares_count'] ?? 0,
+              'profile_photo': avatar,
+              'user_interaction': map['user_interaction'] as String?,
+              'is_saved': map['is_saved'] ?? false,
+              'can_edit': map['can_edit'] ?? false,
+            });
           }).toList();
         }
         lastError = res;
@@ -491,8 +492,9 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
         itemCount: _results.length,
         separatorBuilder: (_, __) => const SizedBox(height: 16),
         itemBuilder: (context, index) {
-          final item = _results[index];
-          final imageUrl = _profileApi.resolveMediaUrl(item.image);
+          // FIX: Gunakan nama variable yang jelas untuk menghindari konflik
+          final postItem = _results[index];
+          final imageUrl = _profileApi.resolveMediaUrl(postItem.image);
           
           return AnimatedBuilder(
             animation: _animationController,
@@ -508,16 +510,17 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
               );
             },
             child: PostCard(
-              item: item,
+              // FIX: Hindari konflik nama variabel dengan menggunakan nama yang berbeda
+              item: postItem,
               defaultAvatar: _profileApi.defaultAvatarUrl,
               resolveAvatar: _profileApi.resolveMediaUrl,
               imageUrl: imageUrl,
-              showMenu: item.canEdit,
+              showMenu: postItem.canEdit,
               currentUserId: _currentUserId,
               profilePageBuilder: (id) => ProfilePage(userId: id),
-              onLike: () => _handleLike(item.id),
-              onComment: () => _openPostDetail(item),
-              onSave: () => _handleSave(item.id),
+              onLike: () => _handleLike(postItem.id),
+              onComment: () => _openPostDetail(postItem),
+              onSave: () => _handleSave(postItem.id),
             ),
           );
         },
