@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smash_mobile/models/post.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:smash_mobile/services/post_service.dart';
+import 'package:provider/provider.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 
 String? _youtubeThumbnail(String url) {
   try {
@@ -48,6 +50,8 @@ class PostCard extends StatefulWidget {
 }
 
 class _PostCardState extends State<PostCard> {
+  int? loggedInUserId;
+  bool isLoadingUser = true;
   late int likesCount;
   late int dislikesCount;
   late int commentsCount;
@@ -62,8 +66,24 @@ class _PostCardState extends State<PostCard> {
     commentsCount = widget.post.commentsCount;
     userReaction = widget.post.userReaction;
     _loadLocalReactionIfMissing();
+    _fetchCurrentUser();
   }
-
+  Future<void> _fetchCurrentUser() async {
+    final request = context.read<CookieRequest>();
+  
+    try {
+      final user =
+          await request.get("http://localhost:8000/post/me/"); // Ganti URL ke link deployment
+      setState(() {
+        loggedInUserId = user['id'];
+        isLoadingUser = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoadingUser = false;
+      });
+    }
+  }
   Future<void> _loadLocalReactionIfMissing() async {
     if (userReaction != null) return;
     try {
