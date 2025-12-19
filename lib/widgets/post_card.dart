@@ -4,10 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
 import 'package:smash_mobile/widgets/default_avatar.dart';
 
-/// Widget kartu post yang reusable untuk menampilkan:
-/// - Header: avatar, username, judul, menu aksi
-/// - Content: teks, gambar, atau video YouTube
-/// - Footer: statistik (likes, comments, shares) dan tombol interaksi
+/// PostCard - Widget kartu post modern dan interaktif
+///
+/// Menampilkan post dengan design clean, gradient header, avatar indicator,
+/// smooth animations, dan action buttons yang responsif.
+///
+/// Cara pakai:
+/// ```dart
+/// PostCard(
+///   item: post,
+///   currentUserId: 123,
+///   onLike: () => handleLike(),
+///   onComment: () => openDetail(),
+/// )
+/// ```
 class PostCard extends StatelessWidget {
   const PostCard({
     super.key,
@@ -33,20 +43,29 @@ class PostCard extends StatelessWidget {
     this.onComment,
   });
 
+  // Data post
   final ProfileFeedItem item;
   final String? avatarUrl;
   final String? imageUrl;
+
+  // Navigasi
   final VoidCallback? onProfileTap;
   final Widget Function(int userId)? profilePageBuilder;
+
+  // Avatar
   final String? defaultAvatar;
   final String? Function(String?)? resolveAvatar;
   final bool bustAvatarCache;
+
+  // User & permission
   final int? currentUserId;
-  final ValueChanged<ProfileFeedItem>? onEdit;
-  final ValueChanged<ProfileFeedItem>? onDelete;
   final bool showMenu;
   final bool showFooterActions;
   final bool enableInteractions;
+
+  // Callbacks
+  final ValueChanged<ProfileFeedItem>? onEdit;
+  final ValueChanged<ProfileFeedItem>? onDelete;
   final VoidCallback? onLike;
   final VoidCallback? onDislike;
   final VoidCallback? onSave;
@@ -54,7 +73,7 @@ class PostCard extends StatelessWidget {
   final VoidCallback? onReport;
   final VoidCallback? onComment;
 
-  /// Format tanggal relatif (2m ago, 3h ago, Jan 15)
+  /// Format timestamp menjadi "2m ago", "3h ago", "Jan 15"
   String _formattedDate(DateTime dt) {
     final local = dt.toLocal();
     final now = DateTime.now();
@@ -66,7 +85,18 @@ class PostCard extends StatelessWidget {
     if (diff.inDays < 7) return '${diff.inDays}d ago';
 
     const months = [
-      'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final day = local.day;
     final month = months[local.month - 1];
@@ -86,294 +116,443 @@ class PostCard extends StatelessWidget {
     final isSaved = item.isSaved;
 
     return Container(
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width - 32,
-      ),
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, Colors.grey.shade50],
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-            spreadRadius: 1,
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 30,
+            offset: const Offset(0, 8),
           ),
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: const Color(0xFFF0F0F0), width: 1.5),
+        border: Border.all(color: Colors.white.withOpacity(0.8), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: avatar + user info + menu
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade100, width: 1.5),
-              ),
-            ),
-            child: Row(
+          _buildModernHeader(avatarWithCacheBust),
+          _buildModernContent(imageLink, videoLink, context),
+          if (showFooterActions)
+            _buildModernFooter(isLiked, isDisliked, isSaved),
+        ],
+      ),
+    );
+  }
+
+  /// Header modern: avatar + online indicator + user info
+  Widget _buildModernHeader(String? avatarUrl) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.blue.shade50.withOpacity(0.7),
+            Colors.purple.shade50.withOpacity(0.5),
+          ],
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Row(
+        children: [
+          _buildAvatarWithIndicator(avatarUrl),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSafeAvatar(avatarWithCacheBust),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeaderRow(context),
-                      const SizedBox(height: 2),
-                      _buildPostMeta(),
-                    ],
+                Text(
+                  item.title.isNotEmpty ? item.title : item.user,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    letterSpacing: -0.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      item.user,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      width: 4,
+                      height: 4,
+                      decoration: const BoxDecoration(
+                        color: Colors.grey,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    Text(
+                      _formattedDate(item.createdAt),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (_canShowMenu) _PostActionsMenu(onSelected: _handleMenuAction),
+        ],
+      ),
+    );
+  }
+
+  /// Avatar 56px + online indicator hijau
+  Widget _buildAvatarWithIndicator(String? avatarUrl) {
+    final isValid = avatarUrl != null && AvatarUtils.isValidImageUrl(avatarUrl);
+    return Stack(
+      children: [
+        SafeAvatar(
+          size: 56,
+          imageUrl: isValid ? avatarUrl : null,
+          backgroundColor: Colors.blue.shade100,
+          borderWidth: 3,
+          borderColor: Colors.white,
+        ),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Content: teks + gambar/video yang stylish
+  Widget _buildModernContent(
+    String? imageLink,
+    String videoLink,
+    BuildContext context,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (item.content.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                item.content,
+                style: const TextStyle(
+                  fontSize: 15,
+                  height: 1.6,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w400,
+                ),
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          if (imageLink != null && imageLink.isNotEmpty)
+            _buildModernImage(imageLink),
+          if (videoLink.isNotEmpty) _buildModernVideo(videoLink, context),
+        ],
+      ),
+    );
+  }
+
+  /// Gambar 220px dengan loading shimmer dan shadow
+  Widget _buildModernImage(String imageLink) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Image.network(
+          imageLink,
+          width: double.infinity,
+          height: 220,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return Container(
+              height: 220,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: progress.expectedTotalBytes != null
+                      ? progress.cumulativeBytesLoaded /
+                            progress.expectedTotalBytes!
+                      : null,
+                ),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              height: 220,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(
+                Icons.broken_image,
+                size: 48,
+                color: Colors.grey,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Video preview dengan play button yang lebih stylish
+  Widget _buildModernVideo(String videoLink, BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      child: _YoutubePreview(
+        url: videoLink,
+        onTap: () => _openLink(videoLink, context),
+      ),
+    );
+  }
+
+  /// Footer: stats + action buttons yang responsif
+  Widget _buildModernFooter(bool isLiked, bool isDisliked, bool isSaved) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [Colors.grey.shade100.withOpacity(0.5), Colors.transparent],
+        ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          _buildModernStatsRow(isLiked, isDisliked),
+          const SizedBox(height: 16),
+          const Divider(height: 1, thickness: 1),
+          const SizedBox(height: 16),
+          _buildModernActionButtonsRow(isLiked, isDisliked, isSaved),
+        ],
+      ),
+    );
+  }
+
+  /// Stats row dengan animasi scale
+  Widget _buildModernStatsRow(bool isLiked, bool isDisliked) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _buildModernStatItem(
+          icon: Icons.thumb_up_outlined,
+          count: item.likesCount,
+          label: 'Likes',
+          color: Colors.blue,
+          isActive: isLiked,
+        ),
+        _buildModernStatItem(
+          icon: Icons.thumb_down_outlined,
+          count: item.dislikesCount,
+          label: 'Dislikes',
+          color: Colors.red,
+          isActive: isDisliked,
+        ),
+        _buildModernStatItem(
+          icon: Icons.comment_outlined,
+          count: item.commentCount,
+          label: 'Comments',
+          color: Colors.green,
+          isActive: false,
+        ),
+        _buildModernStatItem(
+          icon: Icons.share_outlined,
+          count: item.sharesCount,
+          label: 'Shares',
+          color: Colors.purple,
+          isActive: false,
+        ),
+      ],
+    );
+  }
+
+  /// Stat item dengan animasi scale
+  Widget _buildModernStatItem({
+    required IconData icon,
+    required int count,
+    required String label,
+    required Color color,
+    required bool isActive,
+  }) {
+    return Expanded(
+      child: AnimatedScale(
+        scale: isActive ? 1.1 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isActive ? color : Colors.grey.shade600,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              count.toString(),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isActive ? color : Colors.black,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: isActive ? color : Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Action buttons dengan ripple effect yang lebih baik
+  Widget _buildModernActionButtonsRow(
+    bool isLiked,
+    bool isDisliked,
+    bool isSaved,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildModernActionButton(
+          icon: Icons.thumb_up_alt_rounded,
+          label: isLiked ? 'Liked' : 'Like',
+          color: Colors.blue,
+          onTap: onLike,
+          isActive: isLiked,
+        ),
+        _buildModernActionButton(
+          icon: Icons.thumb_down_alt_rounded,
+          label: isDisliked ? 'Disliked' : 'Dislike',
+          color: Colors.red,
+          onTap: onDislike,
+          isActive: isDisliked,
+        ),
+        _buildModernActionButton(
+          icon: Icons.chat_bubble_outline,
+          label: 'Comment',
+          color: Colors.green,
+          onTap: onComment,
+          isActive: false,
+        ),
+        _buildModernActionButton(
+          icon: isSaved ? Icons.bookmark : Icons.bookmark_outline,
+          label: isSaved ? 'Saved' : 'Save',
+          color: Colors.amber,
+          onTap: onSave,
+          isActive: isSaved,
+        ),
+        _buildModernActionButton(
+          icon: Icons.share_outlined,
+          label: 'Share',
+          color: Colors.grey,
+          onTap: onShare,
+          isActive: false,
+        ),
+      ],
+    );
+  }
+
+  /// Action button dengan ripple effect
+  Widget _buildModernActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback? onTap,
+    required bool isActive,
+  }) {
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enableInteractions ? onTap : null,
+          borderRadius: BorderRadius.circular(16),
+          splashColor: color.withOpacity(0.2),
+          highlightColor: color.withOpacity(0.1),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: isActive ? color.withOpacity(0.1) : Colors.transparent,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: enableInteractions
+                      ? (isActive ? color : Colors.grey.shade700)
+                      : Colors.grey.shade400,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                    color: enableInteractions
+                        ? (isActive ? color : Colors.grey.shade700)
+                        : Colors.grey.shade400,
                   ),
                 ),
               ],
             ),
           ),
-          
-          // Content: text/image/video
-          _buildContentSection(imageLink, videoLink, context),
-          
-          // Footer: stats + action buttons
-          if (showFooterActions) _buildFooterActions(isLiked, isDisliked, isSaved),
-        ],
-      ),
-    );
-  }
-
-  /// Build avatar widget dengan validasi URL
-  Widget _buildSafeAvatar(String? url) {
-    final isValid = url != null && AvatarUtils.isValidImageUrl(url);
-    
-    return SafeAvatar(
-      size: 48,
-      imageUrl: isValid ? url : null,
-      backgroundColor: Colors.blue.shade50,
-      borderWidth: 2,
-    );
-  }
-
-  /// Build header row dengan judul dan menu aksi
-  Widget _buildHeaderRow(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            item.title.isNotEmpty ? item.title : item.user,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: Colors.black87,
-              overflow: TextOverflow.ellipsis,
-            ),
-            maxLines: 1,
-          ),
-        ),
-        if (_canShowMenu) _PostActionsMenu(onSelected: _handleMenuAction),
-      ],
-    );
-  }
-
-  /// Build metadata: username dan timestamp
-  Widget _buildPostMeta() {
-    return Text(
-      '${item.user} • ${_formattedDate(item.createdAt)}',
-      style: const TextStyle(
-        color: Colors.grey,
-        fontSize: 12,
-        overflow: TextOverflow.ellipsis,
-      ),
-      maxLines: 1,
-    );
-  }
-
-  /// Build section konten (teks/gambar/video)
-  Widget _buildContentSection(String? imageLink, String videoLink, BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (item.content.isNotEmpty)
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 120),
-              child: Text(
-                item.content,
-                style: const TextStyle(fontSize: 14, height: 1.5, color: Colors.black87),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 5,
-              ),
-            ),
-          if (imageLink != null && imageLink.isNotEmpty)
-            ..._buildImageContent(imageLink),
-          if (videoLink.isNotEmpty)
-            ..._buildVideoContent(videoLink, context),
-        ],
-      ),
-    );
-  }
-
-  /// Build widget gambar dengan error builder
-  List<Widget> _buildImageContent(String imageLink) {
-    return [
-      const SizedBox(height: 12),
-      ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.network(
-          imageLink,
-          width: double.infinity,
-          height: 190,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              height: 190,
-              color: Colors.grey.shade200,
-              child: const Icon(Icons.broken_image, color: Colors.grey, size: 48),
-            );
-          },
-        ),
-      ),
-    ];
-  }
-
-  /// Build widget preview video YouTube
-  List<Widget> _buildVideoContent(String videoLink, BuildContext context) {
-    return [
-      const SizedBox(height: 12),
-      _YoutubePreview(url: videoLink, onTap: () => _openLink(videoLink, context)),
-    ];
-  }
-
-  /// Build footer dengan stats dan action buttons
-  Widget _buildFooterActions(bool isLiked, bool isDisliked, bool isSaved) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        border: Border(top: BorderSide(color: Colors.grey.shade100, width: 1.5)),
-      ),
-      child: Column(
-        children: [
-          _buildStatsRow(isLiked, isDisliked),
-          const SizedBox(height: 12),
-          _buildActionButtonsRow(isLiked, isDisliked, isSaved),
-        ],
-      ),
-    );
-  }
-
-  /// Build row statistik (likes, dislikes, comments, shares)
-  Widget _buildStatsRow(bool isLiked, bool isDisliked) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _buildStatItem(icon: Icons.thumb_up_outlined, count: item.likesCount, label: 'Likes', color: Colors.blue, active: isLiked),
-        _buildStatItem(icon: Icons.thumb_down_outlined, count: item.dislikesCount, label: 'Dislikes', color: Colors.red, active: isDisliked),
-        _buildStatItem(icon: Icons.comment_outlined, count: item.commentCount, label: 'Comments', color: Colors.green),
-        _buildStatItem(icon: Icons.share_outlined, count: item.sharesCount, label: 'Shares', color: Colors.purple),
-      ],
-    );
-  }
-
-  /// Build row tombol aksi interaktif
-  Widget _buildActionButtonsRow(bool isLiked, bool isDisliked, bool isSaved) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      alignment: WrapAlignment.center,
-      children: [
-        _buildActionButton(icon: Icons.thumb_up_alt_rounded, label: isLiked ? 'Liked' : 'Like', color: Colors.blue, onTap: onLike, enabled: enableInteractions),
-        _buildActionButton(icon: Icons.thumb_down_alt_rounded, label: isDisliked ? 'Disliked' : 'Dislike', color: Colors.red, onTap: onDislike, enabled: enableInteractions),
-        _buildActionButton(icon: Icons.chat_bubble_outline, label: 'Comment', color: Colors.green, onTap: onComment, enabled: enableInteractions),
-        _buildActionButton(icon: isSaved ? Icons.bookmark : Icons.bookmark_outline, label: isSaved ? 'Saved' : 'Save', color: Colors.amber, onTap: onSave, enabled: enableInteractions),
-        _buildActionButton(icon: Icons.share_outlined, label: 'Share', color: Colors.grey, onTap: onShare, enabled: enableInteractions),
-      ],
-    );
-  }
-
-  /// Build single stat item
-  Widget _buildStatItem({
-    required IconData icon,
-    required int count,
-    required String label,
-    required Color color,
-    bool active = false,
-  }) {
-    return Expanded(
-      child: Column(
-        children: [
-          Icon(icon, size: 18, color: active ? color : Colors.grey.shade600),
-          const SizedBox(height: 4),
-          Text(
-            count.toString(),
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: active ? color : Colors.black87,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: active ? color : Colors.grey.shade600,
-            ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Build single action button
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback? onTap,
-    required bool enabled,
-  }) {
-    return InkWell(
-      onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: enabled ? Colors.white : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: enabled ? Colors.grey.shade300 : Colors.grey.shade200),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: enabled ? color : Colors.grey.shade400),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: enabled ? color : Colors.grey.shade400,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -393,7 +572,11 @@ class PostCard extends StatelessWidget {
   /// Pilih URL avatar dari multiple sources
   String? _pickAvatar() {
     final resolver = resolveAvatar ?? (String? v) => v;
-    final sources = [item.profilePhoto?.trim(), avatarUrl?.trim(), defaultAvatar];
+    final sources = [
+      item.profilePhoto?.trim(),
+      avatarUrl?.trim(),
+      defaultAvatar,
+    ];
     for (final src in sources) {
       if (src == null || src.isEmpty) continue;
       final resolved = resolver(src);
@@ -431,12 +614,33 @@ class _PostActionsMenu extends StatelessWidget {
       tooltip: 'Actions',
       onSelected: onSelected,
       itemBuilder: (context) => const [
-        PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.black87), SizedBox(width: 8), Text('Edit')])),
-        PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))])),
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 18, color: Colors.black87),
+              SizedBox(width: 8),
+              Text('Edit'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, size: 18, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Delete', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
       ],
       icon: Container(
         padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          shape: BoxShape.circle,
+        ),
         child: const Icon(Icons.more_vert, size: 18, color: Colors.grey),
       ),
     );
@@ -455,52 +659,102 @@ class _YoutubePreview extends StatelessWidget {
     final displayUrl = _compactUrl(url);
 
     return Container(
+      margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.shade100, width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: onTap,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  height: 180,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                    image: thumb != null ? DecorationImage(image: NetworkImage(thumb), fit: BoxFit.cover) : null,
-                  ),
-                ),
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(color: Colors.red.withOpacity(0.85), shape: BoxShape.circle),
-                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 32),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [Icon(Icons.video_library, color: Colors.red.shade600, size: 16), const SizedBox(width: 8), Text('YouTube Video', style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w700, fontSize: 12))]),
-                const SizedBox(height: 6),
-                GestureDetector(onTap: onTap, child: Text(displayUrl, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.black87, fontSize: 12, decoration: TextDecoration.underline))),
-              ],
-            ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: onTap,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    height: 200,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      image: thumb != null
+                          ? DecorationImage(
+                              image: NetworkImage(thumb),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                  ),
+                  // Play button besar
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.9),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.3),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 36,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Video info bar
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(color: Colors.white),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.video_library,
+                    color: Colors.red.shade600,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'YouTube Video',
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: onTap,
+                    child: Text(
+                      displayUrl,
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        fontSize: 11,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -516,7 +770,8 @@ class _YoutubePreview extends StatelessWidget {
         id = uri.pathSegments.firstOrNull;
       } else if (uri.queryParameters.containsKey('v')) {
         id = uri.queryParameters['v'];
-      } else if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'embed') {
+      } else if (uri.pathSegments.length >= 2 &&
+          uri.pathSegments[0] == 'embed') {
         id = uri.pathSegments[1];
       }
 
@@ -539,7 +794,8 @@ class _YoutubePreview extends StatelessWidget {
         id = uri.pathSegments.firstOrNull;
       } else if (uri.queryParameters.containsKey('v')) {
         id = uri.queryParameters['v'];
-      } else if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'embed') {
+      } else if (uri.pathSegments.length >= 2 &&
+          uri.pathSegments[0] == 'embed') {
         id = uri.pathSegments[1];
       }
 

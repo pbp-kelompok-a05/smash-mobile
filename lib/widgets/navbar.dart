@@ -84,6 +84,7 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
+              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
@@ -291,6 +292,7 @@ class _ProfileMenu extends StatelessWidget {
               imageUrl: photoUrl,
               backgroundColor: Colors.grey.shade200,
               borderWidth: 2,
+              borderColor: Colors.white,
               child: (photoBytes != null && photoBytes!.isNotEmpty)
                   ? Image.memory(
                       photoBytes!,

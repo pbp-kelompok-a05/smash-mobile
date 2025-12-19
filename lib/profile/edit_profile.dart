@@ -1,4 +1,4 @@
-// ignore_for_file: depend_on_referenced_packages, unused_element
+// ignore_for_file: depend_on_referenced_packages, unused_element, use_build_context_synchronously, dead_code, unnecessary_underscores
 
 import 'dart:io';
 import 'dart:typed_data';
@@ -526,7 +526,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ? _avatarUrl ?? _resolvePhotoUrl(photo)
         : _fallbackAvatar;
     return Image.network(
-      url ?? _fallbackAvatar,
+      url,
       fit: BoxFit.cover,
       width: size,
       height: size,

@@ -65,7 +65,7 @@ class SafeAvatar extends StatelessWidget {
     this.imageUrl,
     this.backgroundColor,
     this.child,
-    this.borderWidth = 3,
+    this.borderWidth = 3, required Color borderColor,
   });
 
   final double size;
@@ -209,6 +209,7 @@ class AvatarUtils {
       size: size,
       imageUrl: imageUrl,
       backgroundColor: backgroundColor,
+      borderColor: Colors.white,
       child: fallback != null 
           ? SizedBox(width: size, height: size, child: fallback)
           : null,
