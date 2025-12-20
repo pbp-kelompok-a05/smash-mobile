@@ -14,6 +14,7 @@ import 'package:smash_mobile/screens/post_list.dart';
 import 'package:smash_mobile/screens/login.dart';
 import 'package:smash_mobile/screens/register.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
+import 'package:smash_mobile/screens/search.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:smash_mobile/widgets/navbar.dart';
 import 'package:smash_mobile/screens/post_form_entry.dart';
@@ -37,6 +38,7 @@ class _MyHomePageState extends State<MyHomePage>
   // === CONTROLLERS & KEYS ===
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _animationController;
+  late final TextEditingController _searchController;
 
   // === USER STATE ===
   String? _photoUrl;
@@ -73,6 +75,7 @@ class _MyHomePageState extends State<MyHomePage>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
+    _searchController = TextEditingController();
     _animationController.forward();
     _loadProfileHeader();
     
@@ -85,6 +88,7 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   void dispose() {
     _animationController.dispose();
+    _searchController.dispose();
     _carouselController.dispose();
     _carouselTimer?.cancel();
     super.dispose();
@@ -161,6 +165,14 @@ class _MyHomePageState extends State<MyHomePage>
   void _openLogin() => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmashLoginPage()));
   void _openRegister() => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmashRegisterPage()));
   void _openProfile() => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
+  void _openSearch(String query) {
+    final normalized = query.trim();
+    if (normalized.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SearchPage(initialQuery: normalized)),
+    );
+  }
 
   Future<void> _handleLogout() async {
     if (_isLoggingOut) return;
@@ -266,6 +278,8 @@ class _MyHomePageState extends State<MyHomePage>
                 onRegister: _openRegister,
                 onLogout: _handleLogout,
                 onProfileTap: _openProfile,
+                searchController: _searchController,
+                onSearchSubmit: _openSearch,
               ),
             ),
           );
