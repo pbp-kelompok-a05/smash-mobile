@@ -6,8 +6,10 @@ import 'package:smash_mobile/post/post_detail_page.dart';
 import 'package:smash_mobile/screens/edit_post.dart';
 import 'package:smash_mobile/widgets/default_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:provider/provider.dart';
 
-class PostCard extends StatelessWidget {
+class PostCard extends StatefulWidget {
   const PostCard({
     super.key,
     required this.item,
@@ -64,6 +66,29 @@ class PostCard extends StatelessWidget {
   final VoidCallback? onComment;
   final VoidCallback? onTap;
 
+  @override
+  State<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends State<PostCard> {
+  late bool _isLiked;
+  late bool _isDisliked;
+  late bool _isSaved;
+  late int _likesCount;
+  late int _dislikesCount;
+  String? _reaction;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLiked = widget.item.userInteraction == 'like';
+    _isDisliked = widget.item.userInteraction == 'dislike';
+    _isSaved = widget.item.isSaved;
+    _likesCount = widget.item.likesCount;
+    _dislikesCount = widget.item.dislikesCount;
+    _reaction = widget.item.userInteraction;
+  }
+
   /// Format timestamp menjadi "2m ago", "3h ago", "Jan 15"
   String _formattedDate(DateTime dt) {
     final local = dt.toLocal();
@@ -100,14 +125,14 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedAvatar = _pickAvatar();
     final avatarWithCacheBust = _bustCache(resolvedAvatar);
-    final imageLink = imageUrl ?? item.image;
-    final videoLink = item.videoLink ?? '';
-    final isLiked = item.userInteraction == 'like';
-    final isDisliked = item.userInteraction == 'dislike';
-    final isSaved = item.isSaved;
+    final imageLink = widget.imageUrl ?? widget.item.image;
+    final videoLink = widget.item.videoLink ?? '';
+    final isLiked = _isLiked;
+    final isDisliked = _isDisliked;
+    final isSaved = _isSaved;
 
     return InkWell(
-      onTap: onTap ?? () => _defaultTapHandler(context),
+      onTap: widget.onTap ?? () => _defaultTapHandler(context),
       borderRadius: BorderRadius.circular(24),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -141,7 +166,7 @@ class PostCard extends StatelessWidget {
           children: [
             _buildModernHeader(context, avatarWithCacheBust),
             _buildModernContent(imageLink, videoLink, context),
-            if (showFooterActions)
+            if (widget.showFooterActions)
               _buildModernFooter(isLiked, isDisliked, isSaved),
           ],
         ),
@@ -153,7 +178,7 @@ class PostCard extends StatelessWidget {
   void _defaultTapHandler(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => PostDetailPage(postId: item.id)),
+      MaterialPageRoute(builder: (_) => PostDetailPage(postId: widget.item.id)),
     );
   }
 
@@ -181,7 +206,9 @@ class PostCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.title.isNotEmpty ? item.title : item.user,
+                  widget.item.title.isNotEmpty
+                      ? widget.item.title
+                      : widget.item.user,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -195,7 +222,7 @@ class PostCard extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      item.user,
+                      widget.item.user,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -212,7 +239,7 @@ class PostCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      _formattedDate(item.createdAt),
+                      _formattedDate(widget.item.createdAt),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.white70,
@@ -273,11 +300,11 @@ class PostCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (item.content.isNotEmpty)
+          if (widget.item.content.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Text(
-                item.content,
+                widget.item.content,
                 style: const TextStyle(
                   fontSize: 15,
                   height: 1.6,
@@ -415,28 +442,28 @@ class PostCard extends StatelessWidget {
       children: [
         _buildModernStatItem(
           icon: Icons.thumb_up_outlined,
-          count: item.likesCount,
+          count: _likesCount,
           label: 'Likes',
           color: Colors.blue.shade300,
           isActive: isLiked,
         ),
         _buildModernStatItem(
           icon: Icons.thumb_down_outlined,
-          count: item.dislikesCount,
+          count: _dislikesCount,
           label: 'Dislikes',
           color: Colors.red.shade300,
           isActive: isDisliked,
         ),
         _buildModernStatItem(
           icon: Icons.comment_outlined,
-          count: item.commentCount,
+          count: widget.item.commentCount,
           label: 'Comments',
           color: Colors.green.shade300,
           isActive: false,
         ),
         _buildModernStatItem(
           icon: Icons.share_outlined,
-          count: item.sharesCount,
+          count: widget.item.sharesCount,
           label: 'Shares',
           color: Colors.purple.shade300,
           isActive: false,
@@ -497,35 +524,35 @@ class PostCard extends StatelessWidget {
           icon: Icons.thumb_up_alt_rounded,
           label: isLiked ? 'Liked' : 'Like',
           color: Colors.blue.shade300,
-          onTap: onLike,
+          onTap: _handleLike,
           isActive: isLiked,
         ),
         _buildModernActionButton(
           icon: Icons.thumb_down_alt_rounded,
           label: isDisliked ? 'Disliked' : 'Dislike',
           color: Colors.red.shade300,
-          onTap: onDislike,
+          onTap: _handleDislike,
           isActive: isDisliked,
         ),
         _buildModernActionButton(
           icon: Icons.chat_bubble_outline,
           label: 'Comment',
           color: Colors.green.shade300,
-          onTap: onComment,
+          onTap: widget.onComment,
           isActive: false,
         ),
         _buildModernActionButton(
           icon: isSaved ? Icons.bookmark : Icons.bookmark_outline,
           label: isSaved ? 'Saved' : 'Save',
           color: Colors.amber.shade300,
-          onTap: onSave,
+          onTap: _handleSave,
           isActive: isSaved,
         ),
         _buildModernActionButton(
           icon: Icons.share_outlined,
           label: 'Share',
           color: Colors.grey.shade400,
-          onTap: onShare,
+          onTap: widget.onShare,
           isActive: false,
         ),
       ],
@@ -544,7 +571,7 @@ class PostCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: enableInteractions ? onTap : null,
+          onTap: widget.enableInteractions ? onTap : null,
           borderRadius: BorderRadius.circular(16),
           splashColor: color.withOpacity(0.4),
           highlightColor: color.withOpacity(0.2),
@@ -560,7 +587,7 @@ class PostCard extends StatelessWidget {
                 Icon(
                   icon,
                   size: 22,
-                  color: enableInteractions
+                  color: widget.enableInteractions
                       ? (isActive ? color : Colors.white70)
                       : Colors.white38,
                 ),
@@ -570,7 +597,7 @@ class PostCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                    color: enableInteractions
+                    color: widget.enableInteractions
                         ? (isActive ? color : Colors.white70)
                         : Colors.white38,
                   ),
@@ -588,24 +615,27 @@ class PostCard extends StatelessWidget {
     if (action == 'edit') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => EditPostPage(post: item)),
+        MaterialPageRoute(builder: (_) => EditPostPage(post: widget.item)),
       );
     }
-    if (action == 'delete' && onDelete != null) onDelete!(item);
+    if (action == 'delete' && widget.onDelete != null)
+      widget.onDelete!(widget.item);
   }
 
   /// Cek apakah menu bisa ditampilkan
   bool get _canShowMenu =>
-      showMenu &&
-      (item.canEdit || (currentUserId != null && item.userId == currentUserId));
+      widget.showMenu &&
+      (widget.item.canEdit ||
+          (widget.currentUserId != null &&
+              widget.item.userId == widget.currentUserId));
 
   /// Pilih URL avatar dari multiple sources
   String? _pickAvatar() {
-    final resolver = resolveAvatar ?? (String? v) => v;
+    final resolver = widget.resolveAvatar ?? (String? v) => v;
     final sources = [
-      item.profilePhoto?.trim(),
-      avatarUrl?.trim(),
-      defaultAvatar,
+      widget.item.profilePhoto?.trim(),
+      widget.avatarUrl?.trim(),
+      widget.defaultAvatar,
     ];
     for (var src in sources) {
       if (src == null || src.isEmpty) continue;
@@ -617,8 +647,8 @@ class PostCard extends StatelessWidget {
 
   /// Tambahkan cache buster ke URL avatar
   String? _bustCache(String? url) {
-    if (!bustAvatarCache || url == null || url.isEmpty) return url;
-    if (defaultAvatar != null && url == defaultAvatar) return url;
+    if (!widget.bustAvatarCache || url == null || url.isEmpty) return url;
+    if (widget.defaultAvatar != null && url == widget.defaultAvatar) return url;
     final hasQuery = url.contains('?');
     final suffix = 'v=${DateTime.now().millisecondsSinceEpoch}';
     return hasQuery ? '$url&$suffix' : '$url?$suffix';
@@ -694,6 +724,120 @@ class PostCard extends StatelessWidget {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to open link: $e')));
+    }
+  }
+
+  Future<void> _sendInteraction(String action) async {
+    try {
+      final request = context.read<CookieRequest>();
+      final url =
+          'http://localhost:8000/post/api/posts/${widget.item.id}/$action/';
+      await request.post(url, {});
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  void _handleLike() async {
+    if (!widget.enableInteractions) return;
+    final prevLiked = _isLiked;
+    final prevDisliked = _isDisliked;
+    setState(() {
+      if (_isLiked) {
+        _isLiked = false;
+        _likesCount = (_likesCount - 1).clamp(0, 999999);
+        _reaction = null;
+      } else {
+        if (_isDisliked) {
+          _isDisliked = false;
+          _dislikesCount = (_dislikesCount - 1).clamp(0, 999999);
+        }
+        _isLiked = true;
+        _likesCount++;
+        _reaction = 'like';
+      }
+    });
+
+    try {
+      await _sendInteraction('like');
+      widget.onLike?.call();
+    } catch (e) {
+      // revert
+      setState(() {
+        _isLiked = prevLiked;
+        _isDisliked = prevDisliked;
+        _likesCount = widget.item.likesCount;
+        _dislikesCount = widget.item.dislikesCount;
+        _reaction = widget.item.userInteraction;
+      });
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update like: $e')));
+      }
+    }
+  }
+
+  void _handleDislike() async {
+    if (!widget.enableInteractions) return;
+    final prevLiked = _isLiked;
+    final prevDisliked = _isDisliked;
+    setState(() {
+      if (_isDisliked) {
+        _isDisliked = false;
+        _dislikesCount = (_dislikesCount - 1).clamp(0, 999999);
+        _reaction = null;
+      } else {
+        if (_isLiked) {
+          _isLiked = false;
+          _likesCount = (_likesCount - 1).clamp(0, 999999);
+        }
+        _isDisliked = true;
+        _dislikesCount++;
+        _reaction = 'dislike';
+      }
+    });
+
+    try {
+      await _sendInteraction('dislike');
+      widget.onDislike?.call();
+    } catch (e) {
+      // revert
+      setState(() {
+        _isLiked = prevLiked;
+        _isDisliked = prevDisliked;
+        _likesCount = widget.item.likesCount;
+        _dislikesCount = widget.item.dislikesCount;
+        _reaction = widget.item.userInteraction;
+      });
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update dislike: $e')));
+      }
+    }
+  }
+
+  void _handleSave() async {
+    if (!widget.enableInteractions) return;
+    final prevSaved = _isSaved;
+    setState(() {
+      _isSaved = !_isSaved;
+    });
+
+    try {
+      await _sendInteraction('save');
+      widget.onSave?.call();
+    } catch (e) {
+      // revert
+      setState(() {
+        _isSaved = prevSaved;
+      });
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update save: $e')));
+      }
     }
   }
 }
