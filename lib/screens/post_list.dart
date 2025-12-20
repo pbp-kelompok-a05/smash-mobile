@@ -270,7 +270,6 @@ class _PostListPageState extends State<PostListPage>
                 showMenu: post.canEdit,
                 showFooterActions: true,
                 enableInteractions: true,
-                onLike: () => _handleLike(post.id),
                 onComment: () => _openPostDetail(post),
                 onSave: () => _handleSave(post.id),
                 profilePageBuilder: (id) => ProfilePage(userId: id),
@@ -382,18 +381,6 @@ class _PostListPageState extends State<PostListPage>
             child: const Icon(Icons.add, color: Colors.white),
           )
         : const SizedBox.shrink();
-  }
-
-  // TODO: Implementasi handler interaksi
-  Future<void> _handleLike(int postId) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Like feature coming soon', style: GoogleFonts.inter()),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
   }
 
   Future<void> _handleSave(int postId) async {

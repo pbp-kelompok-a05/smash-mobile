@@ -211,10 +211,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
               enableInteractions: true,
               profilePageBuilder: (id) => ProfilePage(userId: id),
               // NEW: Interaction handlers
-              onLike: _handleLike,
-              onDislike: _handleDislike,
-              onSave: _handleSave,
-              onComment: _handleComment,
               onShare: _handleShare,
               // Disable tap on detail page (avoid recursion)
               onTap: () {},
@@ -337,26 +333,38 @@ class _PostDetailPageState extends State<PostDetailPage> {
           else
             Column(
               children: _comments.map((c) {
-                final idInt = int.tryParse(c.id) ?? 0;
+                final idStr = c.id;
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: CommentCard(
-                    id: idInt,
+                    id: idStr,
                     author: c.author,
                     content: c.content,
                     createdAt: c.createdAt,
                     likes: c.likesCount,
                     dislikes: c.dislikesCount,
                     userReaction: c.userReaction,
-                    onLike: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Like pressed')),
-                      );
+                    onLike: () async {
+                      try {
+                        await _api.interactWithComment(idStr, 'like');
+                        await _loadComments();
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to like: $e')),
+                        );
+                      }
                     },
-                    onDislike: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Dislike pressed')),
-                      );
+                    onDislike: () async {
+                      try {
+                        await _api.interactWithComment(idStr, 'dislike');
+                        await _loadComments();
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to dislike: $e')),
+                        );
+                      }
                     },
                   ),
                 );
@@ -388,36 +396,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
     }
-  }
-
-  // Handler interactions (implementasi API)
-  Future<void> _handleLike() async {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Like action triggered')));
-    // Implementasi: await _api.interact(widget.postId, 'like');
-  }
-
-  Future<void> _handleDislike() async {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Dislike action triggered')));
-  }
-
-  Future<void> _handleSave() async {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Save action triggered')));
-  }
-
-  Future<void> _handleComment() async {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Comment action triggered')));
   }
 
   Future<void> _handleShare() async {

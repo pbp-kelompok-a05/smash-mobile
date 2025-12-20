@@ -17,7 +17,7 @@ class CommentCard extends StatefulWidget {
     this.onDislike,
   });
 
-  final int id;
+  final String id;
   final String author;
   final String content;
   final String? avatarUrl;
@@ -44,6 +44,21 @@ class _CommentCardState extends State<CommentCard> {
     _likes = widget.likes;
     _dislikes = widget.dislikes;
     _reaction = widget.userReaction;
+  }
+
+  @override
+  void didUpdateWidget(covariant CommentCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sync internal counters/reaction when parent provides updated values
+    if (widget.likes != oldWidget.likes ||
+        widget.dislikes != oldWidget.dislikes ||
+        widget.userReaction != oldWidget.userReaction) {
+      setState(() {
+        _likes = widget.likes;
+        _dislikes = widget.dislikes;
+        _reaction = widget.userReaction;
+      });
+    }
   }
 
   String _fmtDate(DateTime? dt) {

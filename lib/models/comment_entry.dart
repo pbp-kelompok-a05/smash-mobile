@@ -42,7 +42,9 @@ class Comment {
     dislikesCount: json["dislikes_count"] is int
         ? json["dislikes_count"] as int
         : int.tryParse((json["dislikes_count"] ?? '').toString()) ?? 0,
-    userReaction: json["user_reaction"]?.toString(),
+    userReaction:
+        json["user_reaction"]?.toString() ??
+        json["user_interaction"]?.toString(),
   );
 
   Map<String, dynamic> toJson() => {

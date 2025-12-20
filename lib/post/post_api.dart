@@ -149,12 +149,20 @@ class PostApi {
     );
     final response = await _safeGet(uri);
 
+    List<dynamic> rawList;
     if (response is List) {
-      return (response as List)
-          .map((e) => Comment.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+      rawList = response;
+    } else if (response is Map<String, dynamic> &&
+        response['status'] == 'success' &&
+        response['comments'] is List) {
+      rawList = response['comments'] as List<dynamic>;
+    } else {
+      throw Exception('Gagal mengambil komentar.');
     }
-    throw Exception('Gagal mengambil komentar.');
+
+    return rawList
+        .map((e) => Comment.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   /// Create a comment via Flutter client
@@ -179,6 +187,21 @@ class PostApi {
       if (commentMap != null) return Comment.fromJson(commentMap);
     }
     throw Exception('Gagal membuat komentar.');
+  }
+
+  /// Interact with a comment (like/dislike/report)
+  /// Endpoint: POST /comments/<commentId>/<action>/
+  Future<Map<String, dynamic>> interactWithComment(
+    String commentId,
+    String action,
+  ) async {
+    // use plural 'comments' to match Django include path (e.g. /comments/...)
+    final uri = Uri.parse('$baseUrl/comments/$commentId/$action/');
+    final res = await request.post(uri.toString(), {});
+    if (res is Map<String, dynamic> && res['status'] == 'success') {
+      return Map<String, dynamic>.from(res);
+    }
+    throw Exception('Gagal melakukan interaksi pada komentar.');
   }
 
   /// Helper untuk GET request dengan error handling

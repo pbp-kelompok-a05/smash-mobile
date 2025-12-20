@@ -8,6 +8,7 @@ import 'package:smash_mobile/widgets/default_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:smash_mobile/profile/profile_api.dart';
 
 class PostCard extends StatefulWidget {
   const PostCard({
@@ -77,6 +78,7 @@ class _PostCardState extends State<PostCard> {
   late int _likesCount;
   late int _dislikesCount;
   String? _reaction;
+  int? _effectiveUserId;
 
   @override
   void initState() {
@@ -87,6 +89,25 @@ class _PostCardState extends State<PostCard> {
     _likesCount = widget.item.likesCount;
     _dislikesCount = widget.item.dislikesCount;
     _reaction = widget.item.userInteraction;
+    _effectiveUserId = widget.currentUserId;
+
+    // If parent didn't provide currentUserId, try to infer from Profile API
+    if (_effectiveUserId == null) {
+      // schedule async fetch
+      Future.microtask(() async {
+        try {
+          final request = Provider.of<CookieRequest>(context, listen: false);
+          final profileApi = ProfileApi(request: request);
+          final profile = await profileApi.fetchProfile();
+          if (!mounted) return;
+          setState(() {
+            _effectiveUserId = profile.id;
+          });
+        } catch (_) {
+          // ignore: if not logged in or failed, leave as null
+        }
+      });
+    }
   }
 
   /// Format timestamp menjadi "2m ago", "3h ago", "Jan 15"
@@ -572,7 +593,7 @@ class _PostCardState extends State<PostCard> {
         color: Colors.transparent,
         child: InkWell(
           // If user is not logged in but interactions are enabled, show login prompt.
-          onTap: (widget.enableInteractions && widget.currentUserId != null)
+          onTap: (widget.enableInteractions && _effectiveUserId != null)
               ? onTap
               : (widget.enableInteractions ? () => _showLoginSnack() : null),
           borderRadius: BorderRadius.circular(16),
@@ -590,9 +611,7 @@ class _PostCardState extends State<PostCard> {
                 Icon(
                   icon,
                   size: 22,
-                  color:
-                      (widget.enableInteractions &&
-                          widget.currentUserId != null)
+                  color: (widget.enableInteractions && _effectiveUserId != null)
                       ? (isActive ? color : Colors.white70)
                       : Colors.white38,
                 ),
@@ -603,8 +622,7 @@ class _PostCardState extends State<PostCard> {
                     fontSize: 11,
                     fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                     color:
-                        (widget.enableInteractions &&
-                            widget.currentUserId != null)
+                        (widget.enableInteractions && _effectiveUserId != null)
                         ? (isActive ? color : Colors.white70)
                         : Colors.white38,
                   ),
@@ -631,10 +649,10 @@ class _PostCardState extends State<PostCard> {
 
   /// Cek apakah menu bisa ditampilkan
   bool get _canShowMenu =>
-      widget.showMenu &&
+      (widget.showMenu &&
       (widget.item.canEdit ||
-          (widget.currentUserId != null &&
-              widget.item.userId == widget.currentUserId));
+          (_effectiveUserId != null &&
+              widget.item.userId == _effectiveUserId)));
 
   /// Pilih URL avatar dari multiple sources
   String? _pickAvatar() {
@@ -742,7 +760,7 @@ class _PostCardState extends State<PostCard> {
   }
 
   bool _ensureLoggedInOrShowSnack() {
-    if (widget.currentUserId != null) return true;
+    if (_effectiveUserId != null) return true;
     _showLoginSnack();
     return false;
   }
