@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smash_mobile/models/post.dart';
+import 'package:smash_mobile/screens/edit_post.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:smash_mobile/services/post_service.dart';
 import 'package:provider/provider.dart';
@@ -50,7 +51,7 @@ class PostCard extends StatefulWidget {
 }
 
 class _PostCardState extends State<PostCard> {
-  int? loggedInUserId;
+  String? loggedInUsername;
   bool isLoadingUser = true;
   late int likesCount;
   late int dislikesCount;
@@ -77,7 +78,7 @@ class _PostCardState extends State<PostCard> {
         "http://localhost:8000/post/me/",
       ); // Ganti URL ke link deployment
       setState(() {
-        loggedInUserId = user['id'];
+        loggedInUsername = user['username'];
         isLoadingUser = false;
       });
     } catch (e) {
@@ -181,6 +182,8 @@ class _PostCardState extends State<PostCard> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isOwner=loggedInUsername != null &&
+        widget.post.author == loggedInUsername;
     final post = widget.post;
     final profileImage = widget.profileImage;
     return Container(
@@ -242,6 +245,18 @@ class _PostCardState extends State<PostCard> {
                         ],
                       ),
                     ),
+                    if (isOwner)
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 20),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EditPostScreen(post: post),
+                            ),
+                          );
+                        },
+                      ),
                   ],
                 ),
                 if (post.imageUrl != null) ...[
