@@ -257,6 +257,7 @@ class _PostListPageState extends State<PostListPage>
                 item: post,
                 // Gunakan method resolve dari PostApi
                 avatarUrl: _postApi.resolveMediaUrl(post.profilePhoto),
+                imageUrl: _postApi.resolveMediaUrl(post.image),
                 defaultAvatar:
                     '${_postApi.baseUrl}/static/images/user-profile.png',
                 resolveAvatar: _postApi.resolveMediaUrl,

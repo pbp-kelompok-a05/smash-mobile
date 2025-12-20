@@ -629,6 +629,7 @@ class _ProfilePageState extends State<ProfilePage> {
             key: ValueKey(postItem.id),
             item: postItem,
             avatarUrl: _api.resolveMediaUrl(postItem.profilePhoto),
+            imageUrl: _api.resolveMediaUrl(postItem.image),
             defaultAvatar: _api.defaultAvatarUrl,
             resolveAvatar: _api.resolveMediaUrl,
             showMenu: true,

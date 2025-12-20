@@ -49,15 +49,13 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
     return SafeArea(
       child: Container(
         height: preferredSize.height,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.blue.shade600,
-              Colors.purple.shade600,
-            ],
+            colors: [Colors.blue.shade600, Colors.purple.shade600],
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
@@ -69,16 +67,20 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ],
         ),
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Leading widget (menu icon atau custom)
-            if (leading != null)
-              leading!
-            else if (onMenuTap != null)
-              _AnimatedMenuIcon(onTap: onMenuTap!)
-            else
-              const SizedBox(width: 12),
+            // Leading area: fixed-width container to keep icon centered
+            Container(
+              width: 56,
+              alignment: Alignment.center,
+              child:
+                  leading ??
+                  (onMenuTap != null
+                      ? _AnimatedMenuIcon(onTap: onMenuTap!)
+                      : const SizedBox.shrink()),
+            ),
 
             // Title dengan typography yang lebih baik
             Expanded(
@@ -128,9 +130,10 @@ class _AnimatedMenuIconState extends State<_AnimatedMenuIcon>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _animation = Tween<double>(begin: 0, end: 0.5).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0,
+      end: 0.5,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -147,16 +150,14 @@ class _AnimatedMenuIconState extends State<_AnimatedMenuIcon>
   @override
   Widget build(BuildContext context) {
     return IconButton(
+      padding: const EdgeInsets.all(8),
+      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
       icon: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
           return Transform.rotate(
             angle: _animation.value * 3.14, // 180 derajat
-            child: const Icon(
-              Icons.menu,
-              size: 28,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.menu, size: 28, color: Colors.white),
           );
         },
       ),

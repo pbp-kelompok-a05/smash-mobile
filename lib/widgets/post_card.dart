@@ -75,7 +75,18 @@ class PostCard extends StatelessWidget {
     if (diff.inDays < 7) return '${diff.inDays}d ago';
 
     const months = [
-      'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final day = local.day;
     final month = months[local.month - 1];
@@ -122,17 +133,15 @@ class PostCard extends StatelessWidget {
               offset: const Offset(0, 6),
             ),
           ],
-          border: Border.all(
-            color: Colors.white.withOpacity(0.1),
-            width: 1,
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildModernHeader(avatarWithCacheBust),
+            _buildModernHeader(context, avatarWithCacheBust),
             _buildModernContent(imageLink, videoLink, context),
-            if (showFooterActions) _buildModernFooter(isLiked, isDisliked, isSaved),
+            if (showFooterActions)
+              _buildModernFooter(isLiked, isDisliked, isSaved),
           ],
         ),
       ),
@@ -143,14 +152,12 @@ class PostCard extends StatelessWidget {
   void _defaultTapHandler(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => PostDetailPage(postId: item.id),
-      ),
+      MaterialPageRoute(builder: (_) => PostDetailPage(postId: item.id)),
     );
   }
 
   /// Header modern: avatar + online indicator + user info
-  Widget _buildModernHeader(String? avatarUrl) {
+  Widget _buildModernHeader(BuildContext context, String? avatarUrl) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -216,7 +223,10 @@ class PostCard extends StatelessWidget {
               ],
             ),
           ),
-          if (_canShowMenu) _PostActionsMenu(onSelected: _handleMenuAction),
+          if (_canShowMenu)
+            _PostActionsMenu(
+              onSelected: (action) => _handleMenuAction(context, action),
+            ),
         ],
       ),
     );
@@ -301,44 +311,62 @@ class PostCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: Image.network(
-          imageLink,
-          width: double.infinity,
+        child: SizedBox(
           height: 220,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) return child;
-            return Container(
-              height: 220,
-              decoration: BoxDecoration(
-                color: Colors.blue.shade900.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Center(
-                child: CircularProgressIndicator(
-                  value: progress.expectedTotalBytes != null
-                      ? progress.cumulativeBytesLoaded /
-                          progress.expectedTotalBytes!
-                      : null,
-                  color: Colors.white,
-                ),
-              ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              height: 220,
-              decoration: BoxDecoration(
-                color: Colors.blue.shade900.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.broken_image,
-                size: 48,
-                color: Colors.white70,
-              ),
-            );
-          },
+          width: double.infinity,
+          child: Builder(
+            builder: (context) {
+              String displayUrl = imageLink;
+              try {
+                final uri = Uri.parse(imageLink);
+                if (uri.scheme.isNotEmpty &&
+                    !imageLink.contains('image-proxy')) {
+                  final origin =
+                      '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+                  displayUrl =
+                      '$origin/post/image-proxy/?url=${Uri.encodeComponent(imageLink)}';
+                }
+              } catch (_) {}
+
+              return Image.network(
+                displayUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    height: 220,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade900.withOpacity(0.3),
+                    ),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: progress.expectedTotalBytes != null
+                            ? progress.cumulativeBytesLoaded /
+                                  progress.expectedTotalBytes!
+                            : null,
+                        color: Colors.white,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 220,
+                    width: double.infinity,
+                    color: Colors.blue.shade900.withOpacity(0.3),
+                    child: const Icon(
+                      Icons.broken_image,
+                      size: 48,
+                      color: Colors.white70,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -363,10 +391,7 @@ class PostCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
-          colors: [
-            Colors.purple.shade900.withOpacity(0.3),
-            Colors.transparent,
-          ],
+          colors: [Colors.purple.shade900.withOpacity(0.3), Colors.transparent],
         ),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
@@ -434,11 +459,7 @@ class PostCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isActive ? color : Colors.white70,
-            ),
+            Icon(icon, size: 20, color: isActive ? color : Colors.white70),
             const SizedBox(height: 6),
             Text(
               count.toString(),
@@ -562,14 +583,11 @@ class PostCard extends StatelessWidget {
   }
 
   /// Handler menu aksi (edit/delete)
-  void _handleMenuAction(String action) {
+  void _handleMenuAction(BuildContext context, String action) {
     if (action == 'edit') {
-      // Navigasi ke halaman edit
       Navigator.push(
-        context!,
-        MaterialPageRoute(
-          builder: (_) => EditPostPage(post: item),
-        ),
+        context,
+        MaterialPageRoute(builder: (_) => EditPostPage(post: item)),
       );
     }
     if (action == 'delete' && onDelete != null) onDelete!(item);
@@ -579,8 +597,6 @@ class PostCard extends StatelessWidget {
   bool get _canShowMenu =>
       showMenu &&
       (item.canEdit || (currentUserId != null && item.userId == currentUserId));
-      
-        BuildContext? get context => null;
 
   /// Pilih URL avatar dari multiple sources
   String? _pickAvatar() {
@@ -629,19 +645,23 @@ class _PostActionsMenu extends StatelessWidget {
       itemBuilder: (context) => const [
         PopupMenuItem(
           value: 'edit',
-          child: Row(children: [
-            Icon(Icons.edit, size: 18, color: Colors.white70),
-            SizedBox(width: 8),
-            Text('Edit', style: TextStyle(color: Colors.white70)),
-          ]),
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 18, color: Colors.white70),
+              SizedBox(width: 8),
+              Text('Edit', style: TextStyle(color: Colors.white70)),
+            ],
+          ),
         ),
         PopupMenuItem(
           value: 'delete',
-          child: Row(children: [
-            Icon(Icons.delete, size: 18, color: Colors.redAccent),
-            SizedBox(width: 8),
-            Text('Delete', style: TextStyle(color: Colors.redAccent)),
-          ]),
+          child: Row(
+            children: [
+              Icon(Icons.delete, size: 18, color: Colors.redAccent),
+              SizedBox(width: 8),
+              Text('Delete', style: TextStyle(color: Colors.redAccent)),
+            ],
+          ),
         ),
       ],
       icon: Container(
@@ -732,7 +752,10 @@ class _YoutubePreview extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF203A43),
                 border: Border(
-                  top: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
+                  top: BorderSide(
+                    color: Colors.white.withOpacity(0.1),
+                    width: 1,
+                  ),
                 ),
               ),
               child: Row(
@@ -784,7 +807,8 @@ class _YoutubePreview extends StatelessWidget {
         id = uri.pathSegments.firstOrNull;
       } else if (uri.queryParameters.containsKey('v')) {
         id = uri.queryParameters['v'];
-      } else if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'embed') {
+      } else if (uri.pathSegments.length >= 2 &&
+          uri.pathSegments[0] == 'embed') {
         id = uri.pathSegments[1];
       }
 
@@ -806,7 +830,8 @@ class _YoutubePreview extends StatelessWidget {
         id = uri.pathSegments.firstOrNull;
       } else if (uri.queryParameters.containsKey('v')) {
         id = uri.queryParameters['v'];
-      } else if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'embed') {
+      } else if (uri.pathSegments.length >= 2 &&
+          uri.pathSegments[0] == 'embed') {
         id = uri.pathSegments[1];
       }
 

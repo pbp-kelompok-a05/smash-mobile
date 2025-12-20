@@ -4,7 +4,13 @@ import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/browser_client.dart' as http_browser;
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -14,7 +20,7 @@ import 'package:smash_mobile/screens/register.dart';
 
 /// Halaman form untuk membuat post baru dengan glassmorphism UI
 /// dan login required check
-/// 
+///
 /// API Endpoint: POST http://localhost:8000/post/api/posts/
 class PostEntryFormPage extends StatefulWidget {
   const PostEntryFormPage({super.key});
@@ -29,6 +35,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
   final _titleCtrl = TextEditingController();
   final _contentCtrl = TextEditingController();
   final _imageCtrl = TextEditingController();
+  File? _pickedImage;
   final _videoCtrl = TextEditingController();
   bool _isSubmitting = false;
 
@@ -71,7 +78,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
     setState(() => _isSubmitting = true);
 
     final request = context.read<CookieRequest>();
-    
+
     // Siapkan data untuk dikirim ke API
     // Catatan: Sesuaikan field dengan model Post di backend Django
     // Biasanya field untuk media adalah 'image' dan 'video' atau 'image_url' dan 'video_url'
@@ -83,22 +90,95 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
     // Tambahkan field optional jika diisi (sesuaikan dengan field di model Django)
     final imageText = _imageCtrl.text.trim();
     final videoText = _videoCtrl.text.trim();
-    
+
     // Pilih salah satu format field berikut sesuai dengan model Django Anda:
     // Opsi 1: Jika model menggunakan 'image' dan 'video'
     if (imageText.isNotEmpty) postData['image'] = imageText;
     if (videoText.isNotEmpty) postData['video'] = videoText;
-    
+    // If user picked an image file, include it as base64 in JSON payload
+    if (_pickedImage != null) {
+      final bytes = await _pickedImage!.readAsBytes();
+      postData['image_data'] = base64Encode(bytes);
+      postData['image_name'] = p.basename(_pickedImage!.path);
+    }
+
     // Opsi 2: Jika model menggunakan 'image_url' dan 'video_url'
     // if (imageText.isNotEmpty) postData['image_url'] = imageText;
     // if (videoText.isNotEmpty) postData['video_url'] = videoText;
 
     try {
-      // Kirim request POST ke endpoint
-      final response = await request.postJson(
-        _createEndpoint,
-        jsonEncode(postData),
-      );
+      dynamic response;
+      // If an image file is picked, send multipart/form-data like the web profile API
+      if (_pickedImage != null) {
+        final uri = Uri.parse(_createEndpoint);
+        final req = http.MultipartRequest('POST', uri);
+
+        // copy headers / csrf from CookieRequest
+        final headers = Map<String, String>.from(request.headers);
+        if (!kIsWeb) {
+          final cookieHeader = request.cookies.entries
+              .map((e) => '${e.key}=${e.value}')
+              .join('; ');
+          if (cookieHeader.isNotEmpty) headers['Cookie'] = cookieHeader;
+        }
+        final csrfToken =
+            (request.headers['X-CSRFToken'] ??
+                    request.cookies['csrftoken']?.toString() ??
+                    request.cookies['csrf']?.toString() ??
+                    '')
+                .toString();
+        if (csrfToken.isNotEmpty) headers['X-CSRFToken'] = csrfToken;
+        headers.putIfAbsent('Referer', () => _createEndpoint);
+        req.headers.addAll(headers);
+
+        // add text fields
+        postData.forEach((k, v) {
+          if (v != null) req.fields[k] = v.toString();
+        });
+
+        // attach file
+        if (_pickedImage != null) {
+          req.files.add(
+            await http.MultipartFile.fromPath(
+              'image',
+              _pickedImage!.path,
+              filename: p.basename(_pickedImage!.path),
+            ),
+          );
+        }
+
+        late http.Client client;
+        if (kIsWeb) {
+          final c = http_browser.BrowserClient()..withCredentials = true;
+          client = c;
+        } else {
+          client = http.Client();
+        }
+        try {
+          final streamed = await client.send(req);
+          final body = await streamed.stream.bytesToString();
+          if (body.isNotEmpty) {
+            try {
+              response = jsonDecode(body);
+            } catch (_) {
+              response = body;
+            }
+          } else {
+            response = {'status': streamed.statusCode == 201};
+          }
+          if (streamed.statusCode == 401) {
+            throw Exception('Authentication required.');
+          }
+        } finally {
+          client.close();
+        }
+      } else {
+        // No file, send JSON body
+        response = await request.postJson(
+          _createEndpoint,
+          jsonEncode(postData),
+        );
+      }
 
       if (!mounted) return;
 
@@ -109,22 +189,24 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
       // Custom views mungkin mengembalikan format berbeda
       bool isSuccess = false;
       String successMessage = 'Post created successfully!';
-      
+
       if (response is Map) {
         // Format 1: Django REST Framework (mengembalikan objek dengan id)
         if (response.containsKey('id')) {
           isSuccess = true;
           successMessage = 'Post #${response['id']} created successfully!';
-        } 
+        }
         // Format 2: Custom view dengan field 'status'
-        else if (response['status'] == 'success' || response['status'] == true) {
+        else if (response['status'] == 'success' ||
+            response['status'] == true) {
           isSuccess = true;
           if (response.containsKey('message')) {
             successMessage = response['message'];
           }
         }
         // Format 3: Response dari PostAPIView (mungkin mengembalikan data post)
-        else if (response.containsKey('title') || response.containsKey('content')) {
+        else if (response.containsKey('title') ||
+            response.containsKey('content')) {
           isSuccess = true;
         }
       }
@@ -140,12 +222,12 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
       } else {
         // Handle error response
         String errorMessage = 'Failed to create post';
-        
+
         if (response is Map) {
           // Django REST Framework validation errors
           if (response.containsKey('errors')) {
             errorMessage = 'Validation errors: ${response['errors']}';
-          } 
+          }
           // Custom error messages
           else if (response.containsKey('error')) {
             errorMessage = response['error'];
@@ -169,7 +251,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
         } else if (response is String) {
           errorMessage = response;
         }
-        
+
         _showError(errorMessage);
       }
     } catch (e) {
@@ -221,6 +303,22 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
         ),
       ),
     );
+  }
+
+  /// Pick image from gallery
+  Future<void> _pickImage() async {
+    try {
+      final XFile? picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        setState(() => _pickedImage = File(picked.path));
+      }
+    } catch (e) {
+      _showError('Failed to pick image: ${e.toString()}');
+    }
   }
 
   // === LOGIN CHECK & UI ===
@@ -309,9 +407,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Creating a Post',
           style: GoogleFonts.inter(
@@ -325,15 +421,19 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
           children: [
             Text(
               'Tips for a great post:',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-              ),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
             _buildInfoItem('📝', 'Title should be clear and descriptive'),
             _buildInfoItem('📄', 'Content should be detailed and valuable'),
-            _buildInfoItem('🖼️', 'Image URL should be a direct link to an image'),
-            _buildInfoItem('🎬', 'Video URL should be a link to YouTube or similar'),
+            _buildInfoItem(
+              '🖼️',
+              'Image URL should be a direct link to an image',
+            ),
+            _buildInfoItem(
+              '🎬',
+              'Video URL should be a link to YouTube or similar',
+            ),
             const SizedBox(height: 15),
             Text(
               'API Endpoint:',
@@ -376,12 +476,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
         children: [
           Text(emoji, style: const TextStyle(fontSize: 16)),
           const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.inter(fontSize: 14),
-            ),
-          ),
+          Expanded(child: Text(text, style: GoogleFonts.inter(fontSize: 14))),
         ],
       ),
     );
@@ -516,7 +611,9 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
                             },
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 12),
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
                             ),
                             child: Text(
                               "Don't have an account? Register",
@@ -567,7 +664,10 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Title field
-                  _buildFieldLabel('Title *', 'Required, at least 5 characters'),
+                  _buildFieldLabel(
+                    'Title *',
+                    'Required, at least 5 characters',
+                  ),
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _titleCtrl,
@@ -583,7 +683,10 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
                   const SizedBox(height: 20),
 
                   // Content field
-                  _buildFieldLabel('Content *', 'Required, at least 10 characters'),
+                  _buildFieldLabel(
+                    'Content *',
+                    'Required, at least 10 characters',
+                  ),
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _contentCtrl,
@@ -599,31 +702,28 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
                   ),
                   const SizedBox(height: 20),
 
-                  // Image URL field (optional)
-                  _buildFieldLabel('Image URL (Optional)', 'Direct link to image'),
+                  // Image selector (optional) - prefer file picker over URL
+                  _buildFieldLabel(
+                    'Image (Optional)',
+                    'Pick an image from device',
+                  ),
                   const SizedBox(height: 8),
-                  _buildTextField(
-                    controller: _imageCtrl,
-                    hint: 'https://example.com/image.jpg',
-                    icon: Icons.image_outlined,
-                    keyboardType: TextInputType.url,
-                    validator: (v) {
-                      if (v != null && v.isNotEmpty) {
-                        final urlPattern = RegExp(
-                          r'^(https?://)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*/?$',
-                          caseSensitive: false,
-                        );
-                        if (!urlPattern.hasMatch(v)) {
-                          return 'Please enter a valid URL';
-                        }
-                      }
-                      return null;
-                    },
+                  ElevatedButton.icon(
+                    onPressed: _pickImage,
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: const Text('Choose Image'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF4A2B55),
+                    ),
                   ),
                   const SizedBox(height: 20),
 
                   // Video URL field (optional)
-                  _buildFieldLabel('Video URL (Optional)', 'YouTube or video link'),
+                  _buildFieldLabel(
+                    'Video URL (Optional)',
+                    'YouTube or video link',
+                  ),
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _videoCtrl,
@@ -672,10 +772,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
         const SizedBox(height: 2),
         Text(
           subtitle,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: Colors.white54,
-          ),
+          style: GoogleFonts.inter(fontSize: 12, color: Colors.white54),
         ),
       ],
     );
@@ -736,9 +833,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF4A2B55),
         minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 4,
         shadowColor: Colors.black.withOpacity(0.2),
         padding: const EdgeInsets.symmetric(vertical: 16),

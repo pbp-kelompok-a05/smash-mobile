@@ -5,7 +5,7 @@ import 'package:smash_mobile/models/Filtering_entry.dart';
 /// Menangani: fetch posts, notifications, post detail, dan utilities URL
 class PostApi {
   PostApi({required this.request, String? baseUrl})
-      : baseUrl = baseUrl ?? 'http://localhost:8000';
+    : baseUrl = baseUrl ?? 'http://localhost:8000';
 
   final CookieRequest request;
   final String baseUrl;
@@ -14,14 +14,15 @@ class PostApi {
   /// Ambil semua post dari endpoint /post/api/posts/
   /// Mengembalikan List<ProfileFeedItem> dengan semua data termasuk interaksi user
   Future<List<ProfileFeedItem>> fetchAllPosts() async {
-    final uri = Uri.parse('$baseUrl/post/api/posts/').replace(queryParameters: {
-      'sort': 'newest',
-    });
+    final uri = Uri.parse(
+      '$baseUrl/post/api/posts/',
+    ).replace(queryParameters: {'sort': 'newest'});
     final response = await _safeGet(uri);
 
     if (response is Map<String, dynamic> && response['status'] == 'success') {
-      final posts = (response['posts'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-      
+      final posts =
+          (response['posts'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
       return posts.map((post) {
         return ProfileFeedItem(
           id: post['id'] ?? 0,
@@ -31,7 +32,8 @@ class PostApi {
           videoLink: post['video_link'] as String?,
           user: post['user'] ?? '', // Username dari API
           userId: post['user_id'] ?? 0,
-          createdAt: DateTime.tryParse(post['created_at'] ?? '') ?? DateTime.now(),
+          createdAt:
+              DateTime.tryParse(post['created_at'] ?? '') ?? DateTime.now(),
           commentCount: post['comment_count'] ?? 0,
           likesCount: post['likes_count'] ?? 0,
           dislikesCount: post['dislikes_count'] ?? 0,
@@ -49,8 +51,9 @@ class PostApi {
   /// Cari post berdasarkan query string
   /// Endpoint: GET /post/api/search/?q=<query>
   Future<List<ProfileFeedItem>> searchPosts(String query) async {
-    final uri = Uri.parse('$baseUrl/post/api/search/')
-        .replace(queryParameters: {'q': query});
+    final uri = Uri.parse(
+      '$baseUrl/post/api/search/',
+    ).replace(queryParameters: {'q': query});
     final response = await _safeGet(uri);
 
     if (response is Map<String, dynamic> && response['status'] == 'success') {
@@ -90,11 +93,13 @@ class PostApi {
     if (response is Map<String, dynamic> && response['status'] == 'success') {
       final list = response['notifications'] as List<dynamic>? ?? [];
       return list
-          .map((item) => NotificationItem.fromJson(
-                Map<String, dynamic>.from(item as Map),
-                resolveMediaUrl: _resolveMediaUrl,
-                defaultAvatarUrl: '$baseUrl$_defaultAvatarPath',
-              ))
+          .map(
+            (item) => NotificationItem.fromJson(
+              Map<String, dynamic>.from(item as Map),
+              resolveMediaUrl: _resolveMediaUrl,
+              defaultAvatarUrl: '$baseUrl$_defaultAvatarPath',
+            ),
+          )
           .toList();
     }
     throw Exception('INVALID_RESPONSE');
@@ -117,8 +122,7 @@ class PostApi {
         videoLink: map['video_link'] as String?,
         user: map['user'] ?? '',
         userId: map['user_id'] ?? 0,
-        createdAt:
-            DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
+        createdAt: DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
         commentCount: map['comment_count'] ?? 0,
         likesCount: map['likes_count'] ?? 0,
         dislikesCount: map['dislikes_count'] ?? 0,
@@ -233,8 +237,9 @@ class NotificationItem {
       // Parse dari URL format /profil/<id>/
       final profileUrl = extractProfileUrl();
       if (profileUrl != null) {
-        final match = RegExp(r'/profil/(?:api/profile/)?(\d+)/')
-            .firstMatch(profileUrl);
+        final match = RegExp(
+          r'/profil/(?:api/profile/)?(\d+)/',
+        ).firstMatch(profileUrl);
         if (match != null) return int.tryParse(match.group(1) ?? '');
       }
       return null;
@@ -286,8 +291,7 @@ class NotificationItem {
       fallbackPhoto: defaultAvatarUrl,
       content: json['content'] as String?,
       message: json['message'] ?? '',
-      timestamp:
-          DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
+      timestamp: DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
     );
   }
 }

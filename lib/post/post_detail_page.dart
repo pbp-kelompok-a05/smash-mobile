@@ -114,9 +114,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 ),
               ],
             ),
-            SliverToBoxAdapter(
-              child: _buildBody(),
-            ),
+            SliverToBoxAdapter(child: _buildBody()),
           ],
         ),
       ),
@@ -141,8 +139,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
 
     final item = _item!;
-    final avatar = _resolveMediaUrl(item.profilePhoto);
-    final defaultAvatar = '${_api.baseUrl}/static/images/user-profile.png';
+    final avatar = _api.resolveMediaUrl(item.profilePhoto);
+    final defaultAvatar =
+        _api.resolveMediaUrl('/static/images/user-profile.png') ??
+        '${_api.baseUrl}/static/images/user-profile.png';
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -155,17 +155,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Colors.white.withOpacity(0.5)),
               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                ),
+                BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20),
               ],
             ),
             child: PostCard(
               item: item,
               avatarUrl: avatar,
+              imageUrl: _api.resolveMediaUrl(item.image),
               defaultAvatar: defaultAvatar,
-              resolveAvatar: _resolveMediaUrl,
+              resolveAvatar: _api.resolveMediaUrl,
               showMenu: true,
               currentUserId: _currentUserId,
               showFooterActions: true,
@@ -247,10 +245,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
         children: [
           const Text(
             'Comments',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           // Placeholder untuk komentar
@@ -266,37 +261,37 @@ class _PostDetailPageState extends State<PostDetailPage> {
   // Handler interactions (implementasi API)
   Future<void> _handleLike() async {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Like action triggered')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Like action triggered')));
     // Implementasi: await _api.interact(widget.postId, 'like');
   }
 
   Future<void> _handleDislike() async {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Dislike action triggered')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Dislike action triggered')));
   }
 
   Future<void> _handleSave() async {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Save action triggered')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Save action triggered')));
   }
 
   Future<void> _handleComment() async {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Comment action triggered')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Comment action triggered')));
   }
 
   Future<void> _handleShare() async {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Share action triggered')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Share action triggered')));
   }
 }
