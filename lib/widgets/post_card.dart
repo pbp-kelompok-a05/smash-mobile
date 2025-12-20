@@ -5,6 +5,7 @@ import 'package:smash_mobile/models/Filtering_entry.dart';
 import 'package:smash_mobile/post/post_detail_page.dart';
 import 'package:smash_mobile/screens/edit_post.dart';
 import 'package:smash_mobile/widgets/default_avatar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PostCard extends StatelessWidget {
   const PostCard({
@@ -626,9 +627,74 @@ class PostCard extends StatelessWidget {
   /// Buka link (placeholder)
   Future<void> _openLink(String url, BuildContext context) async {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Open link not supported in this build')),
-    );
+    try {
+      String link = url.trim();
+      Uri? uri = Uri.tryParse(link);
+
+      if (uri == null || uri.scheme.isEmpty) {
+        uri = Uri.tryParse('https://$link');
+      }
+
+      if (uri == null) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Invalid URL')));
+        return;
+      }
+
+      // Try to open with external application (browser / app)
+      if (await canLaunchUrl(uri)) {
+        final opened = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+        if (!opened && context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Could not open link')));
+        }
+        return;
+      }
+
+      // Fallback: attempt to resolve common YouTube formats and try app scheme
+      String? id;
+      final parsed = Uri.tryParse(link);
+      if (parsed != null) {
+        if (parsed.host.contains('youtu.be')) {
+          if (parsed.pathSegments.isNotEmpty) id = parsed.pathSegments.first;
+        } else if (parsed.queryParameters.containsKey('v')) {
+          id = parsed.queryParameters['v'];
+        } else if (parsed.pathSegments.length >= 2 &&
+            parsed.pathSegments[0] == 'embed') {
+          id = parsed.pathSegments[1];
+        }
+      }
+
+      if (id != null && id.isNotEmpty) {
+        final youtubeApp = Uri.parse('vnd.youtube:$id');
+        if (await canLaunchUrl(youtubeApp)) {
+          await launchUrl(youtubeApp);
+          return;
+        }
+        final youtubeWeb = Uri.parse('https://youtu.be/$id');
+        if (await canLaunchUrl(youtubeWeb)) {
+          await launchUrl(youtubeWeb, mode: LaunchMode.externalApplication);
+          return;
+        }
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Unable to open link')));
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to open link: $e')));
+    }
   }
 }
 

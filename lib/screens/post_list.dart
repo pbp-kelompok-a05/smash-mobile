@@ -125,10 +125,16 @@ class _PostListPageState extends State<PostListPage>
     MaterialPageRoute(builder: (_) => PostDetailPage(postId: post.id)),
   );
 
-  void _openCreatePost() => Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => const PostEntryFormPage()),
-  );
+  Future<void> _openCreatePost() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PostEntryFormPage()),
+    );
+    // If the create page returned `true`, refresh posts immediately
+    if (result == true) {
+      await _loadPosts(showLoading: true);
+    }
+  }
 
   /// Handler untuk klik avatar - navigasi ke halaman profil
   void _handleProfileTap(int userId) {

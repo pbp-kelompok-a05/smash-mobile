@@ -32,19 +32,10 @@ class PostEntryFormPage extends StatefulWidget {
 class _PostEntryFormPageState extends State<PostEntryFormPage>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _titleCtrl = TextEditingController();
-  final _contentCtrl = TextEditingController();
-  final _imageCtrl = TextEditingController();
-  File? _pickedImage;
-  final _videoCtrl = TextEditingController();
-  bool _isSubmitting = false;
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _contentController = TextEditingController();
+  final TextEditingController _videoController = TextEditingController();
 
-  /// Endpoint API untuk membuat post
-  /// Menggunakan endpoint: 'api/posts/' (method: POST)
-  /// Sesuai dengan urls.py Django: path('api/posts/', views.PostAPIView.as_view(), name='post_api')
-  static const String _createEndpoint = 'http://localhost:8000/post/api/posts/';
-
-  /// Controller untuk animasi fade-in
   late AnimationController _animationController;
 
   @override
@@ -61,211 +52,154 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
     });
   }
 
+  String? _selectedImageOption;
+  final List<String> _imageOptions = [
+    'No image',
+    'Upload from device',
+    'Choose from gallery',
+  ];
+
+  Uint8List? _pickedImageBytes;
+  final ImagePicker _imagePicker = ImagePicker();
+  XFile? _pickedXFile;
+
+  bool _submitting = false;
+
+  /// Endpoint API untuk membuat post
+  /// Menggunakan endpoint: 'api/posts/' (method: POST)
+  /// Sesuai dengan urls.py Django: path('api/posts/', views.PostAPIView.as_view(), name='post_api')
+  static const String _createEndpoint =
+      'http://localhost:8000/post/api/create-post/';
+
   @override
   void dispose() {
-    _titleCtrl.dispose();
-    _contentCtrl.dispose();
-    _imageCtrl.dispose();
-    _videoCtrl.dispose();
-    _animationController.dispose();
+    _titleController.dispose();
+    _contentController.dispose();
+    _videoController.dispose();
     super.dispose();
   }
 
+  bool _isYouTubeLink(String? url) {
+    if (url == null || url.isEmpty) return false;
+    return url.contains('youtube.com') || url.contains('youtu.be');
+  }
+
+  /// Pilih gambar dari device menggunakan image_picker
+  Future<void> _pickImage() async {
+    try {
+      final XFile? xfile = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+      );
+      if (xfile == null) return;
+      final bytes = await xfile.readAsBytes();
+      setState(() {
+        _pickedImageBytes = bytes;
+        _pickedXFile = xfile;
+        _selectedImageOption = 'Upload from device';
+      });
+    } catch (e) {
+      // ignore: avoid_print
+      print('Image pick failed: $e');
+    }
+  }
+
   /// Validasi dan submit form ke API
-  Future<void> _submitForm() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _submitting = true);
 
-    setState(() => _isSubmitting = true);
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+    final video = _videoController.text.trim();
 
-    final request = context.read<CookieRequest>();
-
-    // Siapkan data untuk dikirim ke API
-    // Catatan: Sesuaikan field dengan model Post di backend Django
-    // Biasanya field untuk media adalah 'image' dan 'video' atau 'image_url' dan 'video_url'
-    final Map<String, dynamic> postData = {
-      'title': _titleCtrl.text.trim(),
-      'content': _contentCtrl.text.trim(),
-    };
-
-    // Tambahkan field optional jika diisi (sesuaikan dengan field di model Django)
-    final imageText = _imageCtrl.text.trim();
-    final videoText = _videoCtrl.text.trim();
-
-    // Pilih salah satu format field berikut sesuai dengan model Django Anda:
-    // Opsi 1: Jika model menggunakan 'image' dan 'video'
-    if (imageText.isNotEmpty) postData['image'] = imageText;
-    if (videoText.isNotEmpty) postData['video'] = videoText;
-    // If user picked an image file, include it as base64 in JSON payload
-    if (_pickedImage != null) {
-      final bytes = await _pickedImage!.readAsBytes();
-      postData['image_data'] = base64Encode(bytes);
-      postData['image_name'] = p.basename(_pickedImage!.path);
+    String? inferredMime;
+    if (_pickedXFile != null) {
+      final p = _pickedXFile!.path.toLowerCase();
+      if (p.endsWith('.png'))
+        inferredMime = 'image/png';
+      else if (p.endsWith('.jpg') || p.endsWith('.jpeg'))
+        inferredMime = 'image/jpeg';
+      else if (p.endsWith('.webp'))
+        inferredMime = 'image/webp';
+      else if (p.endsWith('.gif'))
+        inferredMime = 'image/gif';
     }
 
-    // Opsi 2: Jika model menggunakan 'image_url' dan 'video_url'
-    // if (imageText.isNotEmpty) postData['image_url'] = imageText;
-    // if (videoText.isNotEmpty) postData['video_url'] = videoText;
+    try {
+      await _createPost(
+        title: title,
+        content: content,
+        videoLink: video.isEmpty ? null : video,
+        imageBytes: _pickedImageBytes,
+        imageMime: inferredMime,
+      );
+      setState(() => _submitting = false);
+      _showSuccess('Post created successfully!');
+      Navigator.of(context).pop(true);
+    } catch (err) {
+      _showError('Failed to create post: $err');
+    }
+  }
+
+  Future<Map<String, dynamic>> _createPost({
+    required String title,
+    required String content,
+    String? videoLink,
+    List<int>? imageBytes,
+    String? imageMime,
+    String? userId,
+  }) async {
+    final url = _createEndpoint;
+
+    // If caller didn't provide a userId, try to obtain it from the logged-in session
+    if (userId == null) {
+      try {
+        final request = context.read<CookieRequest>();
+        final me = await request.get('http://localhost:8000/post/me/');
+        if (me != null && me['id'] != null) userId = me['id'].toString();
+      } catch (_) {
+        // ignore and fall back to default
+      }
+    }
+
+    final body = <String, dynamic>{
+      'title': title,
+      'content': content,
+      'video_link': videoLink ?? '',
+      'user_id': userId ?? '1',
+    };
+
+    if (imageBytes != null) {
+      final b64 = base64Encode(imageBytes);
+      final mime = imageMime ?? 'image/png';
+      body['image'] = 'data:$mime;base64,$b64';
+    }
 
     try {
-      dynamic response;
-      // If an image file is picked, send multipart/form-data like the web profile API
-      if (_pickedImage != null) {
-        final uri = Uri.parse(_createEndpoint);
-        final req = http.MultipartRequest('POST', uri);
+      final request = context.read<CookieRequest>();
+      final response = await request.post(url, body);
 
-        // copy headers / csrf from CookieRequest
-        final headers = Map<String, String>.from(request.headers);
-        if (!kIsWeb) {
-          final cookieHeader = request.cookies.entries
-              .map((e) => '${e.key}=${e.value}')
-              .join('; ');
-          if (cookieHeader.isNotEmpty) headers['Cookie'] = cookieHeader;
+      if (response is Map<String, dynamic>) {
+        // API may return status/message or the created post
+        if (response['status'] == 'success' || response['status'] == true) {
+          if (response.containsKey('post'))
+            return Map<String, dynamic>.from(response['post']);
+          return response;
         }
-        final csrfToken =
-            (request.headers['X-CSRFToken'] ??
-                    request.cookies['csrftoken']?.toString() ??
-                    request.cookies['csrf']?.toString() ??
-                    '')
-                .toString();
-        if (csrfToken.isNotEmpty) headers['X-CSRFToken'] = csrfToken;
-        headers.putIfAbsent('Referer', () => _createEndpoint);
-        req.headers.addAll(headers);
-
-        // add text fields
-        postData.forEach((k, v) {
-          if (v != null) req.fields[k] = v.toString();
-        });
-
-        // attach file
-        if (_pickedImage != null) {
-          req.files.add(
-            await http.MultipartFile.fromPath(
-              'image',
-              _pickedImage!.path,
-              filename: p.basename(_pickedImage!.path),
-            ),
-          );
-        }
-
-        late http.Client client;
-        if (kIsWeb) {
-          final c = http_browser.BrowserClient()..withCredentials = true;
-          client = c;
-        } else {
-          client = http.Client();
-        }
-        try {
-          final streamed = await client.send(req);
-          final body = await streamed.stream.bytesToString();
-          if (body.isNotEmpty) {
-            try {
-              response = jsonDecode(body);
-            } catch (_) {
-              response = body;
-            }
-          } else {
-            response = {'status': streamed.statusCode == 201};
-          }
-          if (streamed.statusCode == 401) {
-            throw Exception('Authentication required.');
-          }
-        } finally {
-          client.close();
-        }
-      } else {
-        // No file, send JSON body
-        response = await request.postJson(
-          _createEndpoint,
-          jsonEncode(postData),
-        );
+        // Some endpoints return the created object directly
+        return response;
       }
-
-      if (!mounted) return;
-
-      // Cek response sukses
-      // Django REST Framework biasanya mengembalikan:
-      // - Status 201 Created untuk POST sukses
-      // - Objek dengan field 'id' untuk resource yang dibuat
-      // Custom views mungkin mengembalikan format berbeda
-      bool isSuccess = false;
-      String successMessage = 'Post created successfully!';
-
-      if (response is Map) {
-        // Format 1: Django REST Framework (mengembalikan objek dengan id)
-        if (response.containsKey('id')) {
-          isSuccess = true;
-          successMessage = 'Post #${response['id']} created successfully!';
-        }
-        // Format 2: Custom view dengan field 'status'
-        else if (response['status'] == 'success' ||
-            response['status'] == true) {
-          isSuccess = true;
-          if (response.containsKey('message')) {
-            successMessage = response['message'];
-          }
-        }
-        // Format 3: Response dari PostAPIView (mungkin mengembalikan data post)
-        else if (response.containsKey('title') ||
-            response.containsKey('content')) {
-          isSuccess = true;
-        }
-      }
-
-      if (isSuccess) {
-        _showSuccess(successMessage);
-        // Kembali ke halaman utama setelah sukses
-        // Alternatif: Navigator.pop(context) untuk kembali ke halaman sebelumnya
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => MyHomePage()),
-        );
-      } else {
-        // Handle error response
-        String errorMessage = 'Failed to create post';
-
-        if (response is Map) {
-          // Django REST Framework validation errors
-          if (response.containsKey('errors')) {
-            errorMessage = 'Validation errors: ${response['errors']}';
-          }
-          // Custom error messages
-          else if (response.containsKey('error')) {
-            errorMessage = response['error'];
-          } else if (response.containsKey('detail')) {
-            errorMessage = response['detail'];
-          } else if (response.containsKey('message')) {
-            errorMessage = response['message'];
-          }
-          // Field-specific errors (common in DRF)
-          else {
-            final errors = <String>[];
-            response.forEach((key, value) {
-              if (value is List && value.isNotEmpty) {
-                errors.add('$key: ${value.first}');
-              }
-            });
-            if (errors.isNotEmpty) {
-              errorMessage = errors.join('\n');
-            }
-          }
-        } else if (response is String) {
-          errorMessage = response;
-        }
-
-        _showError(errorMessage);
-      }
+      throw Exception('Create post failed: unexpected response: $response');
     } catch (e) {
-      if (mounted) {
-        _showError('Error: ${e.toString()}');
-      }
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      throw Exception('Error creating post: $e');
     }
   }
 
   /// Tampilkan snackbar sukses
   void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
       SnackBar(
         content: Text(message, style: GoogleFonts.inter(color: Colors.white)),
         backgroundColor: Colors.green,
@@ -277,7 +211,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
           label: 'OK',
           textColor: Colors.white,
           onPressed: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            messenger.clearSnackBars();
           },
         ),
       ),
@@ -286,7 +220,8 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
 
   /// Tampilkan snackbar error
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
       SnackBar(
         content: Text(message, style: GoogleFonts.inter(color: Colors.white)),
         backgroundColor: Colors.red.shade600,
@@ -298,27 +233,11 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
           label: 'Dismiss',
           textColor: Colors.white,
           onPressed: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            messenger.clearSnackBars();
           },
         ),
       ),
     );
-  }
-
-  /// Pick image from gallery
-  Future<void> _pickImage() async {
-    try {
-      final XFile? picked = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1600,
-        imageQuality: 85,
-      );
-      if (picked != null) {
-        setState(() => _pickedImage = File(picked.path));
-      }
-    } catch (e) {
-      _showError('Failed to pick image: ${e.toString()}');
-    }
   }
 
   // === LOGIN CHECK & UI ===
@@ -670,7 +589,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
                   ),
                   const SizedBox(height: 8),
                   _buildTextField(
-                    controller: _titleCtrl,
+                    controller: _titleController,
                     hint: 'Enter post title',
                     icon: Icons.title,
                     validator: (v) {
@@ -689,7 +608,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
                   ),
                   const SizedBox(height: 8),
                   _buildTextField(
-                    controller: _contentCtrl,
+                    controller: _contentController,
                     hint: 'Write your post content...',
                     icon: Icons.article_outlined,
                     maxLines: 5,
@@ -708,13 +627,73 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
                     'Pick an image from device',
                   ),
                   const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    onPressed: _pickImage,
-                    icon: const Icon(Icons.photo_library_outlined),
-                    label: const Text('Choose Image'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF4A2B55),
+                  Container(
+                    color: Colors.transparent,
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        height: 160,
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 80, 67, 78),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: _pickedImageBytes != null
+                            ? Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.memory(
+                                    _pickedImageBytes!,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: CircleAvatar(
+                                      backgroundColor: const Color.fromARGB(
+                                        255,
+                                        80,
+                                        67,
+                                        78,
+                                      ),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.close,
+                                          color: Color.fromARGB(
+                                            255,
+                                            255,
+                                            255,
+                                            255,
+                                          ),
+                                          size: 18,
+                                        ),
+                                        onPressed: () => setState(() {
+                                          _pickedImageBytes = null;
+                                          _pickedXFile = null;
+                                        }),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(
+                                      Icons.upload,
+                                      size: 48,
+                                      color: Colors.white,
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Post Image (Optional)\nTap to select an image',
+                                      style: TextStyle(color: Colors.white54),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -726,22 +705,14 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
                   ),
                   const SizedBox(height: 8),
                   _buildTextField(
-                    controller: _videoCtrl,
+                    controller: _videoController,
                     hint: 'https://youtube.com/watch?v=...',
                     icon: Icons.video_library_outlined,
                     keyboardType: TextInputType.url,
-                    validator: (v) {
-                      if (v != null && v.isNotEmpty) {
-                        final urlPattern = RegExp(
-                          r'^(https?://)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*/?$',
-                          caseSensitive: false,
-                        );
-                        if (!urlPattern.hasMatch(v)) {
-                          return 'Please enter a valid URL';
-                        }
-                      }
-                      return null;
-                    },
+                    validator: (v) =>
+                        (v != null && v.isNotEmpty && !_isYouTubeLink(v))
+                        ? 'Only YouTube links are supported'
+                        : null,
                   ),
                   const SizedBox(height: 32),
 
@@ -828,7 +799,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
   /// Widget untuk submit button
   Widget _buildSubmitButton() {
     return ElevatedButton(
-      onPressed: _isSubmitting ? null : _submitForm,
+      onPressed: _submitting ? null : _submit,
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF4A2B55),
@@ -838,7 +809,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
         shadowColor: Colors.black.withOpacity(0.2),
         padding: const EdgeInsets.symmetric(vertical: 16),
       ),
-      child: _isSubmitting
+      child: _submitting
           ? Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
