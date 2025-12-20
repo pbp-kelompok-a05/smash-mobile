@@ -36,7 +36,42 @@ class PostService {
     } catch (_) {}
     return 'http://127.0.0.1:8000/';
   }
+  Future<Map<String, dynamic>> editPost({
+    required String postId,
+    required String title,
+    required String content,
+    String? videoLink,
+    List<int>? imageBytes,
+    String? imageMime,
+  }) async {
+    final url = '${serverRoot}post/edit-flutter/$postId/';
 
+    final body = <String, dynamic>{
+      'title': title,
+      'content': content,
+      'video_link': videoLink ?? '',
+    };
+
+    if (imageBytes != null) {
+      final b64 = base64Encode(imageBytes);
+      final mime = imageMime ?? 'image/png';
+      body['image'] = 'data:$mime;base64,$b64';
+    }
+
+    final res = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
+
+    if (res.statusCode == 200) {
+      return json.decode(res.body);
+    } else {
+      throw Exception(
+        'Edit post failed: ${res.statusCode} ${res.body}',
+      );
+    }
+  }
   String createPostUrl() => '${serverRoot}create_flutter_post/';
 
   Future<Map<String, dynamic>> createPost({
