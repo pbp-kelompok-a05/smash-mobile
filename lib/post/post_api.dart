@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
+import 'package:smash_mobile/models/comment_entry.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 /// API service untuk operasi post dengan integrasi Django backend
 /// Menangani: fetch posts, notifications, post detail, dan utilities URL
@@ -136,10 +141,58 @@ class PostApi {
     throw Exception('Gagal mengambil detail post.');
   }
 
+  /// Fetch comments for a post
+  /// Endpoint: GET /post/api/posts/<postId>/comments/
+  Future<List<Comment>> fetchComments(int postId, {int? userId}) async {
+    final uri = Uri.parse('$baseUrl/post/api/posts/$postId/comments/').replace(
+      queryParameters: userId != null ? {'user_id': userId.toString()} : null,
+    );
+    final response = await _safeGet(uri);
+
+    if (response is List) {
+      return (response as List)
+          .map((e) => Comment.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+    throw Exception('Gagal mengambil komentar.');
+  }
+
+  /// Create a comment via Flutter client
+  /// Endpoint: POST /post/api/create-comment/
+  Future<Comment> createComment(
+    int postId,
+    String content, {
+    int? userId,
+    int? parentId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/post/api/create-comment/');
+    final body = {
+      'post_id': postId.toString(),
+      'content': content,
+      if (userId != null) 'user_id': userId.toString(),
+      if (parentId != null) 'parent_id': parentId.toString(),
+    };
+
+    final res = await request.post(uri.toString(), body);
+    if (res is Map<String, dynamic> && res['status'] == 'success') {
+      final commentMap = res['comment'] as Map<String, dynamic>?;
+      if (commentMap != null) return Comment.fromJson(commentMap);
+    }
+    throw Exception('Gagal membuat komentar.');
+  }
+
   /// Helper untuk GET request dengan error handling
   Future<dynamic> _safeGet(Uri uri) async {
     try {
-      return await request.get(uri.toString());
+      final res = await request.get(uri.toString());
+      if (res is String) {
+        try {
+          return jsonDecode(res);
+        } catch (_) {
+          return res;
+        }
+      }
+      return res;
     } on FormatException {
       throw Exception('INVALID_RESPONSE');
     }

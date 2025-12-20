@@ -6,6 +6,8 @@ import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
 import 'package:smash_mobile/post/post_api.dart';
+import 'package:smash_mobile/models/comment_entry.dart';
+import 'package:smash_mobile/widgets/comment_card.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:smash_mobile/widgets/post_card.dart';
@@ -26,6 +28,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
   bool _loading = true;
   String? _error;
   int? _currentUserId;
+  // Comments
+  List<Comment> _comments = [];
+  bool _loadingComments = true;
+  String? _commentsError;
+  final TextEditingController _commentController = TextEditingController();
 
   // NEW: Modern colors
   static const Color _primaryColor = Color(0xFF667EEA);
@@ -47,6 +54,13 @@ class _PostDetailPageState extends State<PostDetailPage> {
     _profileApi = ProfileApi(request: request);
     _loadCurrentUser();
     _load();
+    _loadComments();
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCurrentUser() async {
@@ -81,6 +95,33 @@ class _PostDetailPageState extends State<PostDetailPage> {
           _loading = false;
         });
       }
+    }
+  }
+
+  Future<void> _loadComments() async {
+    setState(() {
+      _loadingComments = true;
+      _commentsError = null;
+    });
+    try {
+      final list = await _api.fetchComments(
+        widget.postId,
+        userId: _currentUserId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _comments = list;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _commentsError = e.toString();
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _loadingComments = false;
+      });
     }
   }
 
@@ -234,7 +275,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Widget _buildCommentsSection() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.95),
         borderRadius: BorderRadius.circular(24),
@@ -247,15 +288,106 @@ class _PostDetailPageState extends State<PostDetailPage> {
             'Comments',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 16),
-          // Placeholder untuk komentar
-          Text(
-            'Comments feature coming soon...',
-            style: TextStyle(color: Colors.grey.shade600),
+          const SizedBox(height: 12),
+          // Input row
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _commentController,
+                  minLines: 1,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Write a comment...',
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: _primaryColor,
+                child: IconButton(
+                  icon: const Icon(Icons.send, color: Colors.white, size: 18),
+                  onPressed: _submitComment,
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 12),
+
+          if (_loadingComments)
+            const Center(child: CircularProgressIndicator())
+          else if (_commentsError != null)
+            Text(_commentsError!, style: TextStyle(color: Colors.red.shade700))
+          else if (_comments.isEmpty)
+            Text(
+              'No comments yet. Be the first!',
+              style: TextStyle(color: Colors.grey.shade600),
+            )
+          else
+            Column(
+              children: _comments.map((c) {
+                final idInt = int.tryParse(c.id) ?? 0;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: CommentCard(
+                    id: idInt,
+                    author: c.author,
+                    content: c.content,
+                    createdAt: c.createdAt,
+                    likes: c.likesCount,
+                    dislikes: c.dislikesCount,
+                    userReaction: c.userReaction,
+                    onLike: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Like pressed')),
+                      );
+                    },
+                    onDislike: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Dislike pressed')),
+                      );
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
         ],
       ),
     );
+  }
+
+  Future<void> _submitComment() async {
+    final text = _commentController.text.trim();
+    if (text.isEmpty) return;
+    try {
+      if (!mounted) return;
+      setState(() {
+        // optimistic UI could be added here
+      });
+      await _api.createComment(widget.postId, text, userId: _currentUserId);
+      _commentController.clear();
+      await _loadComments();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Comment posted')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
+    }
   }
 
   // Handler interactions (implementasi API)
