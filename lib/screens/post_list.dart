@@ -14,6 +14,7 @@ import 'package:smash_mobile/screens/login.dart';
 import 'package:smash_mobile/screens/register.dart';
 import 'package:smash_mobile/screens/post_form_entry.dart';
 import 'package:smash_mobile/post/post_detail_page.dart';
+import 'package:smash_mobile/screens/search.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:smash_mobile/widgets/navbar.dart';
 import 'package:smash_mobile/widgets/post_card.dart';
@@ -38,6 +39,7 @@ class _PostListPageState extends State<PostListPage>
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _animationController;
   final ScrollController _scrollController = ScrollController();
+  late final TextEditingController _searchController;
 
   // API & Data
   late PostApi _postApi;
@@ -61,6 +63,7 @@ class _PostListPageState extends State<PostListPage>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
+    _searchController = TextEditingController();
     _animationController.forward();
 
     final request = Provider.of<CookieRequest>(context, listen: false);
@@ -74,6 +77,7 @@ class _PostListPageState extends State<PostListPage>
   void dispose() {
     _animationController.dispose();
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -107,6 +111,14 @@ class _PostListPageState extends State<PostListPage>
     context,
     MaterialPageRoute(builder: (_) => const SmashRegisterPage()),
   );
+  void _openSearch(String query) {
+    final normalized = query.trim();
+    if (normalized.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SearchPage(initialQuery: normalized)),
+    );
+  }
 
   void _openPostDetail(ProfileFeedItem post) => Navigator.push(
     context,
@@ -205,6 +217,8 @@ class _PostListPageState extends State<PostListPage>
       onRegister: _openRegister,
       onLogout: () {},
       onProfileTap: () {},
+      searchController: _searchController,
+      onSearchSubmit: _openSearch,
     );
   }
 
