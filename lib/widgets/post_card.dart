@@ -571,7 +571,10 @@ class _PostCardState extends State<PostCard> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: widget.enableInteractions ? onTap : null,
+          // If user is not logged in but interactions are enabled, show login prompt.
+          onTap: (widget.enableInteractions && widget.currentUserId != null)
+              ? onTap
+              : (widget.enableInteractions ? () => _showLoginSnack() : null),
           borderRadius: BorderRadius.circular(16),
           splashColor: color.withOpacity(0.4),
           highlightColor: color.withOpacity(0.2),
@@ -587,7 +590,9 @@ class _PostCardState extends State<PostCard> {
                 Icon(
                   icon,
                   size: 22,
-                  color: widget.enableInteractions
+                  color:
+                      (widget.enableInteractions &&
+                          widget.currentUserId != null)
                       ? (isActive ? color : Colors.white70)
                       : Colors.white38,
                 ),
@@ -597,7 +602,9 @@ class _PostCardState extends State<PostCard> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                    color: widget.enableInteractions
+                    color:
+                        (widget.enableInteractions &&
+                            widget.currentUserId != null)
                         ? (isActive ? color : Colors.white70)
                         : Colors.white38,
                   ),
@@ -727,6 +734,19 @@ class _PostCardState extends State<PostCard> {
     }
   }
 
+  void _showLoginSnack() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please log in to interact with posts')),
+    );
+  }
+
+  bool _ensureLoggedInOrShowSnack() {
+    if (widget.currentUserId != null) return true;
+    _showLoginSnack();
+    return false;
+  }
+
   Future<void> _sendInteraction(String action) async {
     try {
       final request = context.read<CookieRequest>();
@@ -740,6 +760,7 @@ class _PostCardState extends State<PostCard> {
 
   void _handleLike() async {
     if (!widget.enableInteractions) return;
+    if (!_ensureLoggedInOrShowSnack()) return;
     final prevLiked = _isLiked;
     final prevDisliked = _isDisliked;
     setState(() {
@@ -780,6 +801,7 @@ class _PostCardState extends State<PostCard> {
 
   void _handleDislike() async {
     if (!widget.enableInteractions) return;
+    if (!_ensureLoggedInOrShowSnack()) return;
     final prevLiked = _isLiked;
     final prevDisliked = _isDisliked;
     setState(() {
@@ -820,6 +842,7 @@ class _PostCardState extends State<PostCard> {
 
   void _handleSave() async {
     if (!widget.enableInteractions) return;
+    if (!_ensureLoggedInOrShowSnack()) return;
     final prevSaved = _isSaved;
     setState(() {
       _isSaved = !_isSaved;
