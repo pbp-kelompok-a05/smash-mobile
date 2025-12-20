@@ -1,5 +1,6 @@
 // ignore_for_file: unused_field, avoid_print
 import 'package:flutter/material.dart';
+import 'package:smash_mobile/profile/profile_page.dart';
 
 /// Simple comment card styled similarly to PostCard but compact.
 class CommentCard extends StatefulWidget {
@@ -15,6 +16,8 @@ class CommentCard extends StatefulWidget {
     this.userReaction,
     this.onLike,
     this.onDislike,
+    this.userId,
+    this.onProfileTap,
   });
 
   final String id;
@@ -28,6 +31,8 @@ class CommentCard extends StatefulWidget {
 
   final VoidCallback? onLike;
   final VoidCallback? onDislike;
+  final int? userId;
+  final VoidCallback? onProfileTap;
 
   @override
   State<CommentCard> createState() => _CommentCardState();
@@ -37,6 +42,32 @@ class _CommentCardState extends State<CommentCard> {
   late int _likes;
   late int _dislikes;
   String? _reaction;
+
+  void _handleAvatarTap() {
+    if (widget.onProfileTap != null) {
+      widget.onProfileTap!.call();
+      return;
+    }
+    if (widget.userId != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ProfilePage(userId: widget.userId)),
+      );
+      print('CommentCard: navigated to ProfilePage userId=${widget.userId}');
+      return;
+    }
+    // Debug / fallback: inform user and log
+    print(
+      'CommentCard: userId is null for comment id=${widget.id}, author=${widget.author}',
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open profile: user id missing'),
+        ),
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -117,15 +148,19 @@ class _CommentCardState extends State<CommentCard> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.grey.shade300,
-            backgroundImage: (avatar != null && avatar.isNotEmpty)
-                ? NetworkImage(avatar)
-                : null,
-            child: (avatar == null || avatar.isEmpty)
-                ? const Icon(Icons.person, size: 20, color: Colors.white70)
-                : null,
+          InkWell(
+            onTap: _handleAvatarTap,
+            borderRadius: BorderRadius.circular(20),
+            child: CircleAvatar(
+              radius: 20,
+              backgroundColor: Colors.grey.shade300,
+              backgroundImage: (avatar != null && avatar.isNotEmpty)
+                  ? NetworkImage(avatar)
+                  : null,
+              child: (avatar == null || avatar.isEmpty)
+                  ? const Icon(Icons.person, size: 20, color: Colors.white70)
+                  : null,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(

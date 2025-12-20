@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
+import 'package:smash_mobile/profile/profile_page.dart';
 
 class PostCard extends StatefulWidget {
   const PostCard({
@@ -203,6 +204,24 @@ class _PostCardState extends State<PostCard> {
     );
   }
 
+  void _handleAvatarTap(BuildContext context) {
+    if (widget.onProfileTap != null) {
+      widget.onProfileTap!();
+      return;
+    }
+    if (widget.profilePageBuilder != null) {
+      final page = widget.profilePageBuilder!(widget.item.userId);
+      Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfilePage(userId: widget.item.userId),
+      ),
+    );
+  }
+
   /// Header modern: avatar + online indicator + user info
   Widget _buildModernHeader(BuildContext context, String? avatarUrl) {
     return Container(
@@ -286,12 +305,16 @@ class _PostCardState extends State<PostCard> {
     final isValid = avatarUrl != null && AvatarUtils.isValidImageUrl(avatarUrl);
     return Stack(
       children: [
-        SafeAvatar(
-          size: 56,
-          imageUrl: isValid ? avatarUrl : null,
-          backgroundColor: Colors.blue.shade700,
-          borderWidth: 3,
-          borderColor: Colors.white30,
+        InkWell(
+          onTap: () => _handleAvatarTap(context),
+          borderRadius: BorderRadius.circular(32),
+          child: SafeAvatar(
+            size: 56,
+            imageUrl: isValid ? avatarUrl : null,
+            backgroundColor: Colors.blue.shade700,
+            borderWidth: 3,
+            borderColor: Colors.white30,
+          ),
         ),
         Positioned(
           bottom: 0,

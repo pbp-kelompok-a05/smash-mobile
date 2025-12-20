@@ -112,6 +112,16 @@ class _PostDetailPageState extends State<PostDetailPage> {
       setState(() {
         _comments = list;
       });
+      // Debug: print loaded comment user ids to help diagnose missing ids
+      try {
+        for (var c in _comments) {
+          print(
+            'Loaded comment id=${c.id} author=${c.author} userId=${c.userId}',
+          );
+        }
+      } catch (e) {
+        print('Error printing comment debug info: $e');
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -344,6 +354,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     likes: c.likesCount,
                     dislikes: c.dislikesCount,
                     userReaction: c.userReaction,
+                    userId: c.userId,
                     onLike: () async {
                       try {
                         await _api.interactWithComment(idStr, 'like');
@@ -363,6 +374,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Failed to dislike: $e')),
+                        );
+                      }
+                    },
+                    onProfileTap: () {
+                      if (!mounted) return;
+                      if (c.userId != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProfilePage(userId: c.userId),
+                          ),
                         );
                       }
                     },
