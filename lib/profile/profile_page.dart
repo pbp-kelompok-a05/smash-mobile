@@ -471,8 +471,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           setState(() {
                             _profile = updated;
                             _photoUrl = _resolvedPhoto(updated.profilePhoto);
+                            _navPhotoUrl = _photoUrl;
+                            _navUsername = updated.username;
                             _refreshPostAvatars();
                           });
+                          _loadPosts();
                         }
                       });
                     },
