@@ -84,6 +84,8 @@ class _PostCardState extends State<PostCard> {
   late bool _isSaved;
   late int _likesCount;
   late int _dislikesCount;
+  int _commentCount = 0;
+  int _sharesCount = 0;
   String? _reaction;
   int? _effectiveUserId;
 
@@ -95,6 +97,8 @@ class _PostCardState extends State<PostCard> {
     _isSaved = widget.item.isSaved;
     _likesCount = widget.item.likesCount;
     _dislikesCount = widget.item.dislikesCount;
+    _commentCount = widget.item.commentCount;
+    _sharesCount = widget.item.sharesCount;
     _reaction = widget.item.userInteraction;
     _effectiveUserId = widget.currentUserId;
 
@@ -203,11 +207,37 @@ class _PostCardState extends State<PostCard> {
   }
 
   // Handler default untuk navigasi
-  void _defaultTapHandler(BuildContext context) {
-    Navigator.push(
+  Future<void> _defaultTapHandler(BuildContext context) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => PostDetailPage(postId: widget.item.id)),
     );
+    if (!mounted) return;
+    if (result == true) {
+      await _refreshFromDetail();
+    }
+  }
+
+
+  Future<void> _refreshFromDetail() async {
+    try {
+      final request = Provider.of<CookieRequest>(context, listen: false);
+      final api = PostApi(request: request);
+      final detail = await api.fetchPostDetail(widget.item.id);
+      if (!mounted) return;
+      setState(() {
+        _isLiked = detail.userInteraction == 'like';
+        _isDisliked = detail.userInteraction == 'dislike';
+        _isSaved = detail.isSaved;
+        _likesCount = detail.likesCount;
+        _dislikesCount = detail.dislikesCount;
+        _commentCount = detail.commentCount;
+        _sharesCount = detail.sharesCount;
+        _reaction = detail.userInteraction;
+      });
+    } catch (_) {
+      // Ignore refresh failures; keep existing state.
+    }
   }
 
   void _handleAvatarTap(BuildContext context) {
@@ -506,14 +536,14 @@ class _PostCardState extends State<PostCard> {
         ),
         _buildModernStatItem(
           icon: Icons.comment_outlined,
-          count: widget.item.commentCount,
+          count: _commentCount,
           label: 'Comments',
           color: Colors.green.shade300,
           isActive: false,
         ),
         _buildModernStatItem(
           icon: Icons.share_outlined,
-          count: widget.item.sharesCount,
+          count: _sharesCount,
           label: 'Shares',
           color: Colors.purple.shade300,
           isActive: false,
@@ -665,23 +695,29 @@ class _PostCardState extends State<PostCard> {
   }
 
   /// Handler menu aksi (edit/delete)
-  void _handleMenuAction(BuildContext context, String action) {
+  Future<void> _handleMenuAction(BuildContext context, String action) async {
     if (action == 'edit') {
-      Navigator.push(
+      final result = await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => PostEditFormPage(post: widget.item)),
       );
+      if (!mounted) return;
+      if (result == true) {
+        await _refreshFromDetail();
+        widget.onEdit?.call(widget.item);
+      }
     }
     if (action == 'delete' && widget.onDelete != null)
       widget.onDelete!(widget.item);
   }
 
   /// Cek apakah menu bisa ditampilkan
-  bool get _canShowMenu =>
-      (widget.showMenu &&
-      (widget.item.canEdit ||
-          (_effectiveUserId != null &&
-              widget.item.userId == _effectiveUserId)));
+  bool get _canShowMenu {
+    if (!widget.showMenu) return false;
+    final isOwner =
+        _effectiveUserId != null && widget.item.userId == _effectiveUserId;
+    return widget.item.canEdit || isOwner;
+  }
 
   /// Pilih URL avatar dari multiple sources
   String? _pickAvatar() {

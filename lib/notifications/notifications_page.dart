@@ -14,6 +14,7 @@ import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:smash_mobile/widgets/navbar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:smash_mobile/screens/register.dart';
+import 'package:smash_mobile/navigation.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -22,9 +23,10 @@ class NotificationsPage extends StatefulWidget {
   State<NotificationsPage> createState() => _NotificationsPageState();
 }
 
-class _NotificationsPageState extends State<NotificationsPage> {
+class _NotificationsPageState extends State<NotificationsPage> with RouteAware {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late NotificationsApi _api;
+  late PostApi _postApi;
   bool _loading = true;
   String? _error;
   List<NotificationItem> _items = [];
@@ -36,7 +38,28 @@ class _NotificationsPageState extends State<NotificationsPage> {
     super.initState();
     final request = Provider.of<CookieRequest>(context, listen: false);
     _api = NotificationsApi(request: request);
+    _postApi = PostApi(request: request);
     _loadProfileHeader();
+    _load();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final modal = ModalRoute.of(context);
+    if (modal != null) {
+      routeObserver.subscribe(this, modal);
+    }
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
     _load();
   }
 
@@ -90,9 +113,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
     });
     try {
       final data = await _api.fetchNotifications();
+      final filtered = await _filterDeletedPosts(data);
       if (!mounted) return;
       setState(() {
-        _items = data;
+        _items = filtered;
       });
     } catch (e) {
       if (!mounted) return;
@@ -106,6 +130,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
         });
       }
     }
+  }
+
+  Future<List<NotificationItem>> _filterDeletedPosts(
+    List<NotificationItem> items,
+  ) async {
+    final filtered = <NotificationItem>[];
+    for (final item in items) {
+      if (item.postId == 0) {
+        filtered.add(item);
+        continue;
+      }
+      try {
+        await _postApi.fetchPostDetail(item.postId);
+        filtered.add(item);
+      } catch (_) {
+        // Post deleted or unavailable, skip notification.
+      }
+    }
+    return filtered;
   }
 
   @override

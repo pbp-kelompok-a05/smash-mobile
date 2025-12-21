@@ -9,6 +9,7 @@ import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
 import 'package:smash_mobile/post/post_detail_page.dart';
+import 'package:smash_mobile/post/post_api.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/screens/login.dart';
@@ -28,10 +29,12 @@ class SearchPage extends StatefulWidget {
   State<SearchPage> createState() => _SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateMixin {
+class _SearchPageState extends State<SearchPage>
+    with SingleTickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final TextEditingController _controller;
   late ProfileApi _profileApi;
+  late PostApi _postApi;
   bool _isLoading = false;
   String? _error;
   List<ProfileFeedItem> _results = [];
@@ -42,7 +45,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
   String? _username;
   bool _isLoggedIn = false;
   int? _currentUserId;
-  
+
   /// Controller untuk animasi fade-in
   late AnimationController _animationController;
 
@@ -50,7 +53,8 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
   Timer? _searchTimer;
 
   String? _resolvePhoto(String? url) {
-    final resolved = _profileApi.resolveMediaUrl(url) ?? _profileApi.defaultAvatarUrl;
+    final resolved =
+        _profileApi.resolveMediaUrl(url) ?? _profileApi.defaultAvatarUrl;
     if (url == null || url.trim().isEmpty) return resolved;
     return '$resolved?v=${DateTime.now().millisecondsSinceEpoch}';
   }
@@ -63,14 +67,15 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    
+
     final request = Provider.of<CookieRequest>(context, listen: false);
     _profileApi = ProfileApi(request: request);
+    _postApi = PostApi(request: request);
     _controller = TextEditingController(text: widget.initialQuery);
     _queryTitle = widget.initialQuery;
     _loadProfileHeader();
     _performSearch();
-    
+
     // Jalankan animasi setelah build selesai
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _animationController.forward();
@@ -95,17 +100,17 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
       });
       return;
     }
-    
+
     // Cancel timer yang ada
     _searchTimer?.cancel();
-    
+
     // Set loading state
     setState(() {
       _isLoading = true;
       _error = null;
       _queryTitle = query;
     });
-    
+
     // Jalankan search setelah 500ms debounce
     _searchTimer = Timer(const Duration(milliseconds: 500), () async {
       try {
@@ -144,11 +149,13 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
         final res = await request.get(uri.toString());
         if (res is Map<String, dynamic> && res['status'] == 'success') {
           final posts = res['posts'] as List<dynamic>? ?? [];
-          return posts.map((raw) {
+          final mapped = posts.map((raw) {
             final map = Map<String, dynamic>.from(raw as Map);
             final resolve = _profileApi.resolveMediaUrl;
-            final avatar = resolve(map['profile_photo'] as String?) ?? _profileApi.defaultAvatarUrl;
-            
+            final avatar =
+                resolve(map['profile_photo'] as String?) ??
+                _profileApi.defaultAvatarUrl;
+
             // FIX: Gunakan ProfileFeedItem.fromJson untuk konsistensi
             return ProfileFeedItem.fromJson({
               'id': map['id'] ?? 0,
@@ -169,6 +176,10 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
               'can_edit': map['can_edit'] ?? false,
             });
           }).toList();
+          if (request.loggedIn) {
+            return _enrichWithInteractions(mapped);
+          }
+          return mapped;
         }
         lastError = res;
       } catch (e) {
@@ -176,6 +187,21 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
       }
     }
     throw Exception('Gagal mencari post: $lastError');
+  }
+
+  Future<List<ProfileFeedItem>> _enrichWithInteractions(
+    List<ProfileFeedItem> items,
+  ) async {
+    final enriched = <ProfileFeedItem>[];
+    for (final item in items) {
+      try {
+        final detail = await _postApi.fetchPostDetail(item.id);
+        enriched.add(detail);
+      } catch (_) {
+        enriched.add(item);
+      }
+    }
+    return enriched;
   }
 
   Future<void> _loadProfileHeader() async {
@@ -233,6 +259,46 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
     );
   }
 
+  Future<void> _handleDeletePost(ProfileFeedItem post) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete post?'),
+        content: const Text('This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      final api = ProfileApi(request: Provider.of<CookieRequest>(
+        context,
+        listen: false,
+      ));
+      await api.fetchProfile(); // noop to ensure session
+      if (!mounted) return;
+      setState(() {
+        _results.removeWhere((p) => p.id == post.id);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post deleted')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete post: $e')),
+      );
+    }
+  }
+
   Future<void> _handleLogout() async {
     if (_isLoggingOut) return;
     _isLoggingOut = true;
@@ -268,7 +334,6 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
       drawer: const LeftDrawer(),
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
-      
       // AppBar dengan gradient background
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -283,7 +348,8 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
           _isLoggedIn
               ? IconButton(
                   icon: CircleAvatar(
-                    backgroundImage: _photoUrl != null ? NetworkImage(_photoUrl!) : null,
+                    backgroundImage:
+                        _photoUrl != null ? NetworkImage(_photoUrl!) : null,
                     backgroundColor: Colors.white.withOpacity(0.3),
                     child: _photoUrl == null
                         ? const Icon(Icons.person, color: Colors.white, size: 20)
@@ -297,14 +363,16 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
                       onPressed: _openLogin,
                       child: Text(
                         'Login',
-                        style: GoogleFonts.inter(color: Colors.white, fontSize: 12),
+                        style:
+                            GoogleFonts.inter(color: Colors.white, fontSize: 12),
                       ),
                     ),
                     TextButton(
                       onPressed: _openRegister,
                       child: Text(
                         'Register',
-                        style: GoogleFonts.inter(color: Colors.white, fontSize: 12),
+                        style:
+                            GoogleFonts.inter(color: Colors.white, fontSize: 12),
                       ),
                     ),
                   ],
@@ -347,7 +415,9 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _queryTitle.isEmpty ? 'Enter a query to search' : 'Results for "$_queryTitle"',
+                      _queryTitle.isEmpty
+                          ? 'Enter a query to search'
+                          : 'Results for "$_queryTitle"',
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         color: Colors.white70,
@@ -359,7 +429,10 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
                       height: 2,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.white.withOpacity(0.3), Colors.transparent],
+                          colors: [
+                            Colors.white.withOpacity(0.3),
+                            Colors.transparent
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(1),
                       ),
@@ -368,26 +441,25 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Area konten (loading, error, atau hasil)
-              Expanded(
-                child: _buildContent(),
-              ),
+              Expanded(child: _buildContent()),
             ],
           ),
         ),
       ),
 
       // Floating Action Button untuk create post
-      floatingActionButton: _isLoggedIn
-          ? FloatingActionButton(
-              onPressed: _openCreatePost,
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF4A2B55),
-              elevation: 8,
-              child: const Icon(Icons.add, size: 28),
-            )
-          : null,
+      floatingActionButton:
+          _isLoggedIn
+              ? FloatingActionButton(
+                  onPressed: _openCreatePost,
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF4A2B55),
+                  elevation: 8,
+                  child: const Icon(Icons.add, size: 28),
+                )
+              : null,
     );
   }
 
@@ -398,7 +470,9 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15), // Transparan 15%
         borderRadius: BorderRadius.circular(22), // Pill shape
-        border: Border.all(color: Colors.white.withOpacity(0.3)), // Border putih transparan
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+        ), // Border putih transparan
       ),
       child: TextField(
         controller: _controller,
@@ -409,20 +483,28 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
           hintText: 'Search posts...',
           hintStyle: GoogleFonts.inter(color: Colors.white54), // Hint transparan
           prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 22),
-          suffixIcon: _controller.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.white70, size: 22),
-                  onPressed: () {
-                    _controller.clear();
-                    setState(() {
-                      _results = [];
-                      _queryTitle = '';
-                    });
-                  },
-                )
-              : null,
+          suffixIcon:
+              _controller.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(
+                        Icons.clear,
+                        color: Colors.white70,
+                        size: 22,
+                      ),
+                      onPressed: () {
+                        _controller.clear();
+                        setState(() {
+                          _results = [];
+                          _queryTitle = '';
+                        });
+                      },
+                    )
+                  : null,
           border: InputBorder.none, // Tidak ada border default
-          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: 16,
+          ),
         ),
       ),
     );
@@ -456,10 +538,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
               style: GoogleFonts.inter(color: Colors.white70),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _performSearch,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: _performSearch, child: const Text('Retry')),
           ],
         ),
       );
@@ -495,7 +574,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
           // FIX: Gunakan nama variable yang jelas untuk menghindari konflik
           final postItem = _results[index];
           final imageUrl = _profileApi.resolveMediaUrl(postItem.image);
-          
+
           return AnimatedBuilder(
             animation: _animationController,
             builder: (context, child) {
@@ -515,12 +594,13 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
               defaultAvatar: _profileApi.defaultAvatarUrl,
               resolveAvatar: _profileApi.resolveMediaUrl,
               imageUrl: imageUrl,
-              showMenu: postItem.canEdit,
+              showMenu: true,
               currentUserId: _currentUserId,
               profilePageBuilder: (id) => ProfilePage(userId: id),
               onLike: () => _handleLike(postItem.id),
               onComment: () => _openPostDetail(postItem),
               onSave: () => _handleSave(postItem.id),
+              onEdit: (_) => _performSearch(),
             ),
           );
         },

@@ -31,6 +31,7 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
   bool _loading = true;
   String? _error;
   int? _currentUserId;
+  bool _hasChanges = false;
   // Comments
   List<Comment> _comments = [];
   bool _loadingComments = true;
@@ -148,36 +149,42 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: const LeftDrawer(),
-      // NEW: Gradient background
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-          ),
-        ),
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              backgroundColor: Colors.transparent,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.share, color: Colors.white),
-                  onPressed: _handleShare,
-                ),
-              ],
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.of(context).pop(_hasChanges);
+        return false;
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
+        drawer: const LeftDrawer(),
+        // NEW: Gradient background
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
             ),
-            SliverToBoxAdapter(child: _buildBody()),
-          ],
+          ),
+          child: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                backgroundColor: Colors.transparent,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(_hasChanges),
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.share, color: Colors.white),
+                    onPressed: _handleShare,
+                  ),
+                ],
+              ),
+              SliverToBoxAdapter(child: _buildBody()),
+            ],
+          ),
         ),
       ),
     );
@@ -233,6 +240,14 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
               profilePageBuilder: (id) => ProfilePage(userId: id),
               // NEW: Interaction handlers
               onShare: _handleShare,
+              onEdit: (_) async {
+                _hasChanges = true;
+                await _load();
+              },
+              onLike: () => _hasChanges = true,
+              onDislike: () => _hasChanges = true,
+              onSave: () => _hasChanges = true,
+              onDelete: _handleDeletePost,
               // Disable tap on detail page (avoid recursion)
               onTap: () {},
             ),
@@ -415,9 +430,10 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
     try {
       if (!mounted) return;
       setState(() {
-        // optimistic UI could be added here
       });
       await _api.createComment(widget.postId, text, userId: _currentUserId);
+      _hasChanges = true;
+      await _load();
       _commentController.clear();
       await _loadComments();
       if (!mounted) return;
@@ -448,5 +464,40 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Link copied to clipboard')));
+  }
+
+  Future<void> _handleDeletePost(ProfileFeedItem post) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete post?'),
+        content: const Text('This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await _api.deletePost(post.id);
+      if (!mounted) return;
+      _hasChanges = true;
+      Navigator.of(context).pop(true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post deleted')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete post: $e')),
+      );
+    }
   }
 }

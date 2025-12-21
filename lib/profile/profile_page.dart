@@ -706,7 +706,7 @@ class _ProfilePageState extends State<ProfilePage> {
             resolveAvatar: _api.resolveMediaUrl,
             showMenu: true,
             currentUserId: _navUserId,
-            onEdit: (_) {},
+            onEdit: (_) => _loadPosts(),
             onDelete: _handleDeletePost,
             onSave: _handleSavedToggle,
             onLike: _handleLikedToggle,
