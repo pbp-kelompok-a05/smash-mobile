@@ -130,7 +130,7 @@ class _PostEditFormPageState extends State<PostEditFormPage>
     }
 
     try {
-      await _createPost(
+      await _editPost(
         title: title,
         content: content,
         videoLink: video.isEmpty ? null : video,
@@ -138,14 +138,14 @@ class _PostEditFormPageState extends State<PostEditFormPage>
         imageMime: inferredMime,
       );
       setState(() => _submitting = false);
-      _showSuccess('Post created successfully!');
+      _showSuccess('Post updated successfully!');
       Navigator.of(context).pop(true);
     } catch (err) {
-      _showError('Failed to create post: $err');
+      _showError('Failed to edit post: $err');
     }
   }
 
-  Future<Map<String, dynamic>> _createPost({
+  Future<Map<String, dynamic>> _editPost({
     required String title,
     required String content,
     String? videoLink,
@@ -184,18 +184,18 @@ class _PostEditFormPageState extends State<PostEditFormPage>
       final response = await request.post(url, body);
 
       if (response is Map<String, dynamic>) {
-        // API may return status/message or the created post
+        // API may return status/message or the updated post
         if (response['status'] == 'success' || response['status'] == true) {
           if (response.containsKey('post'))
             return Map<String, dynamic>.from(response['post']);
           return response;
         }
-        // Some endpoints return the created object directly
+        // Some endpoints return the updated object directly
         return response;
       }
-      throw Exception('Create post failed: unexpected response: $response');
+      throw Exception('Edit post failed: unexpected response: $response');
     } catch (e) {
-      throw Exception('Error creating post: $e');
+      throw Exception('Error updating post: $e');
     }
   }
 
@@ -289,7 +289,7 @@ class _PostEditFormPageState extends State<PostEditFormPage>
                       ),
                       Expanded(
                         child: Text(
-                          'Create New Post',
+                          'Edit Post',
                           style: GoogleFonts.inter(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
@@ -331,7 +331,7 @@ class _PostEditFormPageState extends State<PostEditFormPage>
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Creating a Post',
+          'Editing a Post',
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w700,
             color: const Color(0xFF4A2B55),
@@ -481,7 +481,7 @@ class _PostEditFormPageState extends State<PostEditFormPage>
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'You need to be logged in to create a post',
+                            'You need to be logged in to updating a post',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.inter(
                               fontSize: 16,
@@ -826,7 +826,7 @@ class _PostEditFormPageState extends State<PostEditFormPage>
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Creating Post...',
+                  'Updating Post...',
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -840,7 +840,7 @@ class _PostEditFormPageState extends State<PostEditFormPage>
                 const Icon(Icons.add, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Create Post',
+                  'Edit Post',
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
