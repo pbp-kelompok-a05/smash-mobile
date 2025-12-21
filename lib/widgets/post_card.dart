@@ -10,6 +10,8 @@ import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 class PostCard extends StatefulWidget {
   const PostCard({
@@ -596,7 +598,7 @@ class _PostCardState extends State<PostCard> {
           icon: Icons.share_outlined,
           label: 'Share',
           color: Colors.grey.shade400,
-          onTap: widget.onShare,
+          onTap: _handleShare,
           isActive: false,
         ),
       ],
@@ -903,6 +905,27 @@ class _PostCardState extends State<PostCard> {
         ).showSnackBar(SnackBar(content: Text('Failed to update save: $e')));
       }
     }
+  }
+
+  void _handleShare() async {
+    if (widget.onShare != null) {
+      widget.onShare!.call();
+      return;
+    }
+    final title = widget.item.title.trim();
+    final request = context.read<CookieRequest>();
+    final baseUrl = ProfileApi(request: request).baseUrl;
+    final shareUrl = '$baseUrl/post/${widget.item.id}/';
+    final shareText = 'Check out this post on Smash!\n$shareUrl';
+    await Clipboard.setData(ClipboardData(text: shareUrl));
+    await Share.share(
+      shareText,
+      subject: title.isNotEmpty ? title : 'Smash post',
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Link copied to clipboard')),
+    );
   }
 }
 

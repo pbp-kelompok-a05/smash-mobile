@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, unused_field
 
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +13,7 @@ import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:smash_mobile/widgets/post_card.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
+import 'package:share_plus/share_plus.dart';
 
 class PostDetailPage extends StatefulWidget {
   const PostDetailPage({super.key, required this.postId});
@@ -353,6 +355,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     id: idStr,
                     author: c.author,
                     content: c.content,
+                    avatarUrl: _api.resolveMediaUrl(c.profilePhoto),
                     createdAt: c.createdAt,
                     likes: c.likesCount,
                     dislikes: c.dislikesCount,
@@ -425,8 +428,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Future<void> _handleShare() async {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Share action triggered')));
+    final request = context.read<CookieRequest>();
+    final baseUrl = ProfileApi(request: request).baseUrl;
+    final postId = _item?.id ?? widget.postId;
+    final shareUrl = '$baseUrl/post/$postId/';
+    final shareText = 'Check out this post on Smash!\n$shareUrl';
+    await Clipboard.setData(ClipboardData(text: shareUrl));
+    await Share.share(
+      shareText,
+      subject: _item?.title.isNotEmpty == true ? _item!.title : 'Smash post',
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Link copied to clipboard')),
+    );
   }
 }

@@ -2,16 +2,18 @@
 
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:smash_mobile/models/profile_entry.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/screens/login.dart';
-import 'package:smash_mobile/widgets/app_top_bar.dart';
+import 'package:smash_mobile/screens/menu.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -72,47 +74,60 @@ class _EditProfilePageState extends State<EditProfilePage> {
           builder: (context, setStateDialog) {
             InputDecoration dec(String hint) => InputDecoration(
                   hintText: hint,
+                  hintStyle: GoogleFonts.inter(color: Colors.white54),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Colors.white.withOpacity(0.1),
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide:
-                        BorderSide(color: Colors.grey.shade300, width: 1),
+                        BorderSide(color: Colors.white.withOpacity(0.3), width: 1),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide:
-                        BorderSide(color: Colors.teal.shade400, width: 1.2),
+                        const BorderSide(color: Colors.white, width: 1.6),
                   ),
                 );
-            const accent = Color(0xFF9333EA);
             OutlineInputBorder focusBorder = const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(10)),
-              borderSide: BorderSide(color: accent, width: 1.6),
+              borderSide: BorderSide(color: Colors.white, width: 1.6),
             );
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              title: const Text('Change Password'),
+              backgroundColor: const Color(0xFF4A2B55),
+              title: Text(
+                'Change Password',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Enter your current password, then set a new one.',
-                    style: TextStyle(fontSize: 13.5, color: Colors.black87),
+                    style: GoogleFonts.inter(
+                      fontSize: 13.5,
+                      color: Colors.white70,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: oldCtrl,
                     obscureText: obscureOld,
+                    style: GoogleFonts.inter(color: Colors.white),
                     decoration: dec('Old Password').copyWith(
                       suffixIcon: IconButton(
                         icon: Icon(
-                            obscureOld ? Icons.visibility_off : Icons.visibility),
+                            obscureOld ? Icons.visibility_off : Icons.visibility,
+                            color: Colors.white70,
+                          ),
                         onPressed: () => setStateDialog(
                             () => obscureOld = !obscureOld),
                       ),
@@ -123,10 +138,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   TextField(
                     controller: newCtrl,
                     obscureText: obscureNew,
+                    style: GoogleFonts.inter(color: Colors.white),
                     decoration: dec('New Password').copyWith(
                       suffixIcon: IconButton(
                         icon: Icon(
-                            obscureNew ? Icons.visibility_off : Icons.visibility),
+                            obscureNew ? Icons.visibility_off : Icons.visibility,
+                            color: Colors.white70,
+                          ),
                         onPressed: () => setStateDialog(
                             () => obscureNew = !obscureNew),
                       ),
@@ -137,11 +155,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   TextField(
                     controller: confirmCtrl,
                     obscureText: obscureConfirm,
+                    style: GoogleFonts.inter(color: Colors.white),
                     decoration: dec('Confirm Password').copyWith(
                       suffixIcon: IconButton(
                         icon: Icon(obscureConfirm
                             ? Icons.visibility_off
-                            : Icons.visibility),
+                            : Icons.visibility,
+                            color: Colors.white70,
+                          ),
                         onPressed: () => setStateDialog(
                             () => obscureConfirm = !obscureConfirm),
                       ),
@@ -153,27 +174,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
               actions: [
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey.shade700,
+                    foregroundColor: Colors.white,
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    side: BorderSide(color: Colors.grey.shade300),
+                    side: BorderSide(color: Colors.white.withOpacity(0.6)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF9333EA),
-                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF4A2B55),
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 3,
+                    elevation: 2,
                   ),
                   onPressed: _isChangingPass
                       ? null
@@ -208,12 +232,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             );
                             if (mounted) {
                               Navigator.of(context).pop();
-                              Navigator.of(context).maybePop();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Password berhasil diperbarui.')),
-                              );
+                              await _logoutToHome();
                             }
                           } catch (e) {
                             if (mounted) {
@@ -229,7 +248,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             }
                           }
                   },
-                  child: const Text('Update Password'),
+                  child: Text(
+                    'Update Password',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ],
             );
@@ -250,34 +272,72 @@ class _EditProfilePageState extends State<EditProfilePage> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            title: const Text('Delete Account'),
+            backgroundColor: const Color(0xFF4A2B55),
+            title: Text(
+              'Delete Account',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Masukkan password untuk konfirmasi penghapusan akun. Tindakan ini tidak dapat dibatalkan.',
-                  style: TextStyle(fontSize: 13.5),
+                Text(
+                  'Enter your password to confirm account deletion. This action cannot be undone.',
+                  style: GoogleFonts.inter(
+                    fontSize: 13.5,
+                    color: Colors.white70,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: passwordCtrl,
                   obscureText: obscure,
+                  style: GoogleFonts.inter(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'Password',
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Colors.white.withOpacity(0.1),
+                    hintStyle: GoogleFonts.inter(color: Colors.white54),
                     suffixIcon: IconButton(
-                      icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(
+                        obscure ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.white70,
+                      ),
                       onPressed: () => setStateDialog(() => obscure = !obscure),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.white, width: 1.6),
                     ),
                   ),
                 ),
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.inter(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF4A2B55),
+                ),
                 onPressed: _isDeletingAccount
                     ? null
                     : () async {
@@ -322,8 +382,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         }
                       },
                 child: _isDeletingAccount
-                    ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Delete Account'),
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF4A2B55),
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        'Delete Account',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                      ),
               ),
             ],
           );
@@ -344,160 +414,248 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: const LeftDrawer(),
-      backgroundColor: const Color(0xFFD2F3E0),
-      appBar: AppTopBar(
-        title: 'Edit Profile',
-        onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-      ),
       body: Container(
-        color: Colors.white,
-        child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-            children: [
-              const SizedBox(height: 2),
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    CircleAvatar(
-                      radius: 58,
-                      backgroundColor: Colors.white,
-                      child: ClipOval(
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            _avatarPreview(size: 116),
-                            Container(
-              width: 116,
-              height: 116,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white,
-                  width: 6,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF4A2B55),
+              Color(0xFF6A2B53),
+              Color(0xFF9D50BB),
+            ],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverAppBar(
+                pinned: true,
+                expandedHeight: 120,
+                backgroundColor: Colors.transparent,
+                flexibleSpace: FlexibleSpaceBar(
+                  title: const Text(
+                    'Edit Profile',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.3),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                leading: IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                 ),
               ),
-            ),
-            Container(
-              width: 124,
-              height: 124,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white,
-                  width: 2,
-                ),
+            ];
+          },
+          body: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 58,
+                          backgroundColor: Colors.white,
+                          child: ClipOval(
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                _avatarPreview(size: 116),
+                                Container(
+                                  width: 116,
+                                  height: 116,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 6,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  width: 124,
+                                  height: 124,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          widget.profile?.username ?? 'User',
+                          style: GoogleFonts.inter(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildGlassFormCard(),
+                  const SizedBox(height: 12),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
-    ),
-                    const SizedBox(height: 0),
-                    Text(
-                      widget.profile?.username ?? 'User',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black87,
+    );
+  }
+
+  Widget _buildGlassFormCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _label('Username'),
+                const SizedBox(height: 8),
+                _textField(
+                  _usernameController,
+                  hintText: 'Username cannot be blank',
+                ),
+                const SizedBox(height: 20),
+                _label('Photo profile'),
+                const SizedBox(height: 8),
+                _uploadField(),
+                const SizedBox(height: 20),
+                _label('Bio'),
+                const SizedBox(height: 8),
+                _textField(
+                  _bioController,
+                  maxLines: 4,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                const SizedBox(height: 20),
+                _changePasswordCTA(),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade600.withOpacity(0.7),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                    ),
+                    onPressed:
+                        _isDeletingAccount ? null : _showDeleteAccountDialog,
+                    child: Text(
+                      'Delete Account',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(color: Colors.white.withOpacity(0.6)),
+                        ),
+                        onPressed: _isSaving
+                            ? null
+                            : () {
+                                Navigator.of(context).pop();
+                              },
+                        child: Text(
+                          'Cancel',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF4A2B55),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 3,
+                        ),
+                        onPressed: _isSaving ? null : _submit,
+                        child: _isSaving
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFF4A2B55),
+                                ),
+                              )
+                            : Text(
+                                'Update',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              _label('Username'),
-              const SizedBox(height: 6),
-              _textField(
-                _usernameController,
-                hintText: 'Username cannot be blank',
-              ),
-              const SizedBox(height: 16),
-              _label('Photo profile'),
-              const SizedBox(height: 6),
-              _uploadField(),
-              const SizedBox(height: 16),
-              _label('Bio'),
-              const SizedBox(height: 6),
-              _textField(
-                _bioController,
-                maxLines: 4,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              ),
-              const SizedBox(height: 16),
-              _changePasswordCTA(),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: BorderSide(color: Colors.red.shade300),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: _isDeletingAccount ? null : _showDeleteAccountDialog,
-                  child: const Text('Delete Account', style: TextStyle(fontWeight: FontWeight.w700)),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.grey.shade700,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        side: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      onPressed: _isSaving
-                          ? null
-                          : () {
-                              Navigator.of(context).pop();
-                            },
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF9333EA),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 3,
-                      ),
-                      onPressed: _isSaving ? null : _submit,
-                      child: _isSaving
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              'Update',
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -618,6 +776,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  Future<void> _logoutToHome() async {
+    if (_isLoggingOut) return;
+    _isLoggingOut = true;
+    final request = context.read<CookieRequest>();
+    try {
+      await request.logout('http://localhost:8000/authentication/logout/');
+    } catch (_) {}
+    if (!mounted) return;
+    _isLoggingOut = false;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const MyHomePage()),
+      (route) => false,
+    );
+  }
+
   void _openProfile() {
     Navigator.pushReplacement(
       context,
@@ -632,8 +806,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         OutlinedButton.icon(
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            foregroundColor: const Color(0xFF9333EA),
-            side: const BorderSide(color: Color(0xFF9333EA)),
+            foregroundColor: const Color(0xFF4A2B55),
+            backgroundColor: Colors.white,
+            side: const BorderSide(color: Colors.white),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -652,10 +827,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget _label(String text) {
     return Text(
       text,
-      style: const TextStyle(
+      style: GoogleFonts.inter(
         fontSize: 14,
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF444444),
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
       ),
     );
   }
@@ -665,20 +840,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
       EdgeInsetsGeometry? contentPadding,
       String? emptyError,
       String? hintText}) {
-    const accent = Color(0xFF9333EA); // tailwind purple-600
+    const accent = Colors.white;
     return Focus(
       child: TextField(
         controller: controller,
         maxLines: maxLines,
+        style: GoogleFonts.inter(color: Colors.white),
         decoration: InputDecoration(
           filled: true,
-          fillColor: Colors.white,
+          fillColor: Colors.white.withOpacity(0.1),
           contentPadding:
               contentPadding ?? const EdgeInsets.symmetric(horizontal: 12),
           hintText: hintText,
+          hintStyle: GoogleFonts.inter(color: Colors.white54),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: Colors.grey.shade400, width: 1),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.3), width: 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
@@ -686,7 +863,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ),
           errorText: null,
         ),
-        cursorColor: accent,
+        cursorColor: Colors.white,
         onChanged: (v) {
           if (emptyError != null && v.trim().isEmpty) {
             setState(() {});
@@ -699,9 +876,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget _uploadField() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withOpacity(0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade400, width: 1),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       child: Row(
@@ -711,11 +888,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
             height: 34,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: Colors.grey.shade100,
+              color: Colors.white.withOpacity(0.15),
             ),
             child: IconButton(
               onPressed: _pickImage,
-              icon: const Icon(Icons.file_upload_outlined, size: 20),
+              icon: const Icon(Icons.file_upload_outlined, size: 20, color: Colors.white),
               tooltip: 'Pilih foto',
             ),
           ),
@@ -725,8 +902,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
               _selectedImage != null
                   ? _selectedImage!.path.split(Platform.pathSeparator).last
                   : 'Upload photo',
-              style: const TextStyle(
-                color: Colors.black54,
+              style: GoogleFonts.inter(
+                color: Colors.white70,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -735,7 +912,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            icon: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.delete,
+                  color: Colors.red.shade500,
+                  size: 20,
+                ),
+              ),
+            ),
             onPressed: () {
               setState(() {
                 _removePhoto = true;
@@ -743,7 +934,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 _selectedBytes = null;
                 _avatarUrl = _fallbackAvatar;
               });
-              // immediate preview fallback is handled by avatarPreview using default image
             },
             tooltip: 'Hapus foto profil',
           ),

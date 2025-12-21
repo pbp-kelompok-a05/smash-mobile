@@ -11,6 +11,7 @@ class Comment {
   String content;
   String author;
   int? userId;
+  String? profilePhoto;
   DateTime createdAt;
   DateTime updatedAt;
   int likesCount;
@@ -22,6 +23,7 @@ class Comment {
     required this.content,
     required this.author,
     this.userId,
+    this.profilePhoto,
     required this.createdAt,
     required this.updatedAt,
     required this.likesCount,
@@ -69,6 +71,7 @@ class Comment {
       } catch (_) {}
       return null;
     })(),
+    profilePhoto: json["profile_photo"] as String?,
     createdAt: DateTime.tryParse(json["created_at"] ?? '') ?? DateTime.now(),
     updatedAt:
         DateTime.tryParse(json["updated_at"] ?? '') ??
@@ -90,6 +93,7 @@ class Comment {
     "content": content,
     "author": author,
     "user_id": userId,
+    "profile_photo": profilePhoto,
     "created_at": createdAt.toIso8601String(),
     "updated_at": updatedAt.toIso8601String(),
     "likes_count": likesCount,
