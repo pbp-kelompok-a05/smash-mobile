@@ -340,7 +340,6 @@ class _PostListPageState extends State<PostListPage>
                 showFooterActions: true,
                 enableInteractions: true,
                 onComment: () => _openPostDetail(post),
-                onSave: () => _handleSave(post.id),
                 profilePageBuilder: (id) => ProfilePage(userId: id),
                 // Handler klik avatar
                 onProfileTap: () => _handleProfileTap(post.userId),
@@ -450,16 +449,5 @@ class _PostListPageState extends State<PostListPage>
             child: const Icon(Icons.add, color: Colors.white),
           )
         : const SizedBox.shrink();
-  }
-
-  Future<void> _handleSave(int postId) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Save feature coming soon', style: GoogleFonts.inter()),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
   }
 }

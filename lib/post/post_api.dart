@@ -204,6 +204,33 @@ class PostApi {
     throw Exception('Gagal melakukan interaksi pada komentar.');
   }
 
+  /// Toggle save/bookmark for a post (mobile endpoint)
+  /// Endpoint: POST /post/api/save-post/
+  /// Returns `true` if post is now saved, `false` if removed.
+  Future<bool> toggleSavePost(int postId) async {
+    final uri = Uri.parse('$baseUrl/post/api/save-post/');
+    final body = {'post_id': postId.toString()};
+    final res = await request.post(uri.toString(), body);
+    if (res is Map<String, dynamic> && res['status'] == 'success') {
+      // API returns is_saved boolean
+      return res['is_saved'] == true;
+    }
+    throw Exception('Gagal toggle save post.');
+  }
+
+  /// Interact with a post (like, dislike, share, save)
+  /// Endpoint: POST /post/api/posts/<postId>/<action>/
+  /// Returns parsed JSON Map from server.
+  Future<Map<String, dynamic>> interactWithPost(
+    int postId,
+    String action,
+  ) async {
+    final uri = Uri.parse('$baseUrl/post/api/posts/$postId/$action/');
+    final res = await request.post(uri.toString(), {});
+    if (res is Map<String, dynamic>) return Map<String, dynamic>.from(res);
+    throw Exception('Gagal melakukan interaksi pada post.');
+  }
+
   /// Helper untuk GET request dengan error handling
   Future<dynamic> _safeGet(Uri uri) async {
     try {

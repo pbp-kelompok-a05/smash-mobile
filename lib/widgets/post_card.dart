@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:smash_mobile/profile/profile_api.dart';
+import 'package:smash_mobile/post/post_api.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -790,15 +791,10 @@ class _PostCardState extends State<PostCard> {
     return false;
   }
 
-  Future<void> _sendInteraction(String action) async {
-    try {
-      final request = context.read<CookieRequest>();
-      final url =
-          'http://localhost:8000/post/api/posts/${widget.item.id}/$action/';
-      await request.post(url, {});
-    } catch (e) {
-      rethrow;
-    }
+  Future<Map<String, dynamic>> _sendInteraction(String action) async {
+    final request = Provider.of<CookieRequest>(context, listen: false);
+    final api = PostApi(request: request);
+    return await api.interactWithPost(widget.item.id, action);
   }
 
   void _handleLike() async {
@@ -823,8 +819,20 @@ class _PostCardState extends State<PostCard> {
     });
 
     try {
-      await _sendInteraction('like');
+      final resp = await _sendInteraction('like');
       widget.onLike?.call();
+      // Optionally use resp for more accurate counts/state if returned
+      if (resp is Map<String, dynamic>) {
+        // Update counts if backend provided them
+        if (resp.containsKey('likes_count')) {
+          setState(() => _likesCount = resp['likes_count'] ?? _likesCount);
+        }
+        if (resp.containsKey('dislikes_count')) {
+          setState(
+            () => _dislikesCount = resp['dislikes_count'] ?? _dislikesCount,
+          );
+        }
+      }
     } catch (e) {
       // revert
       setState(() {
@@ -864,8 +872,18 @@ class _PostCardState extends State<PostCard> {
     });
 
     try {
-      await _sendInteraction('dislike');
+      final resp = await _sendInteraction('dislike');
       widget.onDislike?.call();
+      if (resp is Map<String, dynamic>) {
+        if (resp.containsKey('likes_count')) {
+          setState(() => _likesCount = resp['likes_count'] ?? _likesCount);
+        }
+        if (resp.containsKey('dislikes_count')) {
+          setState(
+            () => _dislikesCount = resp['dislikes_count'] ?? _dislikesCount,
+          );
+        }
+      }
     } catch (e) {
       // revert
       setState(() {
@@ -891,14 +909,18 @@ class _PostCardState extends State<PostCard> {
       _isSaved = !_isSaved;
     });
 
+    final request = Provider.of<CookieRequest>(context, listen: false);
+    final api = PostApi(request: request);
     try {
-      await _sendInteraction('save');
+      final isSaved = await api.toggleSavePost(widget.item.id);
+      if (!mounted) return;
+      if (isSaved != _isSaved) {
+        setState(() => _isSaved = isSaved);
+      }
       widget.onSave?.call();
     } catch (e) {
       // revert
-      setState(() {
-        _isSaved = prevSaved;
-      });
+      if (mounted) setState(() => _isSaved = prevSaved);
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
