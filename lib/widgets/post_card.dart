@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
 import 'package:smash_mobile/post/post_detail_page.dart';
-import 'package:smash_mobile/screens/edit_post.dart';
+import 'package:smash_mobile/screens/post_edit_form.dart';
 import 'package:smash_mobile/widgets/default_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
@@ -663,7 +663,7 @@ class _PostCardState extends State<PostCard> {
     if (action == 'edit') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => EditPostPage(post: widget.item)),
+        MaterialPageRoute(builder: (_) => PostEditFormPage(post: widget.item)),
       );
     }
     if (action == 'delete' && widget.onDelete != null)
