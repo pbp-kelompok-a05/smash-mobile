@@ -16,6 +16,8 @@ class CommentCard extends StatefulWidget {
     this.userReaction,
     this.onLike,
     this.onDislike,
+    this.canEdit = false,
+    this.onDelete,
     this.userId,
     this.onProfileTap,
   });
@@ -31,6 +33,8 @@ class CommentCard extends StatefulWidget {
 
   final VoidCallback? onLike;
   final VoidCallback? onDislike;
+  final bool canEdit;
+  final VoidCallback? onDelete;
   final int? userId;
   final VoidCallback? onProfileTap;
 
@@ -240,12 +244,81 @@ class _CommentCardState extends State<CommentCard> {
                         ),
                       ),
                     ),
-                    Text(
-                      _fmtDate(widget.createdAt),
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          _fmtDate(widget.createdAt),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        PopupMenuButton<String>(
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            Icons.more_vert,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                          onSelected: (value) {
+                            if (value == 'like') {
+                              _handleLike();
+                              return;
+                            }
+                            if (value == 'dislike') {
+                              _handleDislike();
+                              return;
+                            }
+                            if (value == 'delete' && widget.canEdit) {
+                              showDialog(
+                                context: context,
+                                builder: (dialogContext) => AlertDialog(
+                                  title: const Text('Delete comment?'),
+                                  content: const Text(
+                                    'This action cannot be undone.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(dialogContext).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.of(dialogContext).pop(true);
+                                      },
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              ).then((confirmed) {
+                                if (confirmed == true) {
+                                  widget.onDelete?.call();
+                                }
+                              });
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'like',
+                              child: Text('Like'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'dislike',
+                              child: Text('Dislike'),
+                            ),
+                            if (widget.canEdit)
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text(
+                                  'Delete',
+                                  style: TextStyle(color: Colors.red.shade600),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
                     ),
                   ],
                 ),

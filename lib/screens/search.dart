@@ -156,7 +156,6 @@ class _SearchPageState extends State<SearchPage>
                 resolve(map['profile_photo'] as String?) ??
                 _profileApi.defaultAvatarUrl;
 
-            // FIX: Gunakan ProfileFeedItem.fromJson untuk konsistensi
             return ProfileFeedItem.fromJson({
               'id': map['id'] ?? 0,
               'title': map['title'] ?? '',

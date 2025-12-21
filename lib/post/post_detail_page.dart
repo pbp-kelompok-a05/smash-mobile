@@ -370,6 +370,8 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
             Column(
               children: _comments.map((c) {
                 final idStr = c.id;
+                final canEdit =
+                    _currentUserId != null && c.userId == _currentUserId;
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: CommentCard(
@@ -381,6 +383,7 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
                     likes: c.likesCount,
                     dislikes: c.dislikesCount,
                     userReaction: c.userReaction,
+                    canEdit: canEdit,
                     userId: c.userId,
                     onLike: () async {
                       try {
@@ -404,6 +407,29 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
                         );
                       }
                     },
+                    onDelete: canEdit
+                        ? () async {
+                            try {
+                              await _api.deleteComment(idStr);
+                              _hasChanges = true;
+                              await _load();
+                              await _loadComments();
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Comment deleted'),
+                                ),
+                              );
+                            } catch (e) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to delete comment: $e'),
+                                ),
+                              );
+                            }
+                          }
+                        : null,
                     onProfileTap: () {
                       if (!mounted) return;
                       if (c.userId != null) {

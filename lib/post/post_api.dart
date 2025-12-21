@@ -238,6 +238,38 @@ class PostApi {
     throw Exception('Gagal melakukan interaksi pada komentar.');
   }
 
+  /// Delete a comment by ID
+  /// Endpoint: DELETE /comments/<commentId>/
+  Future<void> deleteComment(String commentId) async {
+    final url = '$baseUrl/comments/$commentId/';
+    late http.Client client;
+    if (kIsWeb) {
+      client = http_browser.BrowserClient()..withCredentials = true;
+    } else {
+      client = http.Client();
+    }
+    final headers = Map<String, String>.from(request.headers);
+    if (!kIsWeb) {
+      final cookieHeader = request.cookies.entries
+          .map((e) => '${e.key}=${e.value}')
+          .join('; ');
+      if (cookieHeader.isNotEmpty) {
+        headers['Cookie'] = cookieHeader;
+      }
+    }
+    try {
+      final response = await client.delete(Uri.parse(url), headers: headers);
+      if (response.statusCode == 401) {
+        throw Exception('Authentication required.');
+      }
+      if (response.statusCode >= 400) {
+        throw Exception('Failed to delete comment.');
+      }
+    } finally {
+      client.close();
+    }
+  }
+
   /// Toggle save/bookmark for a post (mobile endpoint)
   /// Endpoint: POST /post/api/save-post/
   /// Returns `true` if post is now saved, `false` if removed.

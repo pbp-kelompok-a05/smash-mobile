@@ -17,6 +17,7 @@ class Comment {
   int likesCount;
   int dislikesCount;
   String? userReaction;
+  bool canEdit;
 
   Comment({
     required this.id,
@@ -29,6 +30,7 @@ class Comment {
     required this.likesCount,
     required this.dislikesCount,
     this.userReaction,
+    this.canEdit = false,
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) => Comment(
@@ -86,6 +88,7 @@ class Comment {
     userReaction:
         json["user_reaction"]?.toString() ??
         json["user_interaction"]?.toString(),
+    canEdit: json["can_edit"] == true,
   );
 
   Map<String, dynamic> toJson() => {
@@ -99,5 +102,6 @@ class Comment {
     "likes_count": likesCount,
     "dislikes_count": dislikesCount,
     "user_reaction": userReaction,
+    "can_edit": canEdit,
   };
 }
