@@ -6,7 +6,8 @@ import 'package:smash_mobile/models/Filtering_entry.dart';
 import 'package:smash_mobile/models/comment_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/browser_client.dart' as http_browser;
+import 'package:smash_mobile/src/platform_client.dart'
+    show createPlatformClient;
 
 /// API service untuk operasi post dengan integrasi Django backend
 /// Menangani: fetch posts, notifications, post detail, dan utilities URL
@@ -147,12 +148,7 @@ class PostApi {
   /// Endpoint: DELETE /post/api/posts/<postId>/
   Future<void> deletePost(int postId) async {
     final url = '$baseUrl/post/api/posts/$postId/';
-    late http.Client client;
-    if (kIsWeb) {
-      client = http_browser.BrowserClient()..withCredentials = true;
-    } else {
-      client = http.Client();
-    }
+    final client = createPlatformClient(withCredentials: kIsWeb);
     final headers = Map<String, String>.from(request.headers);
     if (!kIsWeb) {
       final cookieHeader = request.cookies.entries
@@ -242,12 +238,7 @@ class PostApi {
   /// Endpoint: DELETE /comments/<commentId>/
   Future<void> deleteComment(String commentId) async {
     final url = '$baseUrl/comments/$commentId/';
-    late http.Client client;
-    if (kIsWeb) {
-      client = http_browser.BrowserClient()..withCredentials = true;
-    } else {
-      client = http.Client();
-    }
+    final client = createPlatformClient(withCredentials: kIsWeb);
     final headers = Map<String, String>.from(request.headers);
     if (!kIsWeb) {
       final cookieHeader = request.cookies.entries

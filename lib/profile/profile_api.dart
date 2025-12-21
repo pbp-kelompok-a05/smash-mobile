@@ -4,7 +4,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/browser_client.dart' as http_browser;
+import 'package:smash_mobile/src/platform_client.dart'
+    show createPlatformClient;
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
 import 'package:smash_mobile/models/profile_entry.dart';
@@ -177,13 +178,7 @@ class ProfileApi {
           ),
         );
       }
-      late http.Client client;
-      if (kIsWeb) {
-        final c = http_browser.BrowserClient()..withCredentials = true;
-        client = c;
-      } else {
-        client = http.Client();
-      }
+      final client = createPlatformClient(withCredentials: kIsWeb);
       try {
         final streamed = await client.send(req);
         final body = await streamed.stream.bytesToString();

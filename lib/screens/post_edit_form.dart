@@ -9,7 +9,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/browser_client.dart' as http_browser;
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -158,7 +157,9 @@ class _PostEditFormPageState extends State<PostEditFormPage>
     if (userId == null) {
       try {
         final request = context.read<CookieRequest>();
-        final me = await request.get('https://nathanael-leander-smash.pbp.cs.ui.ac.id/post/me/');
+        final me = await request.get(
+          'https://nathanael-leander-smash.pbp.cs.ui.ac.id/post/me/',
+        );
         if (me != null && me['id'] != null) userId = me['id'].toString();
       } catch (_) {
         // ignore and fall back to default

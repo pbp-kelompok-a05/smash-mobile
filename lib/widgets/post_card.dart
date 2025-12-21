@@ -15,7 +15,6 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/browser_client.dart' as http_browser;
 
 class PostCard extends StatefulWidget {
   const PostCard({
@@ -217,7 +216,6 @@ class _PostCardState extends State<PostCard> {
       await _refreshFromDetail();
     }
   }
-
 
   Future<void> _refreshFromDetail() async {
     try {
