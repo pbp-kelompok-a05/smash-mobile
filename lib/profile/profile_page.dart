@@ -14,6 +14,7 @@ import 'package:smash_mobile/screens/post_form_entry.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:smash_mobile/widgets/navbar.dart';
 import 'package:smash_mobile/widgets/post_card.dart';
+import 'package:smash_mobile/post/post_api.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Halaman profil pengguna dengan desain modern featuring glassmorphism,
@@ -28,6 +29,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late ProfileApi _api;
+  late PostApi _postApi;
 
   // State management (LOGIC UNCHANGED)
   ProfileData? _profile;
@@ -56,6 +58,7 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     final request = Provider.of<CookieRequest>(context, listen: false);
     _api = ProfileApi(request: request);
+    _postApi = PostApi(request: request);
     _viewingOwnProfile = widget.userId == null;
     if (request.loggedIn && widget.userId != null) {
       _loadSelfIdIfNeeded();
@@ -237,6 +240,55 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _handleDeletePost(ProfileFeedItem post) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete post?'),
+        content: const Text('This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await _postApi.deletePost(post.id);
+      if (!mounted) return;
+      setState(() {
+        _posts.removeWhere((p) => p.id == post.id);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post deleted')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete post: $e')),
+      );
+    }
+  }
+
+  void _handleSavedToggle() {
+    if (_filter == 'bookmarked') {
+      _loadPosts();
+    }
+  }
+
+  void _handleLikedToggle() {
+    if (_filter == 'liked') {
+      _loadPosts();
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final request = context.watch<CookieRequest>();
@@ -308,7 +360,17 @@ class _ProfilePageState extends State<ProfilePage> {
                         MaterialPageRoute(
                           builder: (_) => const PostEntryFormPage(),
                         ),
-                      );
+                      ).then((result) {
+                        if (!mounted) return;
+                        if (result == true) {
+                          if (_filter != 'my') {
+                            setState(() {
+                              _filter = 'my';
+                            });
+                          }
+                          _loadPosts();
+                        }
+                      });
                     },
                   ),
               ],
@@ -645,7 +707,9 @@ class _ProfilePageState extends State<ProfilePage> {
             showMenu: true,
             currentUserId: _navUserId,
             onEdit: (_) {},
-            onDelete: (_) {},
+            onDelete: _handleDeletePost,
+            onSave: _handleSavedToggle,
+            onLike: _handleLikedToggle,
             profilePageBuilder: (id) => ProfilePage(userId: id),
           ),
         );

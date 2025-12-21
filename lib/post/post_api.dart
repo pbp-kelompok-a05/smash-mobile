@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:smash_mobile/models/Filtering_entry.dart';
 import 'package:smash_mobile/models/comment_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/browser_client.dart' as http_browser;
 
 /// API service untuk operasi post dengan integrasi Django backend
 /// Menangani: fetch posts, notifications, post detail, dan utilities URL
@@ -139,6 +141,38 @@ class PostApi {
       );
     }
     throw Exception('Gagal mengambil detail post.');
+  }
+
+  /// Delete post by ID
+  /// Endpoint: DELETE /post/api/posts/<postId>/
+  Future<void> deletePost(int postId) async {
+    final url = '$baseUrl/post/api/posts/$postId/';
+    late http.Client client;
+    if (kIsWeb) {
+      client = http_browser.BrowserClient()..withCredentials = true;
+    } else {
+      client = http.Client();
+    }
+    final headers = Map<String, String>.from(request.headers);
+    if (!kIsWeb) {
+      final cookieHeader = request.cookies.entries
+          .map((e) => '${e.key}=${e.value}')
+          .join('; ');
+      if (cookieHeader.isNotEmpty) {
+        headers['Cookie'] = cookieHeader;
+      }
+    }
+    try {
+      final response = await client.delete(Uri.parse(url), headers: headers);
+      if (response.statusCode == 401) {
+        throw Exception('Authentication required.');
+      }
+      if (response.statusCode >= 400) {
+        throw Exception('Failed to delete post.');
+      }
+    } finally {
+      client.close();
+    }
   }
 
   /// Fetch comments for a post

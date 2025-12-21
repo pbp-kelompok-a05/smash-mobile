@@ -13,6 +13,9 @@ import 'package:smash_mobile/post/post_api.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/browser_client.dart' as http_browser;
 
 class PostCard extends StatefulWidget {
   const PostCard({
