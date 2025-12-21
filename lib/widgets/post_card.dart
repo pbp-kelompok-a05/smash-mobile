@@ -6,12 +6,8 @@ import 'package:smash_mobile/post/post_detail_page.dart';
 import 'package:smash_mobile/screens/post_edit_form.dart';
 import 'package:smash_mobile/widgets/default_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:pbp_django_auth/pbp_django_auth.dart';
-import 'package:provider/provider.dart';
-import 'package:smash_mobile/profile/profile_api.dart';
-import 'package:smash_mobile/profile/profile_page.dart';
 
-class PostCard extends StatefulWidget {
+class PostCard extends StatelessWidget {
   const PostCard({
     super.key,
     required this.item,
@@ -68,49 +64,6 @@ class PostCard extends StatefulWidget {
   final VoidCallback? onComment;
   final VoidCallback? onTap;
 
-  @override
-  State<PostCard> createState() => _PostCardState();
-}
-
-class _PostCardState extends State<PostCard> {
-  late bool _isLiked;
-  late bool _isDisliked;
-  late bool _isSaved;
-  late int _likesCount;
-  late int _dislikesCount;
-  String? _reaction;
-  int? _effectiveUserId;
-
-  @override
-  void initState() {
-    super.initState();
-    _isLiked = widget.item.userInteraction == 'like';
-    _isDisliked = widget.item.userInteraction == 'dislike';
-    _isSaved = widget.item.isSaved;
-    _likesCount = widget.item.likesCount;
-    _dislikesCount = widget.item.dislikesCount;
-    _reaction = widget.item.userInteraction;
-    _effectiveUserId = widget.currentUserId;
-
-    // If parent didn't provide currentUserId, try to infer from Profile API
-    if (_effectiveUserId == null) {
-      // schedule async fetch
-      Future.microtask(() async {
-        try {
-          final request = Provider.of<CookieRequest>(context, listen: false);
-          final profileApi = ProfileApi(request: request);
-          final profile = await profileApi.fetchProfile();
-          if (!mounted) return;
-          setState(() {
-            _effectiveUserId = profile.id;
-          });
-        } catch (_) {
-          // ignore: if not logged in or failed, leave as null
-        }
-      });
-    }
-  }
-
   /// Format timestamp menjadi "2m ago", "3h ago", "Jan 15"
   String _formattedDate(DateTime dt) {
     final local = dt.toLocal();
@@ -147,14 +100,14 @@ class _PostCardState extends State<PostCard> {
   Widget build(BuildContext context) {
     final resolvedAvatar = _pickAvatar();
     final avatarWithCacheBust = _bustCache(resolvedAvatar);
-    final imageLink = widget.imageUrl ?? widget.item.image;
-    final videoLink = widget.item.videoLink ?? '';
-    final isLiked = _isLiked;
-    final isDisliked = _isDisliked;
-    final isSaved = _isSaved;
+    final imageLink = imageUrl ?? item.image;
+    final videoLink = item.videoLink ?? '';
+    final isLiked = item.userInteraction == 'like';
+    final isDisliked = item.userInteraction == 'dislike';
+    final isSaved = item.isSaved;
 
     return InkWell(
-      onTap: widget.onTap ?? () => _defaultTapHandler(context),
+      onTap: onTap ?? () => _defaultTapHandler(context),
       borderRadius: BorderRadius.circular(24),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -188,7 +141,7 @@ class _PostCardState extends State<PostCard> {
           children: [
             _buildModernHeader(context, avatarWithCacheBust),
             _buildModernContent(imageLink, videoLink, context),
-            if (widget.showFooterActions)
+            if (showFooterActions)
               _buildModernFooter(isLiked, isDisliked, isSaved),
           ],
         ),
@@ -200,25 +153,7 @@ class _PostCardState extends State<PostCard> {
   void _defaultTapHandler(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => PostDetailPage(postId: widget.item.id)),
-    );
-  }
-
-  void _handleAvatarTap(BuildContext context) {
-    if (widget.onProfileTap != null) {
-      widget.onProfileTap!();
-      return;
-    }
-    if (widget.profilePageBuilder != null) {
-      final page = widget.profilePageBuilder!(widget.item.userId);
-      Navigator.push(context, MaterialPageRoute(builder: (_) => page));
-      return;
-    }
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ProfilePage(userId: widget.item.userId),
-      ),
+      MaterialPageRoute(builder: (_) => PostDetailPage(postId: item.id)),
     );
   }
 
@@ -246,9 +181,7 @@ class _PostCardState extends State<PostCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.item.title.isNotEmpty
-                      ? widget.item.title
-                      : widget.item.user,
+                  item.title.isNotEmpty ? item.title : item.user,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -262,7 +195,7 @@ class _PostCardState extends State<PostCard> {
                 Row(
                   children: [
                     Text(
-                      widget.item.user,
+                      item.user,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -279,7 +212,7 @@ class _PostCardState extends State<PostCard> {
                       ),
                     ),
                     Text(
-                      _formattedDate(widget.item.createdAt),
+                      _formattedDate(item.createdAt),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.white70,
@@ -305,16 +238,12 @@ class _PostCardState extends State<PostCard> {
     final isValid = avatarUrl != null && AvatarUtils.isValidImageUrl(avatarUrl);
     return Stack(
       children: [
-        InkWell(
-          onTap: () => _handleAvatarTap(context),
-          borderRadius: BorderRadius.circular(32),
-          child: SafeAvatar(
-            size: 56,
-            imageUrl: isValid ? avatarUrl : null,
-            backgroundColor: Colors.blue.shade700,
-            borderWidth: 3,
-            borderColor: Colors.white30,
-          ),
+        SafeAvatar(
+          size: 56,
+          imageUrl: isValid ? avatarUrl : null,
+          backgroundColor: Colors.blue.shade700,
+          borderWidth: 3,
+          borderColor: Colors.white30,
         ),
         Positioned(
           bottom: 0,
@@ -344,11 +273,11 @@ class _PostCardState extends State<PostCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (widget.item.content.isNotEmpty)
+          if (item.content.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Text(
-                widget.item.content,
+                item.content,
                 style: const TextStyle(
                   fontSize: 15,
                   height: 1.6,
@@ -486,28 +415,28 @@ class _PostCardState extends State<PostCard> {
       children: [
         _buildModernStatItem(
           icon: Icons.thumb_up_outlined,
-          count: _likesCount,
+          count: item.likesCount,
           label: 'Likes',
           color: Colors.blue.shade300,
           isActive: isLiked,
         ),
         _buildModernStatItem(
           icon: Icons.thumb_down_outlined,
-          count: _dislikesCount,
+          count: item.dislikesCount,
           label: 'Dislikes',
           color: Colors.red.shade300,
           isActive: isDisliked,
         ),
         _buildModernStatItem(
           icon: Icons.comment_outlined,
-          count: widget.item.commentCount,
+          count: item.commentCount,
           label: 'Comments',
           color: Colors.green.shade300,
           isActive: false,
         ),
         _buildModernStatItem(
           icon: Icons.share_outlined,
-          count: widget.item.sharesCount,
+          count: item.sharesCount,
           label: 'Shares',
           color: Colors.purple.shade300,
           isActive: false,
@@ -568,35 +497,35 @@ class _PostCardState extends State<PostCard> {
           icon: Icons.thumb_up_alt_rounded,
           label: isLiked ? 'Liked' : 'Like',
           color: Colors.blue.shade300,
-          onTap: _handleLike,
+          onTap: onLike,
           isActive: isLiked,
         ),
         _buildModernActionButton(
           icon: Icons.thumb_down_alt_rounded,
           label: isDisliked ? 'Disliked' : 'Dislike',
           color: Colors.red.shade300,
-          onTap: _handleDislike,
+          onTap: onDislike,
           isActive: isDisliked,
         ),
         _buildModernActionButton(
           icon: Icons.chat_bubble_outline,
           label: 'Comment',
           color: Colors.green.shade300,
-          onTap: widget.onComment,
+          onTap: onComment,
           isActive: false,
         ),
         _buildModernActionButton(
           icon: isSaved ? Icons.bookmark : Icons.bookmark_outline,
           label: isSaved ? 'Saved' : 'Save',
           color: Colors.amber.shade300,
-          onTap: _handleSave,
+          onTap: onSave,
           isActive: isSaved,
         ),
         _buildModernActionButton(
           icon: Icons.share_outlined,
           label: 'Share',
           color: Colors.grey.shade400,
-          onTap: widget.onShare,
+          onTap: onShare,
           isActive: false,
         ),
       ],
@@ -615,10 +544,7 @@ class _PostCardState extends State<PostCard> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          // If user is not logged in but interactions are enabled, show login prompt.
-          onTap: (widget.enableInteractions && _effectiveUserId != null)
-              ? onTap
-              : (widget.enableInteractions ? () => _showLoginSnack() : null),
+          onTap: enableInteractions ? onTap : null,
           borderRadius: BorderRadius.circular(16),
           splashColor: color.withOpacity(0.4),
           highlightColor: color.withOpacity(0.2),
@@ -634,7 +560,7 @@ class _PostCardState extends State<PostCard> {
                 Icon(
                   icon,
                   size: 22,
-                  color: (widget.enableInteractions && _effectiveUserId != null)
+                  color: enableInteractions
                       ? (isActive ? color : Colors.white70)
                       : Colors.white38,
                 ),
@@ -644,8 +570,7 @@ class _PostCardState extends State<PostCard> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                    color:
-                        (widget.enableInteractions && _effectiveUserId != null)
+                    color: enableInteractions
                         ? (isActive ? color : Colors.white70)
                         : Colors.white38,
                   ),
@@ -663,27 +588,24 @@ class _PostCardState extends State<PostCard> {
     if (action == 'edit') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => PostEditFormPage(post: widget.item)),
+        MaterialPageRoute(builder: (_) => PostEditFormPage(post: item)),
       );
     }
-    if (action == 'delete' && widget.onDelete != null)
-      widget.onDelete!(widget.item);
+    if (action == 'delete' && onDelete != null) onDelete!(item);
   }
 
   /// Cek apakah menu bisa ditampilkan
   bool get _canShowMenu =>
-      (widget.showMenu &&
-      (widget.item.canEdit ||
-          (_effectiveUserId != null &&
-              widget.item.userId == _effectiveUserId)));
+      showMenu &&
+      (item.canEdit || (currentUserId != null && item.userId == currentUserId));
 
   /// Pilih URL avatar dari multiple sources
   String? _pickAvatar() {
-    final resolver = widget.resolveAvatar ?? (String? v) => v;
+    final resolver = resolveAvatar ?? (String? v) => v;
     final sources = [
-      widget.item.profilePhoto?.trim(),
-      widget.avatarUrl?.trim(),
-      widget.defaultAvatar,
+      item.profilePhoto?.trim(),
+      avatarUrl?.trim(),
+      defaultAvatar,
     ];
     for (var src in sources) {
       if (src == null || src.isEmpty) continue;
@@ -695,8 +617,8 @@ class _PostCardState extends State<PostCard> {
 
   /// Tambahkan cache buster ke URL avatar
   String? _bustCache(String? url) {
-    if (!widget.bustAvatarCache || url == null || url.isEmpty) return url;
-    if (widget.defaultAvatar != null && url == widget.defaultAvatar) return url;
+    if (!bustAvatarCache || url == null || url.isEmpty) return url;
+    if (defaultAvatar != null && url == defaultAvatar) return url;
     final hasQuery = url.contains('?');
     final suffix = 'v=${DateTime.now().millisecondsSinceEpoch}';
     return hasQuery ? '$url&$suffix' : '$url?$suffix';
@@ -772,136 +694,6 @@ class _PostCardState extends State<PostCard> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to open link: $e')));
-    }
-  }
-
-  void _showLoginSnack() {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please log in to interact with posts')),
-    );
-  }
-
-  bool _ensureLoggedInOrShowSnack() {
-    if (_effectiveUserId != null) return true;
-    _showLoginSnack();
-    return false;
-  }
-
-  Future<void> _sendInteraction(String action) async {
-    try {
-      final request = context.read<CookieRequest>();
-      final url =
-          'http://localhost:8000/post/api/posts/${widget.item.id}/$action/';
-      await request.post(url, {});
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  void _handleLike() async {
-    if (!widget.enableInteractions) return;
-    if (!_ensureLoggedInOrShowSnack()) return;
-    final prevLiked = _isLiked;
-    final prevDisliked = _isDisliked;
-    setState(() {
-      if (_isLiked) {
-        _isLiked = false;
-        _likesCount = (_likesCount - 1).clamp(0, 999999);
-        _reaction = null;
-      } else {
-        if (_isDisliked) {
-          _isDisliked = false;
-          _dislikesCount = (_dislikesCount - 1).clamp(0, 999999);
-        }
-        _isLiked = true;
-        _likesCount++;
-        _reaction = 'like';
-      }
-    });
-
-    try {
-      await _sendInteraction('like');
-      widget.onLike?.call();
-    } catch (e) {
-      // revert
-      setState(() {
-        _isLiked = prevLiked;
-        _isDisliked = prevDisliked;
-        _likesCount = widget.item.likesCount;
-        _dislikesCount = widget.item.dislikesCount;
-        _reaction = widget.item.userInteraction;
-      });
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to update like: $e')));
-      }
-    }
-  }
-
-  void _handleDislike() async {
-    if (!widget.enableInteractions) return;
-    if (!_ensureLoggedInOrShowSnack()) return;
-    final prevLiked = _isLiked;
-    final prevDisliked = _isDisliked;
-    setState(() {
-      if (_isDisliked) {
-        _isDisliked = false;
-        _dislikesCount = (_dislikesCount - 1).clamp(0, 999999);
-        _reaction = null;
-      } else {
-        if (_isLiked) {
-          _isLiked = false;
-          _likesCount = (_likesCount - 1).clamp(0, 999999);
-        }
-        _isDisliked = true;
-        _dislikesCount++;
-        _reaction = 'dislike';
-      }
-    });
-
-    try {
-      await _sendInteraction('dislike');
-      widget.onDislike?.call();
-    } catch (e) {
-      // revert
-      setState(() {
-        _isLiked = prevLiked;
-        _isDisliked = prevDisliked;
-        _likesCount = widget.item.likesCount;
-        _dislikesCount = widget.item.dislikesCount;
-        _reaction = widget.item.userInteraction;
-      });
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to update dislike: $e')));
-      }
-    }
-  }
-
-  void _handleSave() async {
-    if (!widget.enableInteractions) return;
-    if (!_ensureLoggedInOrShowSnack()) return;
-    final prevSaved = _isSaved;
-    setState(() {
-      _isSaved = !_isSaved;
-    });
-
-    try {
-      await _sendInteraction('save');
-      widget.onSave?.call();
-    } catch (e) {
-      // revert
-      setState(() {
-        _isSaved = prevSaved;
-      });
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to update save: $e')));
-      }
     }
   }
 }
