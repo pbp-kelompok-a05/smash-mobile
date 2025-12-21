@@ -38,7 +38,9 @@ class SmashApp extends StatelessWidget {
 // LOGIN PAGE
 // =============================================================================
 class SmashLoginPage extends StatelessWidget {
-  const SmashLoginPage({super.key});
+  const SmashLoginPage({super.key, this.redirectTo});
+
+  final Widget? redirectTo;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +73,7 @@ class SmashLoginPage extends StatelessWidget {
                 children: [
                   const _LogoSection(),
                   const SizedBox(height: 32),
-                  const _GlassLoginCard(),
+                  _GlassLoginCard(redirectTo: redirectTo),
                 ],
               ),
             ),
@@ -140,7 +142,9 @@ class _LogoSection extends StatelessWidget {
 // GLASSMORPHISM CARD
 // =============================================================================
 class _GlassLoginCard extends StatelessWidget {
-  const _GlassLoginCard();
+  const _GlassLoginCard({this.redirectTo});
+
+  final Widget? redirectTo;
 
   @override
   Widget build(BuildContext context) {
@@ -158,9 +162,9 @@ class _GlassLoginCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: const Padding(
-            padding: EdgeInsets.all(24.0),
-            child: _SignInForm(),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: _SignInForm(redirectTo: redirectTo),
           ),
         ),
       ),
@@ -172,7 +176,9 @@ class _GlassLoginCard extends StatelessWidget {
 // SIGN IN FORM
 // =============================================================================
 class _SignInForm extends StatefulWidget {
-  const _SignInForm();
+  const _SignInForm({this.redirectTo});
+
+  final Widget? redirectTo;
 
   @override
   State<_SignInForm> createState() => _SignInFormState();
@@ -390,9 +396,12 @@ class _SignInFormState extends State<_SignInForm> {
 
       final success = (response is Map && response['status'] == true) || response == true;
       if (success) {
+        final target = widget.redirectTo;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const MyHomePage()),
+          MaterialPageRoute(
+            builder: (_) => target ?? const MyHomePage(),
+          ),
         );
       } else {
         _showError(response is Map ? response['message']?.toString() ?? 'Login failed' : 'Login failed');

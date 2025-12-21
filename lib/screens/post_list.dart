@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 // Import model dan widget
 import 'package:smash_mobile/models/Filtering_entry.dart';
 import 'package:smash_mobile/post/post_api.dart';
+import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:smash_mobile/screens/login.dart';
 import 'package:smash_mobile/screens/register.dart';
@@ -43,10 +44,13 @@ class _PostListPageState extends State<PostListPage>
 
   // API & Data
   late PostApi _postApi;
+  late ProfileApi _profileApi;
   List<ProfileFeedItem> _posts = [];
   List<ProfileFeedItem> _filteredPosts = [];
   bool _isLoading = true;
   String? _error;
+  String? _navUsername;
+  String? _navPhotoUrl;
 
   // Pagination
   bool _hasMore = true;
@@ -68,8 +72,10 @@ class _PostListPageState extends State<PostListPage>
 
     final request = Provider.of<CookieRequest>(context, listen: false);
     _postApi = PostApi(request: request);
+    _profileApi = ProfileApi(request: request);
 
     _loadInitialData();
+    _loadNavProfile();
     _setupAutoRefresh();
   }
 
@@ -90,6 +96,45 @@ class _PostListPageState extends State<PostListPage>
 
   void _loadInitialData() {
     _loadPosts();
+  }
+
+  Future<void> _loadNavProfile() async {
+    final request = Provider.of<CookieRequest>(context, listen: false);
+    if (!request.loggedIn) {
+      setState(() {
+        _navUsername = null;
+        _navPhotoUrl = null;
+      });
+      return;
+    }
+    try {
+      final profile = await _profileApi.fetchProfile();
+      if (!mounted) return;
+      setState(() {
+        _navUsername = profile.username;
+        _navPhotoUrl =
+            _profileApi.resolveMediaUrl(profile.profilePhoto) ??
+            _profileApi.defaultAvatarUrl;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _navUsername = null;
+        _navPhotoUrl = _profileApi.defaultAvatarUrl;
+      });
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final request = context.read<CookieRequest>();
+    try {
+      await request.logout('http://localhost:8000/authentication/logout/');
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _navUsername = null;
+      _navPhotoUrl = null;
+    });
   }
 
   /// Filter bookmark di frontend (menunggu API support filter)
@@ -212,17 +257,23 @@ class _PostListPageState extends State<PostListPage>
 
   Widget _buildNavBar() {
     final request = Provider.of<CookieRequest>(context, listen: true);
+    if (request.loggedIn && _navUsername == null) {
+      Future.microtask(_loadNavProfile);
+    }
     return NavBar(
       onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
       isLoggedIn: request.loggedIn,
       showCreate: request.loggedIn,
-      photoUrl: null,
+      photoUrl: _navPhotoUrl,
       photoBytes: null,
-      username: null,
+      username: _navUsername,
       onLogin: _openLogin,
       onRegister: _openRegister,
-      onLogout: () {},
-      onProfileTap: () {},
+      onLogout: _handleLogout,
+      onProfileTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfilePage()),
+      ),
       searchController: _searchController,
       onSearchSubmit: _openSearch,
     );

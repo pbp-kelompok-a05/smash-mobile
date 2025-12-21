@@ -46,13 +46,37 @@ class ProfileData {
     this.joinedOn,
   });
 
-  factory ProfileData.fromJson(Map<String, dynamic> json) => ProfileData(
-        id: json['id'] ?? 0,
-        username: (json['username'] ?? '').toString(),
-        bio: (json['bio'] ?? '').toString(),
-        profilePhoto: json['profile_photo'] as String?,
-        joinedOn: DateTime.tryParse((json['joined_on'] ?? '').toString()),
-      );
+  factory ProfileData.fromJson(Map<String, dynamic> json) {
+    DateTime? parseJoined(dynamic value) {
+      if (value == null) return null;
+      final parsed = DateTime.tryParse(value.toString());
+      return parsed;
+    }
+
+    final joinedCandidates = [
+      json['joined_on'],
+      json['date_joined'],
+      json['joined'],
+      json['created_at'],
+    ];
+    DateTime? joinedOn;
+    for (final candidate in joinedCandidates) {
+      joinedOn = parseJoined(candidate);
+      if (joinedOn != null) break;
+    }
+    if (joinedOn == null && json['user'] is Map<String, dynamic>) {
+      final user = Map<String, dynamic>.from(json['user'] as Map);
+      joinedOn = parseJoined(user['date_joined'] ?? user['joined_on']);
+    }
+
+    return ProfileData(
+      id: json['id'] ?? 0,
+      username: (json['username'] ?? '').toString(),
+      bio: (json['bio'] ?? '').toString(),
+      profilePhoto: json['profile_photo'] as String?,
+      joinedOn: joinedOn,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,

@@ -126,12 +126,34 @@ class _CommentCardState extends State<CommentCard> {
 
   String _fmtDate(DateTime? dt) {
     if (dt == null) return '';
+    final local = dt.toLocal();
     final now = DateTime.now();
-    final d = now.difference(dt);
-    if (d.inMinutes < 1) return 'just now';
-    if (d.inMinutes < 60) return '${d.inMinutes}m';
-    if (d.inHours < 24) return '${d.inHours}h';
-    return '${dt.day}/${dt.month}/${dt.year}';
+    final diff = now.difference(local);
+
+    if (diff.inSeconds < 60) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final day = local.day;
+    final month = months[local.month - 1];
+    final year = local.year;
+    final sameYear = year == now.year;
+    return sameYear ? '$month $day' : '$month $day $year';
   }
 
   void _handleLike() {
@@ -208,9 +230,15 @@ class _CommentCardState extends State<CommentCard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      widget.author,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    InkWell(
+                      onTap: _handleAvatarTap,
+                      child: Text(
+                        widget.author,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF3B82F6),
+                        ),
+                      ),
                     ),
                     Text(
                       _fmtDate(widget.createdAt),

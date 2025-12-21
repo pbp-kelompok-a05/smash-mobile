@@ -10,9 +10,11 @@ import 'package:smash_mobile/profile/profile_api.dart';
 import 'package:smash_mobile/profile/edit_profile.dart';
 import 'package:smash_mobile/screens/login.dart';
 import 'package:smash_mobile/screens/register.dart';
+import 'package:smash_mobile/screens/post_form_entry.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:smash_mobile/widgets/navbar.dart';
 import 'package:smash_mobile/widgets/post_card.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Halaman profil pengguna dengan desain modern featuring glassmorphism,
 /// gradient background biru-ungu, dan enhanced UX.
@@ -202,7 +204,11 @@ class _ProfilePageState extends State<ProfilePage> {
   void _openLogin() {
     Navigator.of(
       context,
-    ).push(MaterialPageRoute(builder: (_) => const SmashLoginPage()));
+    ).push(
+      MaterialPageRoute(
+        builder: (_) => const SmashLoginPage(redirectTo: ProfilePage()),
+      ),
+    );
   }
 
   void _openRegister() {
@@ -297,9 +303,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   IconButton(
                     icon: const Icon(Icons.add, color: Colors.white),
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Create post coming soon.'),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PostEntryFormPage(),
                         ),
                       );
                     },
@@ -455,6 +462,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (!_viewingOwnProfile && _profile?.joinedOn != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Joined on ${_formatJoinedDate(_profile!.joinedOn!)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF6B7280),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 if (canEdit)
                   ElevatedButton.icon(
@@ -494,17 +512,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                   ),
-                if (!_viewingOwnProfile && _profile?.joinedOn != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    'Joined on ${_formatJoinedDate(_profile!.joinedOn!)}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6B7280),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -745,80 +752,125 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildGuestContent() {
     return Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.85),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                  ),
-                ],
-              ),
-              child: Icon(Icons.lock_person, size: 60, color: _primaryColor),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Akses Profil Dibutuhkan',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Silakan masuk untuk melihat profil dan mengelola postingan Anda.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _textSecondary.withOpacity(0.8),
-                fontSize: 16,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _openLogin,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 4,
-              ),
-              child: const Row(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.login, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Masuk Sekarang',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.lock_outline,
+                      size: 48,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Login Required',
+                          style: GoogleFonts.inter(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'You need to be logged in to view profile',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: _openLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF4A2B55),
+                            minimumSize: const Size(double.infinity, 56),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 4,
+                            shadowColor: Colors.black.withOpacity(0.2),
+                          ),
+                          child: Text(
+                            'Login',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SmashRegisterPage(),
+                              ),
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                          ),
+                          child: Text(
+                            "Don't have an account? Register",
+                            style: GoogleFonts.inter(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

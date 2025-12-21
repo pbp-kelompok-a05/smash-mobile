@@ -12,6 +12,8 @@ import 'package:smash_mobile/widgets/app_top_bar.dart';
 import 'package:smash_mobile/widgets/default_avatar.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:smash_mobile/widgets/navbar.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:smash_mobile/screens/register.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -110,32 +112,76 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget build(BuildContext context) {
     final request = context.watch<CookieRequest>();
     final loggedIn = request.loggedIn;
-    if (!loggedIn) {
-      return Scaffold(
-        key: _scaffoldKey,
-        drawer: const LeftDrawer(),
-        appBar: AppTopBar(
-          title: 'Notifications',
-          onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-        ),
-        body: _buildLoginGate(),
-      );
-    }
-
     return Scaffold(
       key: _scaffoldKey,
       drawer: const LeftDrawer(),
-      appBar: AppTopBar(
-        title: 'Notifications',
-        onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-      ),
       body: Container(
-        color: Colors.white,
-        child: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: _load,
-            child: _buildBody(),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
           ),
+        ),
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverAppBar(
+                pinned: true,
+                expandedHeight: 120,
+                backgroundColor: Colors.transparent,
+                flexibleSpace: FlexibleSpaceBar(
+                  title: const Text(
+                    'Notifications',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.3),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                leading: IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                ),
+                actions: [
+                  if (!loggedIn)
+                    TextButton(
+                      onPressed: _openLogin,
+                      child: const Text(
+                        'Login',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                ],
+              ),
+            ];
+          },
+          body: loggedIn ? _buildLoggedInBody() : _buildLoginGate(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoggedInBody() {
+    return Container(
+      color: Colors.transparent,
+      child: SafeArea(
+        top: false,
+        child: RefreshIndicator(
+          onRefresh: _load,
+          child: _buildBody(),
         ),
       ),
     );
@@ -143,38 +189,56 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return ListView(
+        physics: AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: 120),
+          Center(child: CircularProgressIndicator()),
+        ],
+      );
     }
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Failed to load notifications',
-              style: TextStyle(color: Colors.red.shade700),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error!,
-              style: TextStyle(color: Colors.red.shade700, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _load,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        children: [
+          const SizedBox(height: 120),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Failed to load notifications',
+                style: TextStyle(color: Colors.red.shade700),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _error!,
+                style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: _load,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ],
       );
     }
     if (_items.isEmpty) {
-      return const Center(
-        child: Text(
-          'No notifications yet.',
-          style: TextStyle(color: Colors.black54),
-        ),
+      return ListView(
+        physics: AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: 140),
+          Center(
+            child: Text(
+              'No notifications yet.',
+              style: TextStyle(color: Colors.black54),
+            ),
+          ),
+        ],
       );
     }
     return ListView.builder(
@@ -195,44 +259,126 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Widget _buildLoginGate() {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFF6F6F6), Color(0xFFFFF3F4)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.lock_outline, size: 64, color: Colors.grey),
-              const SizedBox(height: 12),
-              const Text(
-                'Login required to view notifications.',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 2,
                 ),
-                textAlign: TextAlign.center,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Please log in to continue.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54),
+              child: const Center(
+                child: Icon(
+                  Icons.lock_outline,
+                  size: 48,
+                  color: Colors.white,
+                ),
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _openLogin,
-                child: const Text('Login'),
+            ),
+            const SizedBox(height: 32),
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 22,
+                    offset: const Offset(0, 10),
+                    spreadRadius: 5,
+                  ),
+                ],
               ),
-            ],
-          ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Login Required',
+                    style: GoogleFonts.inter(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'You need to be logged in to view your notifications',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(color: Colors.white70, fontSize: 16),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: _openLogin,
+                    icon: const Icon(Icons.login, size: 18),
+                    label: Text(
+                      'Login',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF4A2B55),
+                      minimumSize: const Size(double.infinity, 56),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 4,
+                      shadowColor: Colors.black.withOpacity(0.2),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SmashRegisterPage(),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: Text(
+                      "Don't have an account? Register",
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -240,7 +386,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   void _openLogin() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SmashLoginPage()),
+      MaterialPageRoute(
+        builder: (_) => const SmashLoginPage(redirectTo: NotificationsPage()),
+      ),
     );
   }
 }
@@ -254,12 +402,33 @@ class _NotificationCard extends StatelessWidget {
   String _formatTime(DateTime? dt) {
     if (dt == null) return '';
     final now = DateTime.now();
-    final diff = now.difference(dt);
+    final local = dt.toLocal();
+    final diff = now.difference(local);
+
     if (diff.inSeconds < 60) return 'just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final day = local.day;
+    final month = months[local.month - 1];
+    final year = local.year;
+    final sameYear = year == now.year;
+    return sameYear ? '$month $day' : '$month $day $year';
   }
 
   @override
@@ -281,115 +450,128 @@ class _NotificationCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           )
         ],
       ),
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: item.actorId != null ? () => _openProfile(context) : null,
-            borderRadius: BorderRadius.circular(22),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: Image.network(
-                avatar,
-                width: 44,
-                height: 44,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const DefaultAvatar(size: 44),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          color: Colors.white.withOpacity(0.15),
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InkWell(
+                onTap: item.actorId != null ? () => _openProfile(context) : null,
+                borderRadius: BorderRadius.circular(24),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image.network(
+                    avatar,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const DefaultAvatar(size: 48),
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (item.postTitle.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  GestureDetector(
-                    onTap: item.actorId != null ? () => _openProfile(context) : null,
-                    child: RichText(
-                      text: TextSpan(
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.black87,
-                        ),
-                        children: [
-                          if (actor.isNotEmpty)
-                            TextSpan(
-                              text: '@$actor',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w700),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (item.postTitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      GestureDetector(
+                        onTap:
+                            item.actorId != null ? () => _openProfile(context) : null,
+                        child: RichText(
+                          text: TextSpan(
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              color: Colors.white,
                             ),
-                          if (remainder.isNotEmpty)
-                            TextSpan(text: ' $remainder'),
-                          const TextSpan(text: ' on '),
-                          TextSpan(
-                            text: '"${item.postTitle}"',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w700),
+                            children: [
+                              if (actor.isNotEmpty)
+                                TextSpan(
+                                  text: '@$actor',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              if (remainder.isNotEmpty)
+                                TextSpan(text: ' $remainder'),
+                              const TextSpan(text: ' on '),
+                              TextSpan(
+                                text: '"${item.postTitle}"',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const TextSpan(text: '.'),
+                            ],
                           ),
-                          const TextSpan(text: '.'),
-                        ],
+                        ),
+                      ),
+                    ],
+                    if (item.content != null && item.content!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        item.content!,
+                        style: GoogleFonts.inter(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    Text(
+                      _formatTime(item.timestamp),
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.white70,
                       ),
                     ),
-                  ),
-                ],
-                if (item.content != null && item.content!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    item.content!,
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 4),
-                Text(
-                  _formatTime(item.timestamp),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.black54,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.only(left: 2.0),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF8B3DFB),
-                        padding: EdgeInsets.zero,
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.zero,
+                        ),
+                        onPressed: () {
+                          if (item.postId != 0) {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    PostDetailPage(postId: item.postId),
+                              ),
+                            );
+                          }
+                        },
+                        child: Text(
+                          'View post details',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
                       ),
-                      onPressed: () {
-                        if (item.postId != 0) {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => PostDetailPage(postId: item.postId),
-                            ),
-                          );
-                        }
-                      },
-                      child: const Text('View post details'),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
