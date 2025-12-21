@@ -5,7 +5,7 @@ import 'package:smash_mobile/post/post_api.dart';
 
 class NotificationsApi {
   NotificationsApi({required this.request, String? baseUrl})
-      : baseUrl = baseUrl ?? 'http://localhost:8000';
+      : baseUrl = baseUrl ?? 'https://nathanael-leander-smash.pbp.cs.ui.ac.id';
 
   final CookieRequest request;
   final String baseUrl;

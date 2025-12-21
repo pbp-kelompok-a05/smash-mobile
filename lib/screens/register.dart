@@ -146,7 +146,7 @@ class _RegisterFormState extends State<_RegisterForm> {
   bool _obscureB = true;
   bool _isSubmitting = false;
 
-  static const String _baseUrl = 'http://localhost:8000';
+  static const String _baseUrl = 'https://nathanael-leander-smash.pbp.cs.ui.ac.id';
   static const String _registerPath = '/authentication/register/';
 
   @override

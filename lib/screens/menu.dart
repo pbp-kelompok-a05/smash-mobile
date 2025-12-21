@@ -193,7 +193,7 @@ class _MyHomePageState extends State<MyHomePage>
 
     final request = context.read<CookieRequest>();
     try {
-      await request.logout('http://localhost:8000/authentication/logout/');
+      await request.logout('https://nathanael-leander-smash.pbp.cs.ui.ac.id/authentication/logout/');
     } catch (e) {
       developer.log('Logout error: $e', name: 'AuthDebug');
     } finally {

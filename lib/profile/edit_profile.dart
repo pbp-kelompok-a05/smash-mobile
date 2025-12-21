@@ -17,11 +17,7 @@ import 'package:smash_mobile/screens/menu.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 
 class EditProfilePage extends StatefulWidget {
-  const EditProfilePage({
-    super.key,
-    required this.profile,
-    required this.api,
-  });
+  const EditProfilePage({super.key, required this.profile, required this.api});
 
   final ProfileData? profile;
   final ProfileApi api;
@@ -42,7 +38,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Uint8List? _selectedBytes;
   bool _removePhoto = false;
   String? _avatarUrl;
-  static const _fallbackAvatar = 'https://raw.githubusercontent.com/identicons/rustcrate/master/public/images/default.png';
+  static const _fallbackAvatar =
+      'https://raw.githubusercontent.com/identicons/rustcrate/master/public/images/default.png';
 
   String _resolvePhotoUrl(String? url) {
     if (url == null || url.trim().isEmpty) return _fallbackAvatar;
@@ -73,23 +70,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             InputDecoration dec(String hint) => InputDecoration(
-                  hintText: hint,
-                  hintStyle: GoogleFonts.inter(color: Colors.white54),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide:
-                        BorderSide(color: Colors.white.withOpacity(0.3), width: 1),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide:
-                        const BorderSide(color: Colors.white, width: 1.6),
-                  ),
-                );
+              hintText: hint,
+              hintStyle: GoogleFonts.inter(color: Colors.white54),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.1),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Colors.white, width: 1.6),
+              ),
+            );
             OutlineInputBorder focusBorder = const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(10)),
               borderSide: BorderSide(color: Colors.white, width: 1.6),
@@ -125,15 +125,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     decoration: dec('Old Password').copyWith(
                       suffixIcon: IconButton(
                         icon: Icon(
-                            obscureOld ? Icons.visibility_off : Icons.visibility,
-                            color: Colors.white70,
-                          ),
-                        onPressed: () => setStateDialog(
-                            () => obscureOld = !obscureOld),
+                          obscureOld ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.white70,
+                        ),
+                        onPressed: () =>
+                            setStateDialog(() => obscureOld = !obscureOld),
                       ),
                       focusedBorder: focusBorder,
                     ),
-                    ),
+                  ),
                   const SizedBox(height: 10),
                   TextField(
                     controller: newCtrl,
@@ -142,11 +142,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     decoration: dec('New Password').copyWith(
                       suffixIcon: IconButton(
                         icon: Icon(
-                            obscureNew ? Icons.visibility_off : Icons.visibility,
-                            color: Colors.white70,
-                          ),
-                        onPressed: () => setStateDialog(
-                            () => obscureNew = !obscureNew),
+                          obscureNew ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.white70,
+                        ),
+                        onPressed: () =>
+                            setStateDialog(() => obscureNew = !obscureNew),
                       ),
                       focusedBorder: focusBorder,
                     ),
@@ -158,13 +158,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     style: GoogleFonts.inter(color: Colors.white),
                     decoration: dec('Confirm Password').copyWith(
                       suffixIcon: IconButton(
-                        icon: Icon(obscureConfirm
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                            color: Colors.white70,
-                          ),
+                        icon: Icon(
+                          obscureConfirm
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: Colors.white70,
+                        ),
                         onPressed: () => setStateDialog(
-                            () => obscureConfirm = !obscureConfirm),
+                          () => obscureConfirm = !obscureConfirm,
+                        ),
                       ),
                       focusedBorder: focusBorder,
                     ),
@@ -175,8 +177,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     side: BorderSide(color: Colors.white.withOpacity(0.6)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -192,8 +196,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFF4A2B55),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -210,22 +216,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               confirmPass.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content:
-                                      Text('Semua kolom password wajib diisi.')),
+                                content: Text(
+                                  'Semua kolom password wajib diisi.',
+                                ),
+                              ),
                             );
                             return;
                           }
                           if (newPass != confirmPass) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content: Text('Konfirmasi password tidak cocok.')),
+                                content: Text(
+                                  'Konfirmasi password tidak cocok.',
+                                ),
+                              ),
                             );
                             return;
                           }
                           setState(() => _isChangingPass = true);
                           try {
                             await widget.api.changePassword(
-                              username:  widget.profile?.username ?? '',
+                              username: widget.profile?.username ?? '',
                               oldPassword: oldPass,
                               newPassword: newPass,
                               confirmPassword: confirmPass,
@@ -238,8 +249,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                    content: Text(
-                                        'Gagal memperbarui password: $e')),
+                                  content: Text(
+                                    'Gagal memperbarui password: $e',
+                                  ),
+                                ),
                               );
                             }
                           } finally {
@@ -247,7 +260,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               setState(() => _isChangingPass = false);
                             }
                           }
-                  },
+                        },
                   child: Text(
                     'Update Password',
                     style: GoogleFonts.inter(fontWeight: FontWeight.w700),
@@ -267,137 +280,159 @@ class _EditProfilePageState extends State<EditProfilePage> {
       context: context,
       builder: (ctx) {
         bool obscure = true;
-        return StatefulBuilder(builder: (context, setStateDialog) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            backgroundColor: const Color(0xFF4A2B55),
-            title: Text(
-              'Delete Account',
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Enter your password to confirm account deletion. This action cannot be undone.',
-                  style: GoogleFonts.inter(
-                    fontSize: 13.5,
-                    color: Colors.white70,
+              backgroundColor: const Color(0xFF4A2B55),
+              title: Text(
+                'Delete Account',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Enter your password to confirm account deletion. This action cannot be undone.',
+                    style: GoogleFonts.inter(
+                      fontSize: 13.5,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: passwordCtrl,
+                    obscureText: obscure,
+                    style: GoogleFonts.inter(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Password',
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.1),
+                      hintStyle: GoogleFonts.inter(color: Colors.white54),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscure ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.white70,
+                        ),
+                        onPressed: () =>
+                            setStateDialog(() => obscure = !obscure),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(
+                          color: Colors.white,
+                          width: 1.6,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.inter(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: passwordCtrl,
-                  obscureText: obscure,
-                  style: GoogleFonts.inter(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'Password',
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.1),
-                    hintStyle: GoogleFonts.inter(color: Colors.white54),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        obscure ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.white70,
-                      ),
-                      onPressed: () => setStateDialog(() => obscure = !obscure),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.white, width: 1.6),
-                    ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF4A2B55),
                   ),
+                  onPressed: _isDeletingAccount
+                      ? null
+                      : () async {
+                          final pass = passwordCtrl.text.trim();
+                          if (pass.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Password wajib diisi untuk konfirmasi.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                          Navigator.of(ctx).pop(); // tutup dialog input
+                          setState(() => _isDeletingAccount = true);
+
+                          try {
+                            await widget.api.deleteAccount(
+                              username: widget.profile?.username ?? '',
+                              password: pass,
+                            );
+
+                            // Hapus session di client (opsional) lalu arahkan ke login
+                            final request = Provider.of<CookieRequest>(
+                              context,
+                              listen: false,
+                            );
+                            try {
+                              await request.logout(
+                                'https://nathanael-leander-smash.pbp.cs.ui.ac.id/authentication/logout/',
+                              );
+                            } catch (_) {}
+
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Akun berhasil dihapus.'),
+                              ),
+                            );
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SmashLoginPage(),
+                              ),
+                              (route) => false,
+                            );
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Gagal menghapus akun: $e'),
+                              ),
+                            );
+                          } finally {
+                            if (mounted)
+                              setState(() => _isDeletingAccount = false);
+                          }
+                        },
+                  child: _isDeletingAccount
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF4A2B55),
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          'Delete Account',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                        ),
                 ),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: Text(
-                  'Cancel',
-                  style: GoogleFonts.inter(
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF4A2B55),
-                ),
-                onPressed: _isDeletingAccount
-                    ? null
-                    : () async {
-                        final pass = passwordCtrl.text.trim();
-                        if (pass.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Password wajib diisi untuk konfirmasi.')),
-                          );
-                          return;
-                        }
-                        Navigator.of(ctx).pop(); // tutup dialog input
-                        setState(() => _isDeletingAccount = true);
-
-                        try {
-                          await widget.api.deleteAccount(
-                            username: widget.profile?.username ?? '',
-                            password: pass,
-                          );
-
-                          // Hapus session di client (opsional) lalu arahkan ke login
-                          final request = Provider.of<CookieRequest>(context, listen: false);
-                          try {
-                            await request.logout('http://localhost:8000/authentication/logout/');
-                          } catch (_) {}
-
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Akun berhasil dihapus.')),
-                          );
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (_) => const SmashLoginPage()),
-                            (route) => false,
-                          );
-                        } catch (e) {
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Gagal menghapus akun: $e')),
-                          );
-                        } finally {
-                          if (mounted) setState(() => _isDeletingAccount = false);
-                        }
-                      },
-                child: _isDeletingAccount
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF4A2B55),
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Text(
-                        'Delete Account',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                      ),
-              ),
-            ],
-          );
-        });
+            );
+          },
+        );
       },
     );
   }
@@ -419,11 +454,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF4A2B55),
-              Color(0xFF6A2B53),
-              Color(0xFF9D50BB),
-            ],
+            colors: [Color(0xFF4A2B55), Color(0xFF6A2B53), Color(0xFF9D50BB)],
             stops: [0.0, 0.5, 1.0],
           ),
         ),
@@ -570,8 +601,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 _textField(
                   _bioController,
                   maxLines: 4,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 _changePasswordCTA(),
@@ -588,8 +621,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       elevation: 0,
                     ),
-                    onPressed:
-                        _isDeletingAccount ? null : _showDeleteAccountDialog,
+                    onPressed: _isDeletingAccount
+                        ? null
+                        : _showDeleteAccountDialog,
                     child: Text(
                       'Delete Account',
                       style: GoogleFonts.inter(fontWeight: FontWeight.w700),
@@ -604,11 +638,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          side: BorderSide(color: Colors.white.withOpacity(0.6)),
+                          side: BorderSide(
+                            color: Colors.white.withOpacity(0.6),
+                          ),
                         ),
                         onPressed: _isSaving
                             ? null
@@ -628,7 +666,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           backgroundColor: Colors.white,
                           foregroundColor: const Color(0xFF4A2B55),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -693,8 +733,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
           width: size,
           height: size,
           color: Colors.grey.shade200,
-          child:
-              Icon(Icons.person, size: size * 0.42, color: Colors.grey.shade600),
+          child: Icon(
+            Icons.person,
+            size: size * 0.42,
+            color: Colors.grey.shade600,
+          ),
         );
       },
     );
@@ -748,9 +791,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menyimpan: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -765,7 +808,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _isLoggingOut = true;
     final request = context.read<CookieRequest>();
     try {
-      await request.logout('http://localhost:8000/authentication/logout/');
+      await request.logout(
+        'https://nathanael-leander-smash.pbp.cs.ui.ac.id/authentication/logout/',
+      );
     } catch (_) {}
     if (!mounted) return;
     _isLoggingOut = false;
@@ -781,7 +826,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _isLoggingOut = true;
     final request = context.read<CookieRequest>();
     try {
-      await request.logout('http://localhost:8000/authentication/logout/');
+      await request.logout(
+        'https://nathanael-leander-smash.pbp.cs.ui.ac.id/authentication/logout/',
+      );
     } catch (_) {}
     if (!mounted) return;
     _isLoggingOut = false;
@@ -835,11 +882,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Widget _textField(TextEditingController controller,
-      {int maxLines = 1,
-      EdgeInsetsGeometry? contentPadding,
-      String? emptyError,
-      String? hintText}) {
+  Widget _textField(
+    TextEditingController controller, {
+    int maxLines = 1,
+    EdgeInsetsGeometry? contentPadding,
+    String? emptyError,
+    String? hintText,
+  }) {
     const accent = Colors.white;
     return Focus(
       child: TextField(
@@ -855,7 +904,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
           hintStyle: GoogleFonts.inter(color: Colors.white54),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.3), width: 1),
+            borderSide: BorderSide(
+              color: Colors.white.withOpacity(0.3),
+              width: 1,
+            ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
@@ -892,7 +944,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ),
             child: IconButton(
               onPressed: _pickImage,
-              icon: const Icon(Icons.file_upload_outlined, size: 20, color: Colors.white),
+              icon: const Icon(
+                Icons.file_upload_outlined,
+                size: 20,
+                color: Colors.white,
+              ),
               tooltip: 'Pilih foto',
             ),
           ),
@@ -920,11 +976,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
-                child: Icon(
-                  Icons.delete,
-                  color: Colors.red.shade500,
-                  size: 20,
-                ),
+                child: Icon(Icons.delete, color: Colors.red.shade500, size: 20),
               ),
             ),
             onPressed: () {

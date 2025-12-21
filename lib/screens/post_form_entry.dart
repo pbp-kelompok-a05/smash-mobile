@@ -21,7 +21,7 @@ import 'package:smash_mobile/screens/register.dart';
 /// Halaman form untuk membuat post baru dengan glassmorphism UI
 /// dan login required check
 ///
-/// API Endpoint: POST http://localhost:8000/post/api/posts/
+/// API Endpoint: POST https://nathanael-leander-smash.pbp.cs.ui.ac.id/post/api/posts/
 class PostEntryFormPage extends StatefulWidget {
   const PostEntryFormPage({super.key});
 
@@ -69,7 +69,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
   /// Menggunakan endpoint: 'api/posts/' (method: POST)
   /// Sesuai dengan urls.py Django: path('api/posts/', views.PostAPIView.as_view(), name='post_api')
   static const String _createEndpoint =
-      'http://localhost:8000/post/api/create-post/';
+      'https://nathanael-leander-smash.pbp.cs.ui.ac.id/post/api/create-post/';
 
   @override
   void dispose() {
@@ -156,7 +156,7 @@ class _PostEntryFormPageState extends State<PostEntryFormPage>
     if (userId == null) {
       try {
         final request = context.read<CookieRequest>();
-        final me = await request.get('http://localhost:8000/post/me/');
+        final me = await request.get('https://nathanael-leander-smash.pbp.cs.ui.ac.id/post/me/');
         if (me != null && me['id'] != null) userId = me['id'].toString();
       } catch (_) {
         // ignore and fall back to default

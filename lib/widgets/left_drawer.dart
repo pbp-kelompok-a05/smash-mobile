@@ -199,7 +199,7 @@ class LeftDrawer extends StatelessWidget {
 
     final request = context.read<CookieRequest>();
     try {
-      await request.logout('http://localhost:8000/authentication/logout/');
+      await request.logout('https://nathanael-leander-smash.pbp.cs.ui.ac.id/authentication/logout/');
     } catch (_) {}
 
     // Navigasi ke login dan hapus semua history

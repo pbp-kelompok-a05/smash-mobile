@@ -146,7 +146,7 @@ class _PostListPageState extends State<PostListPage>
   Future<void> _handleLogout() async {
     final request = context.read<CookieRequest>();
     try {
-      await request.logout('http://localhost:8000/authentication/logout/');
+      await request.logout('https://nathanael-leander-smash.pbp.cs.ui.ac.id/authentication/logout/');
     } catch (_) {}
     if (!mounted) return;
     setState(() {

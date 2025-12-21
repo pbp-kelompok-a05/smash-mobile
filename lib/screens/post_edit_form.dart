@@ -21,7 +21,7 @@ import 'package:smash_mobile/screens/register.dart';
 /// Halaman form untuk membuat post baru dengan glassmorphism UI
 /// dan login required check
 ///
-/// API Endpoint: POST http://localhost:8000/post/api/posts/
+/// API Endpoint: POST https://nathanael-leander-smash.pbp.cs.ui.ac.id/post/api/posts/
 class PostEditFormPage extends StatefulWidget {
   final ProfileFeedItem post;
   const PostEditFormPage({super.key, required this.post});
@@ -39,7 +39,7 @@ class _PostEditFormPageState extends State<PostEditFormPage>
 
   late AnimationController _animationController;
   String get _editEndpoint =>
-      'http://localhost:8000/post/edit-flutter/${widget.post.id}/';
+      'https://nathanael-leander-smash.pbp.cs.ui.ac.id/post/edit-flutter/${widget.post.id}/';
   @override
   void initState() {
     super.initState();
@@ -158,7 +158,7 @@ class _PostEditFormPageState extends State<PostEditFormPage>
     if (userId == null) {
       try {
         final request = context.read<CookieRequest>();
-        final me = await request.get('http://localhost:8000/post/me/');
+        final me = await request.get('https://nathanael-leander-smash.pbp.cs.ui.ac.id/post/me/');
         if (me != null && me['id'] != null) userId = me['id'].toString();
       } catch (_) {
         // ignore and fall back to default

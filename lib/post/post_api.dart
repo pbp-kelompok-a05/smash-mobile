@@ -12,7 +12,7 @@ import 'package:http/browser_client.dart' as http_browser;
 /// Menangani: fetch posts, notifications, post detail, dan utilities URL
 class PostApi {
   PostApi({required this.request, String? baseUrl})
-    : baseUrl = baseUrl ?? 'http://localhost:8000';
+    : baseUrl = baseUrl ?? 'https://nathanael-leander-smash.pbp.cs.ui.ac.id';
 
   final CookieRequest request;
   final String baseUrl;

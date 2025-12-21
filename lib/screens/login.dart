@@ -191,7 +191,7 @@ class _SignInFormState extends State<_SignInForm> {
   bool _obscure = true;
   bool _isSubmitting = false;
 
-  static const String _baseUrl = 'http://localhost:8000';
+  static const String _baseUrl = 'https://nathanael-leander-smash.pbp.cs.ui.ac.id';
   static const String _loginPath = '/authentication/login/';
 
   @override

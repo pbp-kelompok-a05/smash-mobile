@@ -11,12 +11,13 @@ import 'package:smash_mobile/models/profile_entry.dart';
 
 class ProfileApi {
   ProfileApi({required this.request, String? baseUrl})
-      : baseUrl = baseUrl ?? _defaultBaseUrl;
+    : baseUrl = baseUrl ?? _defaultBaseUrl;
 
   final CookieRequest request;
   final String baseUrl;
 
-  static const String _defaultBaseUrl = 'http://localhost:8000';
+  static const String _defaultBaseUrl =
+      'https://nathanael-leander-smash.pbp.cs.ui.ac.id/';
 
   String get defaultAvatarUrl => '$baseUrl/static/images/user-profile.png';
 
@@ -84,9 +85,7 @@ class ProfileApi {
           }
           final status = (response['status'] ?? '').toString().toLowerCase();
           if (status == 'success') {
-            return FilteringEntry.fromJson(
-              Map<String, dynamic>.from(response),
-            );
+            return FilteringEntry.fromJson(Map<String, dynamic>.from(response));
           }
           lastError = response['message'] ?? response;
           continue;
@@ -149,11 +148,12 @@ class ProfileApi {
           headers['Cookie'] = cookieHeader;
         }
       }
-      final csrfToken = (request.headers['X-CSRFToken'] ??
-              request.cookies['csrftoken']?.toString() ??
-              request.cookies['csrf']?.toString() ??
-              '')
-          .toString();
+      final csrfToken =
+          (request.headers['X-CSRFToken'] ??
+                  request.cookies['csrftoken']?.toString() ??
+                  request.cookies['csrf']?.toString() ??
+                  '')
+              .toString();
       if (csrfToken.isNotEmpty) {
         headers['X-CSRFToken'] = csrfToken;
       }
@@ -161,17 +161,21 @@ class ProfileApi {
       req.headers.addAll(headers);
       fields.forEach((k, v) => req.fields[k] = v);
       if (profileBytes != null) {
-        req.files.add(http.MultipartFile.fromBytes(
-          'profile_photo',
-          profileBytes,
-          filename: profileFileName ?? 'avatar.jpg',
-        ));
+        req.files.add(
+          http.MultipartFile.fromBytes(
+            'profile_photo',
+            profileBytes,
+            filename: profileFileName ?? 'avatar.jpg',
+          ),
+        );
       } else if (profilePhoto != null) {
-        req.files.add(await http.MultipartFile.fromPath(
-          'profile_photo',
-          profilePhoto.path,
-          filename: profileFileName ?? 'avatar.jpg',
-        ));
+        req.files.add(
+          await http.MultipartFile.fromPath(
+            'profile_photo',
+            profilePhoto.path,
+            filename: profileFileName ?? 'avatar.jpg',
+          ),
+        );
       }
       late http.Client client;
       if (kIsWeb) {

@@ -137,10 +137,7 @@ class _SearchPageState extends State<SearchPage>
   Future<List<ProfileFeedItem>> _searchPosts(String query) async {
     final request = Provider.of<CookieRequest>(context, listen: false);
     final baseUrl = _profileApi.baseUrl;
-    final endpoints = [
-      '$baseUrl/search/api/',
-      '$baseUrl/post/api/search/',
-    ];
+    final endpoints = ['$baseUrl/search/api/', '$baseUrl/post/api/search/'];
 
     dynamic lastError;
     for (final path in endpoints) {
@@ -235,27 +232,27 @@ class _SearchPageState extends State<SearchPage>
   }
 
   void _openLogin() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SmashLoginPage()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const SmashLoginPage()));
   }
 
   void _openRegister() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SmashRegisterPage()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const SmashRegisterPage()));
   }
 
   void _openProfile() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const ProfilePage()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ProfilePage()));
   }
 
   void _openCreatePost() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const PostEntryFormPage()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const PostEntryFormPage()));
   }
 
   Future<void> _handleDeletePost(ProfileFeedItem post) async {
@@ -278,23 +275,22 @@ class _SearchPageState extends State<SearchPage>
     );
     if (confirm != true) return;
     try {
-      final api = ProfileApi(request: Provider.of<CookieRequest>(
-        context,
-        listen: false,
-      ));
+      final api = ProfileApi(
+        request: Provider.of<CookieRequest>(context, listen: false),
+      );
       await api.fetchProfile(); // noop to ensure session
       if (!mounted) return;
       setState(() {
         _results.removeWhere((p) => p.id == post.id);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Post deleted')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Post deleted')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete post: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to delete post: $e')));
     }
   }
 
@@ -303,7 +299,9 @@ class _SearchPageState extends State<SearchPage>
     _isLoggingOut = true;
     final request = Provider.of<CookieRequest>(context, listen: false);
     try {
-      await request.logout('http://localhost:8000/authentication/logout/');
+      await request.logout(
+        'https://nathanael-leander-smash.pbp.cs.ui.ac.id/authentication/logout/',
+      );
     } catch (_) {}
     if (!mounted) return;
     _isLoggingOut = false;
@@ -347,11 +345,16 @@ class _SearchPageState extends State<SearchPage>
           _isLoggedIn
               ? IconButton(
                   icon: CircleAvatar(
-                    backgroundImage:
-                        _photoUrl != null ? NetworkImage(_photoUrl!) : null,
+                    backgroundImage: _photoUrl != null
+                        ? NetworkImage(_photoUrl!)
+                        : null,
                     backgroundColor: Colors.white.withOpacity(0.3),
                     child: _photoUrl == null
-                        ? const Icon(Icons.person, color: Colors.white, size: 20)
+                        ? const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 20,
+                          )
                         : null,
                   ),
                   onPressed: _openProfile,
@@ -362,16 +365,20 @@ class _SearchPageState extends State<SearchPage>
                       onPressed: _openLogin,
                       child: Text(
                         'Login',
-                        style:
-                            GoogleFonts.inter(color: Colors.white, fontSize: 12),
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                     TextButton(
                       onPressed: _openRegister,
                       child: Text(
                         'Register',
-                        style:
-                            GoogleFonts.inter(color: Colors.white, fontSize: 12),
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
@@ -430,7 +437,7 @@ class _SearchPageState extends State<SearchPage>
                         gradient: LinearGradient(
                           colors: [
                             Colors.white.withOpacity(0.3),
-                            Colors.transparent
+                            Colors.transparent,
                           ],
                         ),
                         borderRadius: BorderRadius.circular(1),
@@ -449,16 +456,15 @@ class _SearchPageState extends State<SearchPage>
       ),
 
       // Floating Action Button untuk create post
-      floatingActionButton:
-          _isLoggedIn
-              ? FloatingActionButton(
-                  onPressed: _openCreatePost,
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF4A2B55),
-                  elevation: 8,
-                  child: const Icon(Icons.add, size: 28),
-                )
-              : null,
+      floatingActionButton: _isLoggedIn
+          ? FloatingActionButton(
+              onPressed: _openCreatePost,
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF4A2B55),
+              elevation: 8,
+              child: const Icon(Icons.add, size: 28),
+            )
+          : null,
     );
   }
 
@@ -480,25 +486,26 @@ class _SearchPageState extends State<SearchPage>
         style: GoogleFonts.inter(color: Colors.white), // Teks putih
         decoration: InputDecoration(
           hintText: 'Search posts...',
-          hintStyle: GoogleFonts.inter(color: Colors.white54), // Hint transparan
+          hintStyle: GoogleFonts.inter(
+            color: Colors.white54,
+          ), // Hint transparan
           prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 22),
-          suffixIcon:
-              _controller.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(
-                        Icons.clear,
-                        color: Colors.white70,
-                        size: 22,
-                      ),
-                      onPressed: () {
-                        _controller.clear();
-                        setState(() {
-                          _results = [];
-                          _queryTitle = '';
-                        });
-                      },
-                    )
-                  : null,
+          suffixIcon: _controller.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(
+                    Icons.clear,
+                    color: Colors.white70,
+                    size: 22,
+                  ),
+                  onPressed: () {
+                    _controller.clear();
+                    setState(() {
+                      _results = [];
+                      _queryTitle = '';
+                    });
+                  },
+                )
+              : null,
           border: InputBorder.none, // Tidak ada border default
           contentPadding: const EdgeInsets.symmetric(
             vertical: 12,
@@ -537,7 +544,10 @@ class _SearchPageState extends State<SearchPage>
               style: GoogleFonts.inter(color: Colors.white70),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(onPressed: _performSearch, child: const Text('Retry')),
+            ElevatedButton(
+              onPressed: _performSearch,
+              child: const Text('Retry'),
+            ),
           ],
         ),
       );
@@ -636,9 +646,7 @@ class _SearchPageState extends State<SearchPage>
     // Navigasi ke halaman detail post
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => PostDetailPage(postId: post.id),
-      ),
+      MaterialPageRoute(builder: (_) => PostDetailPage(postId: post.id)),
     );
   }
 }

@@ -41,7 +41,7 @@ class EditPostPage extends StatefulWidget {
 
 class _EditPostPageState extends State<EditPostPage> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers
   late TextEditingController _titleController;
   late TextEditingController _contentController;
@@ -59,7 +59,9 @@ class _EditPostPageState extends State<EditPostPage> {
     _titleController = TextEditingController(text: widget.post.title);
     _contentController = TextEditingController(text: widget.post.content);
     _imageUrlController = TextEditingController(text: widget.post.image ?? '');
-    _videoUrlController = TextEditingController(text: widget.post.videoLink ?? '');
+    _videoUrlController = TextEditingController(
+      text: widget.post.videoLink ?? '',
+    );
   }
 
   @override
@@ -92,7 +94,7 @@ class _EditPostPageState extends State<EditPostPage> {
       };
 
       final response = await request.post(
-        'http://localhost:8000/post/api/posts/$postId/edit/',
+        'https://nathanael-leander-smash.pbp.cs.ui.ac.id/post/api/posts/$postId/edit/',
         data,
       );
 
@@ -173,7 +175,8 @@ class _EditPostPageState extends State<EditPostPage> {
             ],
           ),
         ),
-        child: SafeArea( // Hindari notch dan status bar
+        child: SafeArea(
+          // Hindari notch dan status bar
           child: Form(
             key: _formKey,
             onChanged: _checkForChanges,
@@ -285,7 +288,10 @@ class _EditPostPageState extends State<EditPostPage> {
         ),
         filled: true,
         fillColor: Colors.white.withOpacity(0.05),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
       ),
       onChanged: (_) => _checkForChanges(),
     );
@@ -314,10 +320,7 @@ class _EditPostPageState extends State<EditPostPage> {
                   const SizedBox(height: 8),
                   Text(
                     'Gagal load gambar',
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
                   ),
                 ],
               ),
@@ -390,10 +393,7 @@ class _EditPostPageState extends State<EditPostPage> {
                 url,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.white70,
-                ),
+                style: const TextStyle(fontSize: 12, color: Colors.white70),
               ),
             ),
           ],
