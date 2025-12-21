@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:smash_mobile/screens/login.dart';
 import 'package:smash_mobile/screens/menu.dart';
 import 'package:smash_mobile/screens/search.dart';
+import 'package:smash_mobile/navigation.dart';
 
 void main() => runApp(const SmashApp());
 
@@ -25,6 +26,7 @@ class SmashApp extends StatelessWidget {
           useMaterial3: true,
         ),
         home: MyHomePage(),
+        navigatorObservers: [routeObserver],
         routes: {
           '/home': (_) => MyHomePage(),
           '/login': (_) => const SmashLoginPage(),

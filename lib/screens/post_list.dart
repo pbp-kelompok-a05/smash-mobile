@@ -19,6 +19,7 @@ import 'package:smash_mobile/screens/search.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:smash_mobile/widgets/navbar.dart';
 import 'package:smash_mobile/widgets/post_card.dart';
+import 'package:smash_mobile/navigation.dart';
 
 /// Halaman daftar post yang menampilkan semua post dari semua user
 /// dengan data interaksi real-time untuk user yang sedang login
@@ -32,7 +33,10 @@ class PostListPage extends StatefulWidget {
 }
 
 class _PostListPageState extends State<PostListPage>
-    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+    with
+        SingleTickerProviderStateMixin,
+        AutomaticKeepAliveClientMixin,
+        RouteAware {
   @override
   bool get wantKeepAlive => true;
 
@@ -80,11 +84,25 @@ class _PostListPageState extends State<PostListPage>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final modal = ModalRoute.of(context);
+    if (modal != null) routeObserver.subscribe(this, modal);
+  }
+
+  @override
   void dispose() {
     _animationController.dispose();
     _scrollController.dispose();
     _searchController.dispose();
+    routeObserver.unsubscribe(this);
     super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // Called when another route above this one has been popped — refresh posts
+    _loadPosts(showLoading: true);
   }
 
   /// Auto refresh setiap 30 detik untuk data real-time

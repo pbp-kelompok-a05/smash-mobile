@@ -53,7 +53,11 @@ class _MyHomePageState extends State<MyHomePage>
 
   // === MENU ITEMS (Padel Themed) ===
   final List<ItemHomepage> _menuItems = [
-    ItemHomepage('Latest Posts', Icons.article_outlined, const Color(0xFF5E72E4)),
+    ItemHomepage(
+      'Latest Posts',
+      Icons.article_outlined,
+      const Color(0xFF5E72E4),
+    ),
     ItemHomepage('Your Hub', Icons.person_pin, const Color(0xFF2DCE89)),
     ItemHomepage('Create', Icons.add_circle_outline, const Color(0xFFFB6340)),
     ItemHomepage('Logout', Icons.logout, const Color(0xFFF5365C)),
@@ -78,7 +82,7 @@ class _MyHomePageState extends State<MyHomePage>
     _searchController = TextEditingController();
     _animationController.forward();
     _loadProfileHeader();
-    
+
     // Start carousel autoplay
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startCarouselAutoPlay();
@@ -162,9 +166,18 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  void _openLogin() => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmashLoginPage()));
-  void _openRegister() => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmashRegisterPage()));
-  void _openProfile() => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
+  void _openLogin() => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const SmashLoginPage()),
+  );
+  void _openRegister() => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const SmashRegisterPage()),
+  );
+  void _openProfile() => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const ProfilePage()),
+  );
   void _openSearch(String query) {
     final normalized = query.trim();
     if (normalized.isEmpty) return;
@@ -215,7 +228,9 @@ class _MyHomePageState extends State<MyHomePage>
 
       setState(() {
         _isLoggedIn = true;
-        _photoUrl = profileApi.resolveMediaUrl(profile.profilePhoto) ?? profileApi.defaultAvatarUrl;
+        _photoUrl =
+            profileApi.resolveMediaUrl(profile.profilePhoto) ??
+            profileApi.defaultAvatarUrl;
         _username = profile.username;
       });
     } catch (e) {
@@ -319,7 +334,10 @@ class _MyHomePageState extends State<MyHomePage>
           icon: Icons.forum_outlined,
           color: const Color(0xFF5E72E4),
           delay: 200,
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PostListPage())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PostListPage()),
+          ),
         ),
         _buildAnimatedInfoCard(
           title: 'Your Hub',
@@ -327,7 +345,10 @@ class _MyHomePageState extends State<MyHomePage>
           icon: Icons.person_pin_outlined,
           color: const Color(0xFF2DCE89),
           delay: 400,
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfilePage()),
+          ),
         ),
         _buildAnimatedInfoCard(
           title: 'Create',
@@ -335,7 +356,10 @@ class _MyHomePageState extends State<MyHomePage>
           icon: Icons.add_circle_outline,
           color: const Color(0xFFFB6340),
           delay: 600,
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PostEntryFormPage())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PostEntryFormPage()),
+          ),
         ),
       ],
     );
@@ -352,12 +376,14 @@ class _MyHomePageState extends State<MyHomePage>
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
-        final intervalValue = Tween<double>(begin: 0, end: 1).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Interval(delay / 1000, 1, curve: Curves.easeOut),
-          ),
-        ).value;
+        final intervalValue = Tween<double>(begin: 0, end: 1)
+            .animate(
+              CurvedAnimation(
+                parent: _animationController,
+                curve: Interval(delay / 1000, 1, curve: Curves.easeOut),
+              ),
+            )
+            .value;
 
         return Transform.translate(
           offset: Offset(0, 30 * (1 - intervalValue)),
@@ -539,6 +565,11 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   Widget _buildGridMenu() {
+    final request = context.watch<CookieRequest>();
+    final items = request.loggedIn
+        ? _menuItems
+        : _menuItems.where((it) => it.name.toLowerCase() != 'logout').toList();
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -548,7 +579,7 @@ class _MyHomePageState extends State<MyHomePage>
         mainAxisSpacing: 16,
         childAspectRatio: 0.85,
       ),
-      itemCount: _menuItems.length,
+      itemCount: items.length,
       itemBuilder: (context, index) {
         return AnimatedBuilder(
           animation: _animationController,
@@ -559,20 +590,28 @@ class _MyHomePageState extends State<MyHomePage>
               curve: Curves.easeOut,
             );
             return Transform.scale(
-              scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-                CurvedAnimation(parent: _animationController, curve: interval),
-              ).value,
+              scale: Tween<double>(begin: 0.8, end: 1.0)
+                  .animate(
+                    CurvedAnimation(
+                      parent: _animationController,
+                      curve: interval,
+                    ),
+                  )
+                  .value,
               child: FadeTransition(
                 opacity: Tween<double>(begin: 0, end: 1).animate(
-                  CurvedAnimation(parent: _animationController, curve: interval),
+                  CurvedAnimation(
+                    parent: _animationController,
+                    curve: interval,
+                  ),
                 ),
                 child: child,
               ),
             );
           },
           child: ItemCard(
-            item: _menuItems[index],
-            onTap: () => _handleMenuTap(context, _menuItems[index]),
+            item: items[index],
+            onTap: () => _handleMenuTap(context, items[index]),
           ),
         );
       },
@@ -612,10 +651,7 @@ class InfoCard extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              color.withOpacity(0.2),
-              color.withOpacity(0.05),
-            ],
+            colors: [color.withOpacity(0.2), color.withOpacity(0.05)],
           ),
           border: Border.all(color: color.withOpacity(0.3), width: 1.5),
           boxShadow: [
@@ -737,7 +773,9 @@ class _ItemCardState extends State<ItemCard> {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
-                    color: widget.item.color.withOpacity(_isHovered ? 0.25 : 0.15),
+                    color: widget.item.color.withOpacity(
+                      _isHovered ? 0.25 : 0.15,
+                    ),
                     shape: BoxShape.circle,
                   ),
                   padding: const EdgeInsets.all(14),

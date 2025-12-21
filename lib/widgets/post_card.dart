@@ -923,9 +923,6 @@ class _PostCardState extends State<PostCard> {
       subject: title.isNotEmpty ? title : 'Smash post',
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Link copied to clipboard')),
-    );
   }
 }
 

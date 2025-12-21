@@ -14,6 +14,7 @@ import 'package:smash_mobile/profile/profile_page.dart';
 import 'package:smash_mobile/widgets/post_card.dart';
 import 'package:smash_mobile/widgets/left_drawer.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:smash_mobile/navigation.dart';
 
 class PostDetailPage extends StatefulWidget {
   const PostDetailPage({super.key, required this.postId});
@@ -22,7 +23,7 @@ class PostDetailPage extends StatefulWidget {
   State<PostDetailPage> createState() => _PostDetailPageState();
 }
 
-class _PostDetailPageState extends State<PostDetailPage> {
+class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late PostApi _api;
   late ProfileApi _profileApi;
@@ -63,9 +64,24 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final modal = ModalRoute.of(context);
+    if (modal != null) routeObserver.subscribe(this, modal);
+  }
+
+  @override
   void dispose() {
     _commentController.dispose();
+    routeObserver.unsubscribe(this);
     super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // Returned to this page (e.g., after editing) — refresh data
+    _load();
+    _loadComments();
   }
 
   Future<void> _loadCurrentUser() async {
@@ -117,16 +133,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
       setState(() {
         _comments = list;
       });
-      // Debug: print loaded comment user ids to help diagnose missing ids
-      try {
-        for (var c in _comments) {
-          print(
-            'Loaded comment id=${c.id} author=${c.author} userId=${c.userId}',
-          );
-        }
-      } catch (e) {
-        print('Error printing comment debug info: $e');
-      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -439,8 +445,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
       subject: _item?.title.isNotEmpty == true ? _item!.title : 'Smash post',
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Link copied to clipboard')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Link copied to clipboard')));
   }
 }

@@ -20,19 +20,24 @@ class LeftDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final request = context.watch<CookieRequest>();
+    final loggedIn = request.loggedIn;
+
     return Drawer(
       width: 280,
       backgroundColor: Colors.transparent, // Transparan untuk glass effect
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
-          color: const Color(0xFF4A2B55).withOpacity(0.85), // Warna ungu semi-transparan
+          color: const Color(
+            0xFF4A2B55,
+          ).withOpacity(0.85), // Warna ungu semi-transparan
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
               // Header dengan gradient dan logo
               _buildDrawerHeader(),
-              
+
               // Menu items dengan glass effect
               _buildMenuItem(
                 context: context,
@@ -40,14 +45,14 @@ class LeftDrawer extends StatelessWidget {
                 title: 'Home',
                 onTap: () => _navigateTo(context, const MyHomePage()),
               ),
-              
+
               _buildMenuItem(
                 context: context,
                 icon: Icons.person_outline,
                 title: 'Profile',
                 onTap: () => _navigateTo(context, const ProfilePage()),
               ),
-              
+
               _buildMenuItem(
                 context: context,
                 icon: Icons.add_circle_outline,
@@ -61,24 +66,26 @@ class LeftDrawer extends StatelessWidget {
                 title: 'All Post',
                 onTap: () => _navigateTo(context, const PostListPage()),
               ),
-              
+
               _buildMenuItem(
                 context: context,
                 icon: Icons.notifications_none,
                 title: 'Notifications',
-                onTap: () => _navigateToPush(context, const NotificationsPage()),
+                onTap: () =>
+                    _navigateToPush(context, const NotificationsPage()),
               ),
-              
+
               const Divider(color: Colors.white24, height: 1),
-              
-              _buildMenuItem(
-                context: context,
-                icon: Icons.logout,
-                title: 'Logout',
-                onTap: () => _handleLogout(context),
-                textColor: Colors.redAccent,
-                iconColor: Colors.redAccent,
-              ),
+
+              if (loggedIn)
+                _buildMenuItem(
+                  context: context,
+                  icon: Icons.logout,
+                  title: 'Logout',
+                  onTap: () => _handleLogout(context),
+                  textColor: Colors.redAccent,
+                  iconColor: Colors.redAccent,
+                ),
             ],
           ),
         ),
@@ -94,10 +101,7 @@ class LeftDrawer extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF4A2B55),
-            const Color(0xFF9D50BB),
-          ],
+          colors: [const Color(0xFF4A2B55), const Color(0xFF9D50BB)],
         ),
       ),
       child: Padding(
@@ -121,7 +125,7 @@ class LeftDrawer extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // App title
             Text(
               'Smash Mobile',
@@ -132,14 +136,11 @@ class LeftDrawer extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            
+
             // Tagline
             Text(
               "Forum Padel #1 di Indonesia",
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: Colors.white70,
-              ),
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.white70),
             ),
           ],
         ),
@@ -183,10 +184,7 @@ class LeftDrawer extends StatelessWidget {
   /// Navigasi dengan pushReplacement (untuk halaman utama)
   void _navigateTo(BuildContext context, Widget page) {
     Navigator.pop(context); // Tutup drawer
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => page),
-    );
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => page));
   }
 
   /// Navigasi dengan push (untuk halaman sekunder)
@@ -198,12 +196,12 @@ class LeftDrawer extends StatelessWidget {
   /// Handle logout dengan konfirmasi
   Future<void> _handleLogout(BuildContext context) async {
     Navigator.pop(context); // Tutup drawer
-    
+
     final request = context.read<CookieRequest>();
     try {
       await request.logout('http://localhost:8000/authentication/logout/');
     } catch (_) {}
-    
+
     // Navigasi ke login dan hapus semua history
     Navigator.pushAndRemoveUntil(
       context,
