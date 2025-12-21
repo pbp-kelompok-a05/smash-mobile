@@ -31,7 +31,6 @@ class PostEditFormPage extends StatefulWidget {
 }
 
 class _PostEditFormPageState extends State<PostEditFormPage>
-
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController = TextEditingController();
@@ -181,19 +180,27 @@ class _PostEditFormPageState extends State<PostEditFormPage>
 
     try {
       final request = context.read<CookieRequest>();
-      final response = await request.post(url, body);
 
-      if (response is Map<String, dynamic>) {
-        // API may return status/message or the updated post
-        if (response['status'] == 'success' || response['status'] == true) {
-          if (response.containsKey('post'))
-            return Map<String, dynamic>.from(response['post']);
+      // Use the package post; it attempts to decode JSON. Capture errors
+      // so we can surface raw HTML responses (e.g. login redirect or error page).
+      try {
+        final response = await request.post(url, body);
+        if (response is Map<String, dynamic>) {
+          if (response['status'] == 'success' || response['status'] == true) {
+            if (response.containsKey('post'))
+              return Map<String, dynamic>.from(response['post']);
+            return response;
+          }
           return response;
         }
-        // Some endpoints return the updated object directly
-        return response;
+        throw Exception(
+          'Edit post failed: unexpected response type: ${response.runtimeType}',
+        );
+      } on FormatException catch (fe) {
+        // The server returned non-JSON (likely HTML). Include the message
+        // so the UI can show useful debug info instead of generic JSON error.
+        throw Exception('Non-JSON response from server: ${fe.message}');
       }
-      throw Exception('Edit post failed: unexpected response: $response');
     } catch (e) {
       throw Exception('Error updating post: $e');
     }
