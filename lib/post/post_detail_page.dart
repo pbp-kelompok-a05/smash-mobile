@@ -52,9 +52,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
     final request = Provider.of<CookieRequest>(context, listen: false);
     _api = PostApi(request: request);
     _profileApi = ProfileApi(request: request);
-    _loadCurrentUser();
+    // Load post details immediately, but ensure we fetch current user
+    // before loading comments so the API can include `userReaction`.
     _load();
-    _loadComments();
+    _loadCurrentUser().whenComplete(() {
+      _loadComments();
+    });
   }
 
   @override

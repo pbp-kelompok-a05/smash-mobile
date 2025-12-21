@@ -41,6 +41,8 @@ class CommentCard extends StatefulWidget {
 class _CommentCardState extends State<CommentCard> {
   late int _likes;
   late int _dislikes;
+  late bool _isLiked;
+  late bool _isDisliked;
   String? _reaction;
 
   void _handleAvatarTap() {
@@ -75,19 +77,49 @@ class _CommentCardState extends State<CommentCard> {
     _likes = widget.likes;
     _dislikes = widget.dislikes;
     _reaction = widget.userReaction;
+    _isLiked = widget.userReaction == 'like';
+    _isDisliked = widget.userReaction == 'dislike';
   }
 
   @override
   void didUpdateWidget(covariant CommentCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Sync internal counters/reaction when parent provides updated values
-    if (widget.likes != oldWidget.likes ||
-        widget.dislikes != oldWidget.dislikes ||
-        widget.userReaction != oldWidget.userReaction) {
+    // If the comment identity changed (widget reused by list), fully
+    // reinitialize internal state from the new widget to avoid showing
+    // stale reaction/counts from the previous comment.
+    if (widget.id != oldWidget.id) {
       setState(() {
         _likes = widget.likes;
         _dislikes = widget.dislikes;
         _reaction = widget.userReaction;
+        _isLiked = widget.userReaction == 'like';
+        _isDisliked = widget.userReaction == 'dislike';
+      });
+      return;
+    }
+    // Sync internal counters/reaction when parent provides updated values.
+    // Important: don't overwrite the local `_reaction` when only counts
+    // (likes/dislikes) change — otherwise a parent update that only
+    // refreshes counts would clear the user's reaction state.
+    final countsChanged =
+        widget.likes != oldWidget.likes ||
+        widget.dislikes != oldWidget.dislikes;
+    final reactionChanged = widget.userReaction != oldWidget.userReaction;
+
+    if (reactionChanged) {
+      setState(() {
+        _likes = widget.likes;
+        _dislikes = widget.dislikes;
+        _reaction = widget.userReaction;
+        _isLiked = widget.userReaction == 'like';
+        _isDisliked = widget.userReaction == 'dislike';
+      });
+    } else if (countsChanged) {
+      setState(() {
+        _likes = widget.likes;
+        _dislikes = widget.dislikes;
+        // keep existing `_reaction` — don't overwrite with possibly-null
+        // `widget.userReaction` when only counts updated.
       });
     }
   }
@@ -104,13 +136,16 @@ class _CommentCardState extends State<CommentCard> {
 
   void _handleLike() {
     setState(() {
-      if (_reaction == 'like') {
+      if (_isLiked) {
+        _isLiked = false;
         _reaction = null;
         _likes = (_likes - 1).clamp(0, 999999);
       } else {
-        if (_reaction == 'dislike') {
+        if (_isDisliked) {
+          _isDisliked = false;
           _dislikes = (_dislikes - 1).clamp(0, 999999);
         }
+        _isLiked = true;
         _reaction = 'like';
         _likes++;
       }
@@ -120,13 +155,16 @@ class _CommentCardState extends State<CommentCard> {
 
   void _handleDislike() {
     setState(() {
-      if (_reaction == 'dislike') {
+      if (_isDisliked) {
+        _isDisliked = false;
         _reaction = null;
         _dislikes = (_dislikes - 1).clamp(0, 999999);
       } else {
-        if (_reaction == 'like') {
+        if (_isLiked) {
+          _isLiked = false;
           _likes = (_likes - 1).clamp(0, 999999);
         }
+        _isDisliked = true;
         _reaction = 'dislike';
         _dislikes++;
       }
@@ -201,7 +239,7 @@ class _CommentCardState extends State<CommentCard> {
                             Icon(
                               Icons.thumb_up,
                               size: 16,
-                              color: _reaction == 'like'
+                              color: _isLiked
                                   ? Colors.blue
                                   : Colors.grey.shade700,
                             ),
@@ -228,7 +266,7 @@ class _CommentCardState extends State<CommentCard> {
                             Icon(
                               Icons.thumb_down,
                               size: 16,
-                              color: _reaction == 'dislike'
+                              color: _isDisliked
                                   ? Colors.red
                                   : Colors.grey.shade700,
                             ),
