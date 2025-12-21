@@ -2,31 +2,39 @@
 
 Tugas Kelompok PBP A - A05
 
+### Download APK
+
+[![Build Status](https://app.bitrise.io/app/cb387238-c776-4e90-8597-8c004a372020/status.svg?token=JPiKA9uZjkC4KSkVz1g8mw&branch=master)](https://app.bitrise.io/app/cb387238-c776-4e90-8597-8c004a372020)
+
+Public install link (Bitrise): [Download](https://app.bitrise.io/app/cb387238-c776-4e90-8597-8c004a372020/installable-artifacts/0b879d94cec807b5/public-install-page/99858cbb922032bc59882b22a7f5bf13)
+
+All builds: [See all builds](https://app.bitrise.io/app/cb387238-c776-4e90-8597-8c004a372020)
+
 ### Anggota
 
--   Ardyana Feby Pratiwi - 2406398274
--   Christna Yosua Rotinsulu - 2406495691
--   Ilham Afuw Ghaniy - 2406403495
--   Nathanael Leander Herdanatra - 2406421320
--   Nita Pasaribu 2406436890
--   Rashika Maharani Putri Rudyanto - 2406352670
+- Ardyana Feby Pratiwi - 2406398274
+- Christna Yosua Rotinsulu - 2406495691
+- Ilham Afuw Ghaniy - 2406403495
+- Nathanael Leander Herdanatra - 2406421320
+- Nita Pasaribu 2406436890
+- Rashika Maharani Putri Rudyanto - 2406352670
 
 ### Deskripsi Aplikasi
 
 Repositori ini memuat kode untuk aplikasi **Smash Mobile!** yaitu versi _mobile app_ dari forum olahraga padel **Smash!**. Dengan tampilan yang dioptimalkan untuk smartphone Anda, aplikasi ini menyediakan fitur-fitur untuk membuat pengalaman berdiskusi Anda lebih baik, di antaranya:
 
--   Fitur login, register, dan logout yang terintegrasi dengan [versi web dari aplikasi](https://nathanael-leander-smash.pbp.cs.ui.ac.id/).
--   Halaman _homepage_ yang berisi tautan cepat dan _feed_ terbaru yang diperbarui setiap harinya.
--   Halaman untuk melihat semua daftar postingan dan mendukung _filtering_.
--   Buat post baru, komentar, like, dan dislike.
--   Akses halaman profil Anda dengan mudah.
+- Fitur login, register, dan logout yang terintegrasi dengan [versi web dari aplikasi](https://nathanael-leander-smash.pbp.cs.ui.ac.id/).
+- Halaman _homepage_ yang berisi tautan cepat dan _feed_ terbaru yang diperbarui setiap harinya.
+- Halaman untuk melihat semua daftar postingan dan mendukung _filtering_.
+- Buat post baru, komentar, like, dan dislike.
+- Akses halaman profil Anda dengan mudah.
 
 ### Daftar Modul:
 
--   Homepage: Nita, Christna
--   Login-register-logout: Chika (Rashika)
--   Post-comment: Nathan, Ilham
--   Profile: Ardyana
+- Homepage: Nita, Christna
+- Login-register-logout: Chika (Rashika)
+- Post-comment: Nathan, Ilham
+- Profile: Ardyana
 
 ### Peran atau aktor pengguna aplikasi
 
